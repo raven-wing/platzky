@@ -1,0 +1,38 @@
+{
+  "DB": {
+    "type": "json",
+    "PATH": "test/db.json"
+  },
+  "SECRET_KEY": "you-will-never-guess",
+  "fields": [
+    "subscribers_limit",
+    "mails_limit",
+    "month_price",
+    "annual_price"
+  ],
+  "BABEL_TRANSLATION_DIRECTORIES": "locale",
+  "BABEL_DEFAULT_LOCALE": "en",
+  "SITEMAP_INCLUDE_RULES_WITHOUT_PARAMS": "True",
+  "DOMAINS": [
+    "www.whichmailing.localhost:5000",
+    "www.jakimailing.localhost:5000"
+  ],
+  "MAIN_DOMAIN": "whichmailing.localhost:5000",
+  "DOMAIN_TO_LANG": {
+    "www.whichmailing.localhost:5000": "en",
+    "www.jakimailing.localhost:5000": "pl"
+  },
+  "LANG_MAP": {
+    "en": {
+      "name": "English",
+      "flag": "uk",
+      "domain": "www.whichmailing.localhost:5000"
+    },
+    "pl": {
+      "name": "polski",
+      "flag": "pl",
+      "domain": "www.jakimailing.localhost:5000"
+    }
+  },
+  "SESSION_COOKIE_DOMAIN": "www.whichmailing.localhost:5000"
+}

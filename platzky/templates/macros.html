@@ -1,0 +1,43 @@
+{% macro question_form(question) %}
+<div class="border text-center" style="height:400px">
+  <img src="{{ url_for('icon', name=question.id) }}" alt={{ question.id }} style="max-width:100%;max-height:60%;">
+  <h3>
+    {{ question.label }}
+  </h3>
+  {{ question }}
+</div>
+{% endmacro %}
+
+
+{% macro result_table(fields, best_list) %}
+<table class="table table-striped" id="result-table">
+  <thead>
+  <tr>
+    <th scope="col">provider</th>
+    {% for field in fields %}
+    <th scope="col">{{ _(field) }}</th>
+    {% endfor %}
+  </tr>
+  </thead>
+  <tbody>
+  {% for item in best_list %}
+  <tr>
+    <th scope="row">
+      <a href={{item['link']}} class="result-link" target="_blank">
+        {{ item['name'] }} <i class="fas fa-external-link-alt"></i>
+      </a>
+    </th>
+    {% for field in fields %}
+    {% if item["offer"][field]|string == "inf" %}
+    <td data-order=999999999>
+      {% else %}
+    <td data-order={{item["offer"][field]}}>
+      {% endif %}
+      {{ _(item["offer"][field] |string) }}
+    </td>
+    {% endfor %}
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endmacro %}

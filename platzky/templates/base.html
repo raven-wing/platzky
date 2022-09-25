@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="{{ language }}">
+<head>
+  {% include "head_meta.html" %}
+  <title>{% block title %}{% endblock %} - {{_("Which Mailing")}}</title>
+  <meta name="description" content=" {% block description %} {% endblock %} ">
+  {% for lg in languages %}
+  {% endfor %}
+</head>
+<body>
+<div class="container" style="max-width:1080px; height:100%">
+  {% include "body_meta.html" %}
+  <nav class="navbar navbar-expand-lg navbar-light bg-light" id="mainNav">
+    <div class="container-fluid">
+      <a class="navbar-brand" href={{url_for('blog.index')}}>{{_("Which Mailing?")}}</a>
+      <button class="navbar-toggler" type="button" data-mdb-toggle="collapse" data-mdb-target="#navbarNav"
+              aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <i class="fas fa-bars"></i>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav">
+          <li class="nav-item">
+            <a class="nav-link" href={{url_for('blog.index')}}>{{_("Find best mailing for you")}}</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href={{url_for('blog.index')}}>Blog</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href={{url_for('blog.get_page', page_slug=_('about-us'))}}>{{_("About us")}}</a>
+          </li>
+        </ul>
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button"
+               data-bs-toggle="dropdown" aria-expanded="false">
+              <i class=" {{ languages[language]['flag'] }} flag"></i></a>
+            <ul class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+              {% for lg,items in languages.items() %}
+              <li><a class="dropdown-item" href={{url_for('blog.change_language', lang=lg, _external=True)}}>
+                <i class="{{ items['flag'] }} flag"></i>{{ items['name'] }}</a></li>
+              {% endfor %}
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+</div>
+
+{% block header %}
+{% endblock %}
+
+
+{% block content %}
+{% endblock %}
+
+</body>
+</html>
