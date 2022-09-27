@@ -1,34 +1,31 @@
 import urllib.parse
-import os
-
-from flask import Flask, request, render_template, current_app, redirect, send_from_directory, make_response, url_for, Blueprint
-from flask_babel import Babel
+from flask import request, render_template, current_app, redirect, send_from_directory, make_response, url_for, Blueprint
 
 
 #from secure import SecureHeaders
 
 from platzky.blog import comment_form, post_formatter
+from .www_handler import redirect_www_to_nonwww, redirect_nonwww_to_www
 
 
 
-
-def create_blog_blueprint(db, languages, config, babel):
-    blog = Blueprint('blog', __name__, url_prefix="/blog")
+def create_blog_blueprint(db, config, babel, url_prefix):
+    blog = Blueprint('blog', __name__, url_prefix=url_prefix)
+    languages = config["LANG_MAP"]
     main_domain = config["MAIN_DOMAIN"]
     # secure_headers = SecureHeaders()
 
+    @blog.before_request
+    def handle_www_redirection():
+        if config["USE_WWW"]:
+            return redirect_nonwww_to_www()
+        else:
+            return redirect_www_to_nonwww()
 
-    # @blog.before_request
-    # def redirect_nonwww():
-    #     """Redirect non-www requests to www."""
-    #     urlparts = urllib.parse.urlparse(request.url)
-    #     if not urlparts.netloc.startswith("www."):
-    #         urlparts = urlparts._replace(netloc=f'www.{urlparts.netloc}')
-    #         return redirect(urllib.parse.urlunparse(urlparts), code=301)
 
     # @blog.after_request
     # def set_secure_headers(response):
-    #     # secure_headers.flask(response)
+    #     secure_headers.flask(response)
     #     return response
 
     def domains_locale(dom):
@@ -100,77 +97,12 @@ def create_blog_blueprint(db, languages, config, babel):
             answers[field] = value
         return redirect(url_for('get_results', **answers))
 
-    @blog.route('/results', methods=["GET"])
-    def get_results():
-        answers = {}
-        fields = current_app.config['fields']
-        for field, value in request.args.items():
-            answers[field] = request.args.get(field)
-        answers['subscribers_limit'] = int(answers['subscribers_limit'])  # TODO change either logic or move it somewhere else
-        best_reults = get_best(answers)
-        return render_template("result.html", best_list=best_reults, fields=fields, answers=answers)
-
     @blog.route('/icon/<string:name>', methods=["GET"])
     def icon(name):
         return send_from_directory('../static/icons', f"{name}.png")
 
-    @blog.route("/robots.txt")
-    def robots():
-        robots_response = render_template("robots.txt", domain=request.host, mimetype='text/plain')
-        response = make_response(robots_response)
-        response.headers["Content-Type"] = "text/plain"
-        return response
-
-    @blog.route("/sitemap.xml", host=languages['pl']['domain'])
-    def pl_sitemap():
-        return sitemap('pl')
-
-    @blog.route("/sitemap.xml", host=main_domain)
-    def main_sitemap():
-        return sitemap('en')
-
-    def sitemap(lang):
-        """
-        Route to dynamically generate a sitemap of your website/application.
-        lastmod and priority tags omitted on static pages.
-        lastmod included on dynamic content such as blog posts.
-        """
-
-        global url
-        host_components = urllib.parse.urlparse(request.host_url)
-        host_base = host_components.scheme + "://" + host_components.netloc
-
-        # Static routes with static content
-        static_urls = list()
-        for rule in blog.url_map.iter_rules():
-            if not str(rule).startswith("/admin") and not str(rule).startswith("/user"):
-                if "GET" in rule.methods and len(rule.arguments) == 0:
-                    url = {
-                        "loc": f"{host_base}{str(rule)}"
-                    }
-                static_urls.append(url)
-
-        # Dynamic routes with dynamic content
-        dynamic_urls = list()
-        blog_posts = db.get_all_posts(lang)
-        for post in blog_posts:
-            slug = post['slug']
-            datet = post['date'].split('T')[0]
-            url = {
-                "loc": f"{host_base}/blog/{slug}",
-                "lastmod": datet
-            }
-            dynamic_urls.append(url)
-
-        statics = list({v['loc']: v for v in static_urls}.values())
-        dynamics = list({v['loc']: v for v in dynamic_urls}.values())
-        xml_sitemap = render_template("sitemap.xml", static_urls=statics, dynamic_urls=dynamics,
-                                      host_base=host_base)
-        response = make_response(xml_sitemap)
-        response.headers["Content-Type"] = "application/xml"
-        return response
-
     return blog
+
 
 
 

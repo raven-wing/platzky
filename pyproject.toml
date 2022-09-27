@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "platzkey"
+name = "platzky"
 version = "0.1.0"
 description = "Another blog in python"
 authors = ["Your Name <you@example.com>"]
@@ -16,6 +16,7 @@ Flask-WTF = "^1.0.1"
 gql = "^3.4.0"
 aiohttp = "^3.8.3"
 Flask-Markdown = "^0.3"
+Flask-Minify = "^0.39"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.1.3"
