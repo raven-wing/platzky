@@ -9,7 +9,8 @@ from .www_handler import redirect_www_to_nonwww, redirect_nonwww_to_www
 
 
 
-def create_blog_blueprint(db, config, babel, url_prefix):
+def create_blog_blueprint(db, config, babel):
+    url_prefix = config["BLOG_PREFIX"]
     blog = Blueprint('blog', __name__, url_prefix=url_prefix)
     languages = config["LANG_MAP"]
     main_domain = config["MAIN_DOMAIN"]

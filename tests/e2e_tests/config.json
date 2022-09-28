@@ -1,5 +1,4 @@
 {
-  "USE_WWW": true,
   "DB": {
     "type": "json_file",
     "PATH": "./db.json"

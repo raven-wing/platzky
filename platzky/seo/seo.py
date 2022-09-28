@@ -2,7 +2,8 @@ import urllib.parse
 from flask import request, render_template, make_response, Blueprint
 
 
-def create_seo_blueprint(db, config, url_prefix):
+def create_seo_blueprint(db, config):
+    url_prefix = config["SEO_PREFIX"]
     seo = Blueprint('seo', __name__, url_prefix=url_prefix)
     languages = config["LANG_MAP"]
     main_domain = config["MAIN_DOMAIN"]

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "platzky"
-version = "0.1.0"
+version = "0.1.1"
 description = "Another blog in python"
 authors = ["Your Name <you@example.com>"]
 license = "MIT"
