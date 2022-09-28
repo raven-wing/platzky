@@ -1,7 +1,8 @@
 {
+  "USE_WWW": true,
   "DB": {
-    "type": "json",
-    "PATH": "test/db.json"
+    "type": "json_file",
+    "PATH": "./db.json"
   },
   "SECRET_KEY": "you-will-never-guess",
   "fields": [

@@ -17,6 +17,7 @@ def create_app(config_path):
     app.config.from_file(absolute_config_path, load=yaml.safe_load)
 
     db_driver = db_loader.load_db_driver(app.config["DB"]["type"])
+    os.chdir(os.path.dirname(config_path))
     app.db = db_driver.get_db(app.config["DB"])
     app.babel = Babel(app)
 
@@ -32,7 +33,7 @@ def create_app(config_path):
     app.register_blueprint(seo_blueprint)
 
     Minify(app=app, html=True, js=True, cssless=True)
-    # os.chdir(os.path.dirname(config_path))
+
 
 
     @app.babel.localeselector

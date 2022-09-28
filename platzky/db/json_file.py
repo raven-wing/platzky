@@ -1,6 +1,10 @@
-from whichmailing.db.db import DB
+from platzky.blog.db import DB
 import json
 import datetime
+
+
+def get_db(config):
+    return JsonFile(config["PATH"])
 
 
 class JsonFile(DB):
