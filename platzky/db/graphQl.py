@@ -8,8 +8,8 @@ from platzky.blog.db import DB
 
 
 def get_db(config):
-    endpoint = config["CMS_ENDPOINT"]
-    token = config["CMS_TOKEN"]
+    endpoint = config["DB"]["CMS_ENDPOINT"]
+    token = config["DB"]["CMS_TOKEN"]
     return GraphQL(endpoint, token)
 
 

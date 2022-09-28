@@ -13,12 +13,13 @@ from flaskext.markdown import Markdown
 def create_app(config_path):
     app = Flask(__name__)
     Markdown(app)
+    # print(os.getcwd())
     absolute_config_path = os.path.join(os.getcwd(), config_path)
-    app.config.from_file(absolute_config_path, load=yaml.safe_load)
 
+    app.config.from_file(absolute_config_path, load=yaml.safe_load)
+    app.config["CONFIG_PATH"] = absolute_config_path
     db_driver = db_loader.load_db_driver(app.config["DB"]["type"])
-    os.chdir(os.path.dirname(config_path))
-    app.db = db_driver.get_db(app.config["DB"])
+    app.db = db_driver.get_db(app.config)
     app.babel = Babel(app)
 
     blog_blueprint = blog.create_blog_blueprint(db=app.db,

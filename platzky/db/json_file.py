@@ -1,10 +1,12 @@
 from platzky.blog.db import DB
 import json
 import datetime
-
+import os.path
 
 def get_db(config):
-    return JsonFile(config["PATH"])
+    db_path = os.path.join(os.path.dirname(config["CONFIG_PATH"]),
+                           config["DB"]["PATH"])
+    return JsonFile(db_path)
 
 
 class JsonFile(DB):
