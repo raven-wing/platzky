@@ -1,5 +1,5 @@
 import urllib.parse
-from flask import request, render_template, current_app, redirect, send_from_directory, make_response, url_for, Blueprint
+from flask import request, render_template, redirect, send_from_directory, make_response, url_for, Blueprint
 
 
 #from secure import SecureHeaders
@@ -66,7 +66,7 @@ def create_blog_blueprint(db, config, babel):
             comment = request.form.to_dict()
             db.add_comment(post_slug=post_slug, author_name=comment["author_name"],
                                             comment=comment["comment"])
-            return redirect(url_for('get_post', post_slug=post_slug, comment_sent=True))
+            return redirect(url_for('blog.get_post', post_slug=post_slug, comment_sent=True))
         raw_post = db.get_post(post_slug)
 
         return render_template("post.html", post=post_formatter.format_post(raw_post), post_slug=post_slug,
@@ -87,16 +87,6 @@ def create_blog_blueprint(db, config, babel):
     def change_language(lang):
         new_domain = blog.get_langs_domain(lang)
         return redirect("http://" + new_domain, code=301)
-
-    @blog.route('/results', methods=["POST"])
-    def render_answers():
-        answers = {}
-        required_fields = current_app.config['fields']
-        for field, value in request.form.to_dict().items():
-            if field not in required_fields:
-                continue
-            answers[field] = value
-        return redirect(url_for('get_results', **answers))
 
     @blog.route('/icon/<string:name>', methods=["GET"])
     def icon(name):
