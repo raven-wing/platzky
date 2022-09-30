@@ -4,8 +4,8 @@ function posts() {
 
 describe('Blog test', () => {
   beforeEach(() => {
-    cy.visit('/')
-  })
+    cy.visit('http://platzky.localhost:5000/');
+  });
 
   it('display posts and leave comment in one of them', () => {
     posts()
@@ -32,19 +32,20 @@ describe('Blog test', () => {
   })
 
   it('return 404 on nonexisting page', () => {
-    cy.visit('/page/non-existing-page')
-    posts()
-      .should('have.length', 2)
-      .contains('title').click()
-    cy.contains('content')
-  })
+    const url404test = '/page/non-existing-page'
+    cy.request({url: url404test, failOnStatusCode: false})
+      .then(resp=> expect(resp.status).to.eq(404))
 
-  it('should display nothing if page has no graphic', () => {
-    cy.visit('/page/page-with-no-background')
-    posts()
-      .should('have.length', 2)
-      .contains('title').click()
-    cy.contains('content')
+    cy.visit(url404test, {failOnStatusCode: false})
+    cy.contains('No such page')
   })
+//
+//  it('should display nothing if page has no graphic', () => {
+//    cy.visit('/page/page-with-no-background')
+//    posts()
+//      .should('have.length', 2)
+//      .contains('title').click()
+//    cy.contains('content')
+//  })
 
 })

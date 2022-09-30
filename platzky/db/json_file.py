@@ -23,11 +23,11 @@ class JsonFile(DB):
         return self.json["posts"]
 
     def get_post(self, slug):
-        post = next(filter(lambda x: x["slug"] == slug, self.json["posts"]))
+        post = next(filter(lambda x: x["slug"] == slug, self.json["posts"]), None)
         return post
 
     def get_page(self, slug):
-        post = next(filter(lambda x: x["slug"] == slug, self.json["pages"]))
+        post = next(filter(lambda x: x["slug"] == slug, self.json["pages"]), None)
         return post
 
     def get_posts_by_tag(self, tag, lang):
