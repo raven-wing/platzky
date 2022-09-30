@@ -43,7 +43,10 @@
     {
       "title": "page title",
       "slug": "page",
-      "contentInMarkdown": "content"
+      "contentInMarkdown": "page content",
+      "coverImage": {
+        "url": "https://media.graphcms.com/XvmCDUjYTIq4c9wOIseo"
+      }
     }
   ]
 }

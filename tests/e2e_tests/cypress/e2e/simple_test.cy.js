@@ -30,4 +30,21 @@ describe('Blog test', () => {
     cy.get('.post-meta').contains('tag/1').click()
     cy.get('.post-title').should('have.length', 1)
   })
+
+  it('return 404 on nonexisting page', () => {
+    cy.visit('/page/non-existing-page')
+    posts()
+      .should('have.length', 2)
+      .contains('title').click()
+    cy.contains('content')
+  })
+
+  it('should display nothing if page has no graphic', () => {
+    cy.visit('/page/page-with-no-background')
+    posts()
+      .should('have.length', 2)
+      .contains('title').click()
+    cy.contains('content')
+  })
+
 })

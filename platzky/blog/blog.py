@@ -23,11 +23,11 @@ def create_blog_blueprint(db, config, babel):
         else:
             return redirect_www_to_nonwww()
 
-
-    # @blog.after_request
-    # def set_secure_headers(response):
-    #     secure_headers.flask(response)
-    #     return response
+    # def get_langs_domain(lang):
+    #     if self.does_lang_has_domain(lang):
+    #         return self.language_map.get(lang)['domain']
+    #     else:
+    #         return self.config['MAIN_DOMAIN']
 
     def domains_locale(dom):
         return config["DOMAIN_TO_LANG"][dom]
@@ -75,7 +75,6 @@ def create_blog_blueprint(db, config, babel):
     @blog.route('/page/<path:page_slug>', methods=["GET", "POST"])
     def get_page(page_slug):
         return render_template("page.html", post=db.get_page(page_slug))
-
 
     @blog.route('/tag/<path:tag>', methods=["GET"])
     def get_posts_from_tag(tag):

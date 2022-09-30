@@ -26,7 +26,7 @@ class JsonFile(DB):
         post = next(filter(lambda x: x["slug"] == slug, self.json["posts"]))
         return post
 
-    def get_page(self, slug, lang):
+    def get_page(self, slug):
         post = next(filter(lambda x: x["slug"] == slug, self.json["pages"]))
         return post
 
