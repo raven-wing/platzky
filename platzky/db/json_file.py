@@ -30,6 +30,10 @@ class JsonFile(DB):
         post = next(filter(lambda x: x["slug"] == slug, self.json["pages"]), None)
         return post
 
+    def get_menu(self):
+        post = self.json["menu"]
+        return post
+
     def get_posts_by_tag(self, tag, lang):
         posts = filter(lambda x: tag in x["tags"], self.json["posts"])
         return posts

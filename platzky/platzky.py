@@ -7,7 +7,7 @@ import urllib.parse
 from .blog import blog, db_loader
 from .seo import seo
 from .plugin_loader import plugify
-from . import config
+from . import default_config
 
 from .www_handler import redirect_www_to_nonwww, redirect_nonwww_to_www
 
@@ -34,7 +34,7 @@ def create_engine(config_path):
     app = Flask(__name__)
     Markdown(app)
     absolute_config_path = os.path.join(os.getcwd(), config_path)
-    app.config.from_mapping(config.defaults)
+    app.config.from_mapping(default_config.defaults)
     app.config.from_file(absolute_config_path, load=yaml.safe_load)
     app.config["CONFIG_PATH"] = absolute_config_path
     db_driver = db_loader.load_db_driver(app.config["DB"]["type"])
@@ -60,10 +60,10 @@ def create_engine(config_path):
         if does_lang_has_domain(lang):
             return app.config["LANG_MAP"].get(lang)['domain']
         else:
-            return config['MAIN_DOMAIN']
+            return app.config['MAIN_DOMAIN']
 
     def domains_locale(dom):
-        return config["DOMAIN_TO_LANG"][dom]
+        return app.config["DOMAIN_TO_LANG"][dom]
 
     @app.route('/lang/<string:lang>', methods=["GET"])
     def change_language(lang):
@@ -72,10 +72,13 @@ def create_engine(config_path):
 
     @app.context_processor
     def utils():
-        return {'languages': languages,
-                "language": get_locale(),
-                "url_link": lambda x: urllib.parse.quote(x, safe='')
-                }
+        return {
+            "app_name": app.config["APP_NAME"],
+            'languages': languages,
+            "language": get_locale(),
+            "url_link": lambda x: urllib.parse.quote(x, safe=''),
+            "menu": app.db.get_menu()
+        }
 
     @app.errorhandler(404)
     def page_not_found(e):

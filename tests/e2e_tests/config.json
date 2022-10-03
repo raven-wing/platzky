@@ -1,4 +1,5 @@
 {
+  "APP_NAME": "platzky",
   "DB": {
     "type": "json_file",
     "PATH": "./db.json"

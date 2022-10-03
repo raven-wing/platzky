@@ -48,5 +48,10 @@
         "url": "https://media.graphcms.com/XvmCDUjYTIq4c9wOIseo"
       }
     }
-  ]
+  ],
+  "menu":
+  {
+    "Blog": "/",
+    "Page": "/page/page"
+  }
 }
