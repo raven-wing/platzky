@@ -4,12 +4,12 @@ function posts() {
 
 describe('Blog test', () => {
   beforeEach(() => {
-    cy.visit('http://platzky.localhost:5000/');
+    cy.visit('/');
   });
 
   it('display posts and leave comment in one of them', () => {
     posts()
-      .should('have.length', 2)
+      .should('have.length', 1)
       .contains('title').click()
     cy.contains('content')
 
@@ -27,7 +27,7 @@ describe('Blog test', () => {
   })
 
   it('clicking tag it filters posts with tag', () => {
-    cy.get('.post-meta').contains('tag/1').click()
+    cy.get('.post-meta').contains('tag/3').click()
     cy.get('.post-title').should('have.length', 1)
   })
 
