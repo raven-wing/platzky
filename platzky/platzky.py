@@ -1,20 +1,15 @@
-from functools import partial
-import os
-import yaml
+from flask import Flask, request, session, redirect, render_template
 from flask_babel import Babel
-from flask import Flask, request, session, redirect, url_for, render_template
+from flask_minify import Minify
+from flaskext.markdown import Markdown
+import os
 import urllib.parse
 
+from . import config
 from .blog import blog, db_loader
-from .seo import seo
 from .plugin_loader import plugify
-from . import default_config
-
+from .seo import seo
 from .www_handler import redirect_www_to_nonwww, redirect_nonwww_to_www
-
-from flask_minify import Minify
-
-from flaskext.markdown import Markdown
 
 
 def create_app(config_path):
@@ -34,9 +29,8 @@ def create_engine(config_path):
     app = Flask(__name__)
     Markdown(app)
     absolute_config_path = os.path.join(os.getcwd(), config_path)
-    app.config.from_mapping(default_config.defaults)
-    app.config.from_file(absolute_config_path, load=yaml.safe_load)
-    app.config["CONFIG_PATH"] = absolute_config_path
+    app.config.from_mapping(config.load_config(absolute_config_path))
+
     db_driver = db_loader.load_db_driver(app.config["DB"]["type"])
     app.db = db_driver.get_db(app.config)
     app.babel = Babel(app)
