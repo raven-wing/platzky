@@ -20,7 +20,8 @@ class JsonFile(DB):
             json.dump(self.json, json_file)
 
     def get_all_posts(self, lang):
-        return self.json["posts"]
+        posts = (filter(lambda x: x["language"] == lang, self.json["posts"]))
+        return list(posts)
 
     def get_post(self, slug):
         post = next(filter(lambda x: x["slug"] == slug, self.json["posts"]), None)

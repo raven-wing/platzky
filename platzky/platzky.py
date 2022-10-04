@@ -1,3 +1,4 @@
+from functools import partial
 import os
 import yaml
 from flask_babel import Babel
@@ -19,8 +20,7 @@ from flaskext.markdown import Markdown
 def create_app(config_path):
     engine = create_engine(config_path)
     blog_blueprint = blog.create_blog_blueprint(db=engine.db,
-                                                config=engine.config,
-                                                babel=engine.babel)
+                                                config=engine.config, babel=engine.babel)
     seo_blueprint = seo.create_seo_blueprint(db=engine.db,
                                              config=engine.config)
     engine.register_blueprint(blog_blueprint)
@@ -41,10 +41,7 @@ def create_engine(config_path):
     app.db = db_driver.get_db(app.config)
     app.babel = Babel(app)
     languages = app.config["LANG_MAP"]
-
-    @app.babel.localeselector
-    def get_locale():
-        return session.get('language', request.accept_languages.best_match(app.config["LANG_MAP"].keys()))
+    domain_langs = app.config["DOMAIN_TO_LANG"]
 
     @app.before_request
     def handle_www_redirection():
@@ -53,22 +50,25 @@ def create_engine(config_path):
         else:
             return redirect_www_to_nonwww()
 
-    def does_lang_has_domain(self, lang):
-        return 'domain' in self.language_map.get(lang)
+    @app.babel.localeselector
+    def get_locale():
+        domain = request.headers['Host']
+        chosen_domain_lang = domain_langs.get(domain, request.accept_languages.best_match(languages.keys()))
+        lang = session.get('language', chosen_domain_lang)
+        session['language'] = lang
+        return lang
 
     def get_langs_domain(lang):
-        if does_lang_has_domain(lang):
-            return app.config["LANG_MAP"].get(lang)['domain']
-        else:
-            return app.config['MAIN_DOMAIN']
-
-    def domains_locale(dom):
-        return app.config["DOMAIN_TO_LANG"][dom]
+        return languages.get(lang).get('domain')
 
     @app.route('/lang/<string:lang>', methods=["GET"])
     def change_language(lang):
-        new_domain = get_langs_domain(lang)
-        return redirect("http://" + new_domain, code=301)
+        if new_domain := get_langs_domain(lang):
+            return redirect("http://" + new_domain, code=301)
+        else:
+            session['language'] = lang
+            return redirect("http://" + request.url)
+
 
     @app.context_processor
     def utils():
@@ -84,8 +84,4 @@ def create_engine(config_path):
     def page_not_found(e):
         return render_template('404.html', title='404'), 404
 
-    @app.route('/language/<language>')
-    def set_language(language):
-        session['language'] = language
-        return redirect(url_for('index'))
     return plugify(app)

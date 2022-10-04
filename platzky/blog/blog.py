@@ -1,7 +1,4 @@
-from flask import request, render_template, redirect, send_from_directory, make_response, url_for, Blueprint
-from werkzeug.exceptions import HTTPException
-# from secure import SecureHeaders
-
+from flask import request, render_template, redirect, send_from_directory, make_response, url_for, Blueprint, session, current_app
 from platzky.blog import comment_form, post_formatter
 
 
@@ -10,25 +7,21 @@ def create_blog_blueprint(db, config, babel):
     url_prefix = config["BLOG_PREFIX"]
     blog = Blueprint('blog', __name__, url_prefix=url_prefix)
 
-    main_domain = config["MAIN_DOMAIN"]
-
-    # secure_headers = SecureHeaders()
+    def locale():
+        return babel.locale_selector_func()
 
     @blog.errorhandler(404)
     def page_not_found(e):
         return render_template('404.html', title='404'), 404
 
-    def get_locale():
-        return "en"
-
     @blog.route('/', methods=["GET"])
     def index():
-        lang = get_locale()
+        lang = locale()
         return render_template("blog.html", posts=db.get_all_posts(lang))
 
     @blog.route('/feed', methods=["GET"])
     def get_feed():
-        lang = get_locale()
+        lang = locale()
 
         response = make_response(render_template("feed.xml", posts=db.get_all_posts(lang)))
         response.headers["Content-Type"] = "application/xml"
@@ -40,7 +33,7 @@ def create_blog_blueprint(db, config, babel):
             comment = request.form.to_dict()
             db.add_comment(post_slug=post_slug, author_name=comment["author_name"],
                            comment=comment["comment"])
-            return redirect(url_for('blog.get_post', post_slug=post_slug, comment_sent=True, language=get_locale()))
+            return redirect(url_for('blog.get_post', post_slug=post_slug, comment_sent=True, language=locale()))
 
         if raw_post := db.get_post(post_slug):
             return render_template("post.html", post=post_formatter.format_post(raw_post), post_slug=post_slug,
@@ -57,7 +50,7 @@ def create_blog_blueprint(db, config, babel):
 
     @blog.route('/tag/<path:tag>', methods=["GET"])
     def get_posts_from_tag(tag):
-        lang = get_locale()
+        lang = locale()
         posts = db.get_posts_by_tag(tag, lang)
         return render_template("blog.html", posts=posts, subtitle=f" - tag: {tag}")
 
