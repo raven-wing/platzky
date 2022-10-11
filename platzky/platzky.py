@@ -47,8 +47,7 @@ def create_engine(config_path):
     @app.babel.localeselector
     def get_locale():
         domain = request.headers['Host']
-        chosen_domain_lang = domain_langs.get(domain, request.accept_languages.best_match(languages.keys()))
-        lang = session.get('language', chosen_domain_lang)
+        lang = domain_langs.get(domain, request.accept_languages.best_match(languages.keys()))
         session['language'] = lang
         return lang
 
@@ -57,6 +56,7 @@ def create_engine(config_path):
 
     @app.route('/lang/<string:lang>', methods=["GET"])
     def change_language(lang):
+
         if new_domain := get_langs_domain(lang):
             return redirect("http://" + new_domain, code=301)
         else:
