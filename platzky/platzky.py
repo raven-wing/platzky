@@ -12,8 +12,9 @@ from .seo import seo
 from .www_handler import redirect_www_to_nonwww, redirect_nonwww_to_www
 
 
-def create_app(config_path):
-    engine = create_engine(config_path)
+def create_app_from_config(config_object):
+    engine = create_engine(config_object)
+
     blog_blueprint = blog.create_blog_blueprint(db=engine.db,
                                                 config=engine.config, babel=engine.babel)
     seo_blueprint = seo.create_seo_blueprint(db=engine.db,
@@ -21,15 +22,19 @@ def create_app(config_path):
     engine.register_blueprint(blog_blueprint)
     engine.register_blueprint(seo_blueprint)
     Minify(app=engine, html=True, js=True, cssless=True)
-
     return engine
 
 
-def create_engine(config_path):
+def create_app(config_path):
+    absolute_config_path = os.path.join(os.getcwd(), config_path)
+    config_object = config.load_config(absolute_config_path)
+    return create_app_from_config(config_object)
+
+
+def create_engine(config_object):
     app = Flask(__name__)
     Markdown(app)
-    absolute_config_path = os.path.join(os.getcwd(), config_path)
-    app.config.from_mapping(config.load_config(absolute_config_path))
+    app.config.from_mapping(config_object.asdict())
 
     db_driver = db_loader.load_db_driver(app.config["DB"]["type"])
     app.db = db_driver.get_db(app.config)

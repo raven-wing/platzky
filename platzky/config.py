@@ -2,13 +2,18 @@ from os import path
 import yaml
 
 
-def get_babel_dir_format(directory, raw_variable):
-    list_dir = raw_variable.split(";")
-    new_babel_variable = ';'.join([path.join(directory, translation_dir) for translation_dir in list_dir])
-    return new_babel_variable
+class Config():
+    def __init__(self, absolute_config_path):
+        self.config = get_config_mapping(absolute_config_path)
+
+    def add_translations_dir(self, absolute_translation_dir):
+        self.config["BABEL_TRANSLATION_DIRECTORIES"] += ";" + absolute_translation_dir
+
+    def asdict(self):
+        return self.config
 
 
-def load_config(absolute_config_path):
+def get_config_mapping(absolute_config_path):
     default_config = {
         "USE_WWW": True,
         "SEO_PREFIX": "/",
@@ -18,7 +23,14 @@ def load_config(absolute_config_path):
         file_config = yaml.safe_load(stream)
 
     config = default_config | file_config
-    translation_dirs = config.get("TRANSLATION_DIRECTORIES", []) + ["./locale"]
-    config["BABEL_TRANSLATION_DIRECTORIES"] = ";".join(translation_dirs)
     config["CONFIG_PATH"] = absolute_config_path
+    babel_format_dir = ";".join(config.get("TRANSLATION_DIRECTORIES", []))
+    config["BABEL_TRANSLATION_DIRECTORIES"] = babel_format_dir
+    return config
+
+
+def load_config(absolute_config_path):
+    config = Config(absolute_config_path)
+    path_to_module_locale = path.join(path.dirname(__file__), "./locale")
+    config.add_translations_dir(path_to_module_locale)
     return config
