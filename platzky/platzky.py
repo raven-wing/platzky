@@ -66,7 +66,6 @@ def create_engine(config_path):
 
     @app.context_processor
     def utils():
-        print(app.db.get_menu_items())
         return {
             "app_name": app.config["APP_NAME"],
             'languages': languages,

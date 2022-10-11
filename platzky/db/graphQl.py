@@ -51,7 +51,6 @@ class GraphQL(DB):
             }
             """
         )
-        print(self.client.execute(menu_items)['menuItems'])
         return self.client.execute(menu_items)['menuItems']
 
     def get_post(self, slug):
