@@ -66,12 +66,13 @@ def create_engine(config_path):
 
     @app.context_processor
     def utils():
+        print(app.db.get_menu_items())
         return {
             "app_name": app.config["APP_NAME"],
             'languages': languages,
             "language": get_locale(),
             "url_link": lambda x: urllib.parse.quote(x, safe=''),
-            "menu": app.db.get_menu()
+            "menu_items": app.db.get_menu_items()
         }
 
     @app.errorhandler(404)

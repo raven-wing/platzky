@@ -19,9 +19,9 @@
       </button>
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav">
-          {% for title, link in menu.items() %}
+          {% for menu_item in menu_items %}
           <li class="nav-item">
-            <a class="nav-link" href={{link}} >{{_(title)}}</a>
+            <a class="nav-link" href={{menu_item["url"]}} >{{_(menu_item["name"])}}</a>
           </li>
           {% endfor %}
         </ul>

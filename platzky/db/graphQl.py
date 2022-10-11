@@ -40,6 +40,20 @@ class GraphQL(DB):
         )
         return self.client.execute(all_posts, variable_values={"lang": lang})['posts']
 
+    def get_menu_items(self):
+        menu_items = gql(
+            """
+            query MyQuery {
+              menuItems(stage: PUBLISHED){
+                name
+                url
+              }
+            }
+            """
+        )
+        print(self.client.execute(menu_items)['menuItems'])
+        return self.client.execute(menu_items)['menuItems']
+
     def get_post(self, slug):
         post = gql(
             """

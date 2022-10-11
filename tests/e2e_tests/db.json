@@ -51,9 +51,14 @@
       }
     }
   ],
-  "menu":
-  {
-    "Blog": "/",
-    "Page": "/page/page"
-  }
+  "menu_items": [
+    {
+      "name": "Find best mailing for you",
+      "URL": "/"
+    },
+    {
+      "name": "Page",
+      "URL": "/page/page"
+    }
+  ]
 }
