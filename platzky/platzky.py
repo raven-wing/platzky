@@ -5,8 +5,8 @@ from flaskext.markdown import Markdown
 import os
 import urllib.parse
 
-from . import config
-from .blog import blog, db_loader
+from . import config, db_loader
+from .blog import blog
 from .plugin_loader import plugify
 from .seo import seo
 from .www_handler import redirect_www_to_nonwww, redirect_nonwww_to_www

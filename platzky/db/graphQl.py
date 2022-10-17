@@ -145,19 +145,6 @@ class GraphQL(DB):
         query = self.client.execute(all_questions)
         return query['questions']
 
-    def get_redirections(self):
-        redirections = gql(
-            """
-            query MyQuery{
-              redirections(stage: PUBLISHED){
-                source
-                destination
-              }
-            }
-            """
-        )
-        return {x['source']:x['destination'] for x in self.client.execute(redirections)['redirections']}
-
     def add_comment(self, author_name, comment, post_slug):
         add_comment = gql(
             """
