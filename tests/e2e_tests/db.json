@@ -7,7 +7,9 @@
       "tags": [
         "tag/1"
       ],
-      "contentInMarkdown": "zawartość",
+      "contentInRichText": {
+        "markdown": "zawartość"
+      },
       "date": "2021-02-19",
       "coverImage": {
         "alternateText": "text which is alternative",
@@ -30,7 +32,9 @@
       "tags": [
         "tag/3"
       ],
-      "contentInMarkdown": "content",
+      "contentInRichText": {
+        "markdown": "content"
+      },
       "date": "2021-02-19",
       "coverImage": {
         "alternateText": "alternate text",

@@ -39,13 +39,10 @@ describe('Blog test', () => {
     cy.visit(url404test, {failOnStatusCode: false})
     cy.contains('No such page')
   })
+
+// TODO add tests:
+//   - alt text
+//   - translations
 //
-//  it('should display nothing if page has no graphic', () => {
-//    cy.visit('/page/page-with-no-background')
-//    posts()
-//      .should('have.length', 2)
-//      .contains('title').click()
-//    cy.contains('content')
-//  })
 
 })
