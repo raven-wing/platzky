@@ -60,5 +60,8 @@
       "name": "Page",
       "URL": "/page/page"
     }
-  ]
+  ],
+  "redirections": {
+    "/slugo": "/slug"
+  }
 }

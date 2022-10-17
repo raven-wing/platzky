@@ -46,9 +46,6 @@ class JsonFile(DB):
     def get_all_questions(self):
         return self.json["questions"]
 
-    def get_redirections(self):
-        return self.json["redirections"]
-
     def add_comment(self, author_name, comment, post_slug):
         comment = {
             "author": str(author_name),
