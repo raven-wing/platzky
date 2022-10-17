@@ -61,7 +61,10 @@ class GraphQL(DB):
             query MyQuery($slug: String!) {
               post(where: {slug: $slug}, stage: PUBLISHED) {
                 title
-                contentInMarkdown
+                contentInRichText {
+                  text
+                  markdown
+                }
                 excerpt
                 tags
                 coverImage {
