@@ -10,7 +10,10 @@
       "contentInMarkdown": "zawartość",
       "date": "2021-02-19",
       "coverImage": {
-        "url": "https://media.graphcms.com/XvmCDUjYTIq4c9wOIseo"
+        "alternateText": "text which is alternative",
+        "image": {
+          "url": "https://media.graphcms.com/XvmCDUjYTIq4c9wOIseo"
+        }
       },
       "comments": [
         {
@@ -30,7 +33,10 @@
       "contentInMarkdown": "content",
       "date": "2021-02-19",
       "coverImage": {
-        "url": "https://media.graphcms.com/XvmCDUjYTIq4c9wOIseo"
+        "alternateText": "alternate text",
+        "image": {
+          "url": "https://media.graphcms.com/XvmCDUjYTIq4c9wOIseo"
+        }
       },
       "comments": [
         {

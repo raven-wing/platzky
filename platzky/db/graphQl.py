@@ -30,10 +30,12 @@ class GraphQL(DB):
                 excerpt
                 slug
                 tags
-                coverImage
-                {
+                coverImage {
+                  alternateText
+                  image {
                     url
-                }                
+                  }
+                }             
               }
             }
             """
@@ -62,9 +64,11 @@ class GraphQL(DB):
                 contentInMarkdown
                 excerpt
                 tags
-                coverImage
-                {
+                coverImage {
+                  alternateText
+                  image {
                     url
+                  }
                 }
                 comments {
                     author

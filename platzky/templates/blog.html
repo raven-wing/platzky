@@ -14,7 +14,7 @@
   {% for post in posts %}
   <div class="row align-items-center">
     <div class="col-3">
-      <img src={{ post.coverImage.url }} class="img-thumbnail align-middle">
+      <img src="{{ post.coverImage.image.url }}" alt="{{ post.coverImage.alternateText }}" class="img-thumbnail align-middle">
     </div>
     <div class="col-8 mx-auto">
       <div class="post-preview">
