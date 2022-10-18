@@ -20,10 +20,10 @@ jobs:
         python -m pip install --upgrade pip
         pip install poetry
         poetry install
-#     - name: Test with pytest
-#       run: |
-#         poetry run coverage run -m pytest
-#         poetry run coverage lcov
+     - name: Test with pytest
+       run: |
+         poetry run coverage run -m pytest
+         poetry run coverage lcov
 #     - name: Coveralls
 #       uses: coverallsapp/github-action@master
 #       with:
