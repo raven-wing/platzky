@@ -27,7 +27,9 @@ def get_config_mapping(base_config):
     default_config = {
         "USE_WWW": True,
         "SEO_PREFIX": "/",
-        "BLOG_PREFIX": "/"
+        "BLOG_PREFIX": "/",
+        "LANG_MAP": {},
+        "DOMAIN_TO_LANG": {}
     }
 
     config = default_config | base_config

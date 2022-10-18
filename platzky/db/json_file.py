@@ -5,8 +5,7 @@ import os.path
 
 
 def get_db(config):
-    db_path = os.path.join(os.path.dirname(config["CONFIG_PATH"]),
-                           config["DB"]["PATH"])
+    db_path = os.path.abspath(config["DB"]["PATH"])
     return JsonFile(db_path)
 
 
