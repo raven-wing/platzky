@@ -2,7 +2,6 @@ from flask import request, render_template, redirect, send_from_directory, make_
 from platzky.blog import comment_form, post_formatter
 
 
-
 def create_blog_blueprint(db, config, babel):
     url_prefix = config["BLOG_PREFIX"]
     blog = Blueprint('blog', __name__, url_prefix=url_prefix)
@@ -22,7 +21,6 @@ def create_blog_blueprint(db, config, babel):
     @blog.route('/feed', methods=["GET"])
     def get_feed():
         lang = locale()
-
         response = make_response(render_template("feed.xml", posts=db.get_all_posts(lang)))
         response.headers["Content-Type"] = "application/xml"
         return response

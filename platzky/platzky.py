@@ -12,6 +12,13 @@ from .seo import seo
 from .www_handler import redirect_www_to_nonwww, redirect_nonwww_to_www
 
 
+def load_config(absolute_config_path):
+    config_obj = config.from_file(absolute_config_path)
+    path_to_module_locale = os.path.join(os.path.dirname(__file__), "./locale")
+    config_obj.add_translations_dir(path_to_module_locale)
+    return config_obj
+
+
 def create_app_from_config(config_object):
     engine = create_engine(config_object)
 
@@ -27,7 +34,7 @@ def create_app_from_config(config_object):
 
 def create_app(config_path):
     absolute_config_path = os.path.join(os.getcwd(), config_path)
-    config_object = config.load_config(absolute_config_path)
+    config_object = load_config(absolute_config_path)
     return create_app_from_config(config_object)
 
 
