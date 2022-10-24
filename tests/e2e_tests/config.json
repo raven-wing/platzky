@@ -2,7 +2,7 @@
   "APP_NAME": "platzky",
   "DB": {
     "type": "json_file",
-    "PATH": "./db.json"
+    "PATH": "../tests/e2e_tests/db.json"
   },
   "SECRET_KEY": "you-will-never-guess",
   "fields": [

@@ -4,7 +4,8 @@ from gql import gql
 
 
 def json_get_redirections(self):
-    return self.json["redirections"]
+    return self.data["redirections"]
+
 
 def graphql_get_redirections(self):
     redirections = gql(
@@ -26,6 +27,7 @@ def get_proper_redirections(db_type):
         "graphQl": graphql_get_redirections
     }
     return redirections[db_type]
+
 
 def process(app):
     app.db.get_redirections = get_proper_redirections(app.config["DB"]["type"])
