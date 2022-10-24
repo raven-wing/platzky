@@ -10,6 +10,11 @@ describe('Blog test', () => {
   it('display posts and leave comment in one of them', () => {
     posts()
       .should('have.length', 1)
+      .within( () => {
+        cy.get('img')
+          .should('have.attr', 'alt', 'alternate text')
+        }
+      )
       .contains('title').click()
     cy.contains('content')
 
@@ -25,6 +30,8 @@ describe('Blog test', () => {
     cy.get('.table.table-striped')
       .contains(comment)
   })
+
+
 
   it('clicking tag it filters posts with tag', () => {
     cy.get('.post-meta').contains('tag/3').click()
