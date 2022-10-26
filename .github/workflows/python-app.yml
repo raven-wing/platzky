@@ -38,4 +38,4 @@ jobs:
       run: |
         cd platzky && poetry run flask --app "platzky:create_app('./tests/e2e_tests/config.yml')" --debug run &
         sleep 3
-        cd ../tests/e2e_tests && node_modules/cypress/bin/cypress run
+        cd ./tests/e2e_tests && node_modules/cypress/bin/cypress run
