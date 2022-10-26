@@ -68,12 +68,11 @@ def create_engine(config_object):
 
     @app.route('/lang/<string:lang>', methods=["GET"])
     def change_language(lang):
-
         if new_domain := get_langs_domain(lang):
             return redirect("http://" + new_domain, code=301)
         else:
             session['language'] = lang
-            return redirect("http://" + request.url)
+            return redirect(request.referrer)
 
 
     @app.context_processor
