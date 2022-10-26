@@ -7,6 +7,10 @@ def json_get_redirections(self):
     return self.data.get("redirections", {})
 
 
+def google_get_redirections(self):
+    return self.data.get("redirections", {})
+
+
 def graphql_get_redirections(self):
     redirections = gql(
         """
@@ -24,7 +28,9 @@ def graphql_get_redirections(self):
 def get_proper_redirections(db_type):
     redirections = {
         "json_file": json_get_redirections,
-        "graph_ql": graphql_get_redirections
+        "graph_ql": graphql_get_redirections,
+        "google_json": google_get_redirections
+
     }
     return redirections[db_type]
 

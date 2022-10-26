@@ -1,5 +1,6 @@
 import yaml
 
+
 def is_db_ok(mapping):
     if 'DB' not in mapping:
         raise Exception("DB not set")
@@ -8,6 +9,7 @@ def is_db_ok(mapping):
     if mapping['DB']['TYPE'] not in ['graph_ql', 'json_file', 'google_json']:
         raise Exception("DB type is not supported")
     return True
+
 
 class Config():
     def __init__(self, mapping):
