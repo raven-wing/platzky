@@ -11,13 +11,13 @@ def get_db(config):
 
 class JsonFile(Json):
     def __init__(self, file_path):
-        self.file = file_path
-        with open(self.file) as json_file:
+        self.data_file_path = file_path
+        with open(self.data_file_path) as json_file:
             data = json.load(json_file)
             super().__init__(data)
 
     def _save_file(self):
-        with open(self.file, 'w') as json_file:
+        with open(self.data_file_path, 'w') as json_file:
             json.dump(self.data, json_file)
 
     def add_comment(self, author_name, comment, post_slug):

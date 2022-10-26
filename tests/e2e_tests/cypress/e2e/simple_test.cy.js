@@ -48,7 +48,7 @@ describe('Blog test', () => {
   })
 
 // TODO add tests:
-//   - alt text
+//   - post and page without image
 //   - translations
 //
 

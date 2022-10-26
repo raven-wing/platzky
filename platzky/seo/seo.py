@@ -5,8 +5,6 @@ from flask import request, render_template, make_response, Blueprint
 def create_seo_blueprint(db, config):
     url_prefix = config["SEO_PREFIX"]
     seo = Blueprint('seo', __name__, url_prefix=url_prefix)
-    languages = config["LANG_MAP"]
-    main_domain = config["MAIN_DOMAIN"]
     # secure_headers = SecureHeaders()
 
     @seo.route("/robots.txt")
@@ -16,13 +14,13 @@ def create_seo_blueprint(db, config):
         response.headers["Content-Type"] = "text/plain"
         return response
 
-    @seo.route("/sitemap.xml", host=languages['pl']['domain'])
-    def pl_sitemap():
-        return sitemap('pl')
-
-    @seo.route("/sitemap.xml", host=main_domain)
+    @seo.route("/sitemap.xml")
     def main_sitemap():
-        return sitemap('en')
+        if domain_to_lang := config.get("DOMAIN_TO_LANG", None):
+            domains_lang = domain_to_lang[request.host]
+            return sitemap(domains_lang)
+        else:
+            return sitemap(config.get("BABEL_TRANSLATION_DIRECTORIES")) #TODO should be based on localization not on config
 
     def sitemap(lang):
         """

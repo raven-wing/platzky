@@ -4,7 +4,7 @@ from gql import gql
 
 
 def json_get_redirections(self):
-    return self.data["redirections"]
+    return self.data.get("redirections", {})
 
 
 def graphql_get_redirections(self):
@@ -24,13 +24,13 @@ def graphql_get_redirections(self):
 def get_proper_redirections(db_type):
     redirections = {
         "json_file": json_get_redirections,
-        "graphQl": graphql_get_redirections
+        "graph_ql": graphql_get_redirections
     }
     return redirections[db_type]
 
 
 def process(app):
-    app.db.get_redirections = get_proper_redirections(app.config["DB"]["type"])
+    app.db.get_redirections = get_proper_redirections(app.config["DB"]["TYPE"])
     redirects = app.db.get_redirections(app.db)
     for source, destiny in redirects.items():
         func = partial(redirect, destiny, code=301)

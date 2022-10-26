@@ -11,7 +11,7 @@ class Json(DB):
         self.data = data_dict
 
     def get_all_posts(self, lang):
-        posts = (filter(lambda x: x["language"] == lang, self.data["posts"]))
+        posts = (filter(lambda x: x["language"] == lang, self.data.get("posts", [])))
         return list(posts)
 
     def get_post(self, slug):
@@ -23,7 +23,7 @@ class Json(DB):
         return post
 
     def get_menu_items(self):
-        post = self.data["menu_items"]
+        post = self.data.get("menu_items", [])
         return post
 
     def get_posts_by_tag(self, tag, lang):

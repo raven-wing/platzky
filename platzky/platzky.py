@@ -43,10 +43,10 @@ def create_engine(config_object):
     Markdown(app)
     app.config.from_mapping(config_object.asdict())
 
-    db_driver = db_loader.load_db_driver(app.config["DB"]["type"])
+    db_driver = db_loader.load_db_driver(app.config["DB"]["TYPE"])
     app.db = db_driver.get_db(app.config)
     app.babel = Babel(app)
-    languages = app.config["LANG_MAP"]
+    languages = app.config["LANGUAGES"]
     domain_langs = app.config["DOMAIN_TO_LANG"]
 
     @app.before_request

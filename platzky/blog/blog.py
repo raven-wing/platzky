@@ -42,7 +42,11 @@ def create_blog_blueprint(db, config, babel):
     @blog.route('/page/<path:page_slug>', methods=["GET", "POST"])
     def get_page(page_slug):
         if post := db.get_page(page_slug):
-            return render_template("page.html", post=post)
+            if cover_image := post.get("coverImage"):
+                cover_image_url = cover_image["url"]
+            else:
+                cover_image_url = None
+            return render_template("page.html", post=post, cover_image=cover_image_url)
         else:
             return page_not_found("no such page")
 

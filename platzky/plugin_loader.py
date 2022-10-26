@@ -2,6 +2,7 @@ import os
 import sys
 from os.path import dirname, abspath
 import importlib.util
+import pkgutil
 
 
 def find_plugins():
@@ -15,6 +16,11 @@ def find_plugins():
         sys.modules[module_name] = plugin
         spec.loader.exec_module(plugin)
         plugins.append(plugin)
+
+    for finder, name, ispkg in pkgutil.iter_modules():
+        if name.startswith('platzky_'):
+            plugins.append(importlib.import_module(name))
+
     return plugins
 
 
