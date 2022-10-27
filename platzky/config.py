@@ -1,3 +1,5 @@
+import os.path
+
 import yaml
 
 
@@ -44,7 +46,12 @@ def from_file(absolute_config_path):
     with open(absolute_config_path, "r") as stream:
         file_config = yaml.safe_load(stream)
     file_config["CONFIG_PATH"] = absolute_config_path
-    return from_mapping(file_config)
+    config_from_file = from_mapping(file_config)
+    config_directory = os.path.dirname(absolute_config_path)
+    for x in ["locales", "locale", "translations"]:
+        translation_directory = os.path.join(config_directory, x)
+        config_from_file.add_translations_dir(translation_directory)
+    return config_from_file
 
 
 def from_mapping(mapping):

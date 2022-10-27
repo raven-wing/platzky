@@ -59,7 +59,9 @@ def create_engine(config_object):
     @app.babel.localeselector
     def get_locale():
         domain = request.headers['Host']
-        lang = domain_langs.get(domain, request.accept_languages.best_match(languages.keys()))
+        lang = domain_langs.get(domain,
+                                session.get('language',
+                                            request.accept_languages.best_match(languages.keys())))
         session['language'] = lang
         return lang
 
@@ -73,7 +75,6 @@ def create_engine(config_object):
         else:
             session['language'] = lang
             return redirect(request.referrer)
-
 
     @app.context_processor
     def utils():
