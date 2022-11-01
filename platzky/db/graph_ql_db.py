@@ -109,9 +109,11 @@ class GraphQL(DB):
                     slug
                     excerpt
                     date
-                    coverImage
-                    {
+                    coverImage {
+                      alternateText
+                      image {
                         url
+                      }
                     }
               }
             }
