@@ -1,6 +1,6 @@
 import urllib.parse
 from os.path import dirname
-from flask import request, render_template, make_response, Blueprint
+from flask import request, render_template, make_response, Blueprint, current_app
 
 
 def create_seo_blueprint(db, config):
@@ -36,13 +36,13 @@ def create_seo_blueprint(db, config):
 
         # Static routes with static content
         static_urls = list()
-        for rule in seo.url_map.iter_rules():
+        for rule in current_app.url_map.iter_rules():
             if not str(rule).startswith("/admin") and not str(rule).startswith("/user"):
                 if "GET" in rule.methods and len(rule.arguments) == 0:
                     url = {
                         "loc": f"{host_base}{str(rule)}"
                     }
-                static_urls.append(url)
+                    static_urls.append(url)
 
         # Dynamic routes with dynamic content
         dynamic_urls = list()
@@ -51,7 +51,7 @@ def create_seo_blueprint(db, config):
             slug = post['slug']
             datet = post['date'].split('T')[0]
             url = {
-                "loc": f"{host_base}/seo/{slug}",
+                "loc": f"{host_base}/{slug}",
                 "lastmod": datet
             }
             dynamic_urls.append(url)
