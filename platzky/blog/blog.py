@@ -1,13 +1,19 @@
-from flask import request, render_template, redirect, send_from_directory, make_response, url_for, Blueprint, session, current_app
+from flask import request, render_template, redirect, send_from_directory,\
+    make_response, url_for, Blueprint, Markup
 from platzky.blog import comment_form, post_formatter
+from os.path import dirname
 
 
 def create_blog_blueprint(db, config, babel):
     url_prefix = config["BLOG_PREFIX"]
-    blog = Blueprint('blog', __name__, url_prefix=url_prefix)
+    blog = Blueprint('blog', __name__, url_prefix=url_prefix, template_folder=f'{dirname(__file__)}/../templates')
 
     def locale():
         return babel.locale_selector_func()
+
+    @blog.app_template_filter()
+    def markdown(text):
+        return Markup(text)
 
     @blog.errorhandler(404)
     def page_not_found(e):

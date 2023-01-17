@@ -28,7 +28,7 @@ class Config():
 
 
 def get_config_mapping(base_config):
-    default_config = {
+    default_config = {  # TODO move it to platzky
         "USE_WWW": True,
         "SEO_PREFIX": "/",
         "BLOG_PREFIX": "/",
