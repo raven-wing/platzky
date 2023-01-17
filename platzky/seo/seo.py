@@ -1,10 +1,11 @@
 import urllib.parse
+from os.path import dirname
 from flask import request, render_template, make_response, Blueprint
 
 
 def create_seo_blueprint(db, config):
     url_prefix = config["SEO_PREFIX"]
-    seo = Blueprint('seo', __name__, url_prefix=url_prefix)
+    seo = Blueprint('seo', __name__, url_prefix=url_prefix, template_folder=f'{dirname(__file__)}/../templates')
     # secure_headers = SecureHeaders()
 
     @seo.route("/robots.txt")
