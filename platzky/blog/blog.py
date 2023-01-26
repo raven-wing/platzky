@@ -1,4 +1,4 @@
-from flask import request, render_template, send_from_directory,\
+from flask import request, render_template,\
     make_response, Blueprint, Markup
 from platzky.blog import comment_form, post_formatter
 from os.path import dirname
@@ -63,9 +63,5 @@ def create_blog_blueprint(db, config, babel):
         lang = locale()
         posts = db.get_posts_by_tag(tag, lang)
         return render_template("blog.html", posts=posts, subtitle=f" - tag: {tag}")
-
-    @blog.route('/icon/<string:name>', methods=["GET"])
-    def icon(name):
-        return send_from_directory('../static/icons', f"{name}.png")
 
     return blog
