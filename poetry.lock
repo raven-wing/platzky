@@ -434,17 +434,6 @@ ply = "*"
 six = "*"
 
 [[package]]
-name = "Markdown"
-version = "3.4.1"
-description = "Python implementation of Markdown."
-category = "main"
-optional = false
-python-versions = ">=3.7"
-
-[package.extras]
-testing = ["coverage", "pyyaml"]
-
-[[package]]
 name = "MarkupSafe"
 version = "2.1.1"
 description = "Safely add untrusted strings to HTML/XML markup."
@@ -701,7 +690,7 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "76d3a892f5aedd5fd4a1188b6bc9e75ecc0a895bd4b3fcf95579abecaf2e1897"
+content-hash = "2c0689b56d85ce85e85fbe135292d3a35b7a24bf0f563e7fa83080e695548997"
 
 [metadata.files]
 aiohttp = [
@@ -1097,10 +1086,6 @@ jsmin = [
 lesscpy = [
     {file = "lesscpy-0.15.0-py2.py3-none-any.whl", hash = "sha256:7f7437df153ca9221beb5425c189d1523f95f864d1400f311598527ff03248d7"},
     {file = "lesscpy-0.15.0.tar.gz", hash = "sha256:ef058fb3fca077f0136222c415bc6d20fe256e92648ccbf4b3de874ba03b9b9d"},
-]
-Markdown = [
-    {file = "Markdown-3.4.1-py3-none-any.whl", hash = "sha256:08fb8465cffd03d10b9dd34a5c3fea908e20391a2a90b88d66362cb05beed186"},
-    {file = "Markdown-3.4.1.tar.gz", hash = "sha256:3b809086bb6efad416156e00a0da66fe47618a5d6918dd688f53f40c8e4cfeff"},
 ]
 MarkupSafe = [
     {file = "MarkupSafe-2.1.1-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:86b1f75c4e7c2ac2ccdaec2b9022845dbb81880ca318bb7a0a01fbf7813e3812"},
