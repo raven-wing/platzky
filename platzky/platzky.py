@@ -61,7 +61,7 @@ def create_engine(config, db, languages, domain_langs):
         domain = request.headers['Host']
         lang = domain_langs.get(domain,
                                 session.get('language',
-                                            request.accept_languages.best_match(languages.keys())))
+                                            request.accept_languages.best_match(languages.keys(), 'en')))
         session['language'] = lang
         return lang
 
