@@ -2,7 +2,7 @@
 
 from gql import gql, Client
 from gql.transport.aiohttp import AIOHTTPTransport
-import json
+
 from platzky.blog.db import DB
 
 
@@ -109,11 +109,9 @@ class GraphQL(DB):
                     slug
                     excerpt
                     date
-                    coverImage {
-                      alternateText
-                      image {
+                    coverImage
+                    {
                         url
-                      }
                     }
               }
             }

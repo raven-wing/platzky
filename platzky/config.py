@@ -1,4 +1,5 @@
 import os.path
+
 import yaml
 
 
@@ -27,13 +28,12 @@ class Config():
 
 
 def get_config_mapping(base_config):
-    default_config = {  # TODO move it to platzky
+    default_config = {
         "USE_WWW": True,
         "SEO_PREFIX": "/",
         "BLOG_PREFIX": "/",
         "LANGUAGES": {},
-        "DOMAIN_TO_LANG": {},
-        "PLUGINS": []
+        "DOMAIN_TO_LANG": {}
     }
 
     config = default_config | base_config
@@ -51,10 +51,6 @@ def from_file(absolute_config_path):
     for x in ["locales", "locale", "translations"]:
         translation_directory = os.path.join(config_directory, x)
         config_from_file.add_translations_dir(translation_directory)
-
-    path_to_module_locale = os.path.join(os.path.dirname(__file__), "./locale")
-    config_from_file.add_translations_dir(path_to_module_locale)
-
     return config_from_file
 
 

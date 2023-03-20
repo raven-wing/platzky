@@ -5,21 +5,10 @@ import importlib.util
 import pkgutil
 
 
-def get_selected_not_installed_plugins(enabled_plugins):
-    plugins_root_dir = os.path.join(dirname(abspath(__file__)), 'plugins')
-    plugins_dirs = set(os.listdir(plugins_root_dir))
-
-    return enabled_plugins - plugins_dirs
-
-
-def find_plugins(enabled_plugins):
+def find_plugins():
     plugins_dir = os.path.join(dirname(abspath(__file__)), 'plugins')
     plugins = []
-
-    if selected_not_enabled := get_selected_not_installed_plugins(enabled_plugins):
-        raise Exception(f"Plugins {selected_not_enabled} has been selected in config, but has not been installed.")
-
-    for plugin_dir in enabled_plugins:
+    for plugin_dir in os.listdir(plugins_dir):
         module_name = plugin_dir.removesuffix('.py')
         spec = importlib.util.spec_from_file_location(module_name,
                                                       os.path.join(plugins_dir, plugin_dir, "entrypoint.py"))
@@ -36,7 +25,6 @@ def find_plugins(enabled_plugins):
 
 
 def plugify(app):
-    plugins = set(app.config["PLUGINS"])
-    for plugin in find_plugins(plugins):
+    for plugin in find_plugins():
         plugin.process(app)
     return app
