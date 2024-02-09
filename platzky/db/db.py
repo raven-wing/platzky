@@ -39,6 +39,5 @@ class DB:
         pass
 
 
-
 class DBConfig(BaseModel):
     type: str = Field(alias="TYPE")

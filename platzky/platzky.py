@@ -43,7 +43,7 @@ class Engine(Flask):
     def add_dynamic_body(self, body: str):
         self.dynamic_body += body
 
-    def add_dynamic_header(self, body: str):
+    def add_dynamic_head(self, body: str):
         self.dynamic_head += body
 
     def get_locale(self) -> str:
