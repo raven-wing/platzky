@@ -40,3 +40,24 @@ def test_babel_gets_proper_directories():
             list(engine.babel.domain_instance.translation_directories)
             == translation_directories
         )
+
+
+def test_notifier():
+    config = Config.parse_obj(
+        {
+            "APP_NAME": "testingApp",
+            "SECRET_KEY": "secret",
+            "DB": {
+                "TYPE": "json",
+                "DATA": {}
+            },
+        }
+    )
+    engine = create_engine_from_config(config)
+    notifier_msg = None
+    def notifier(message):
+        nonlocal notifier_msg
+        notifier_msg = message
+    engine.add_notifier(notifier)
+    engine.notify("test")
+    assert notifier_msg == "test"

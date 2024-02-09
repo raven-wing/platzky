@@ -30,7 +30,7 @@ class Engine(Flask):
         self.babel = Babel(
             self,
             locale_selector=self.get_locale,
-            default_translation_directories=babel_translation_directories
+            default_translation_directories=babel_translation_directories,
         )
 
     def notify(self, message: str):
@@ -149,3 +149,8 @@ def create_engine_from_config(config: Config) -> Engine:
     """Create an engine from a config."""
     db = get_db(config.db)
     return create_engine(config, db)
+
+
+def create_app(config_path: str) -> Engine:
+    config = Config.parse_yaml(config_path)
+    return create_app_from_config(config)
