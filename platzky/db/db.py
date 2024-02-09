@@ -35,6 +35,10 @@ class DB:
     def add_comment(self, author_name, comment, post_slug):
         pass
 
+    def get_logo_url(self):
+        pass
+
+
 
 class DBConfig(BaseModel):
     type: str = Field(alias="TYPE")

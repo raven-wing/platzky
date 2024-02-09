@@ -26,6 +26,7 @@ pydantic = "^2.6.1"
 black = "^24.1.1"
 ruff = "^0.2.1"
 pyright = "^1.1.350"
+beautifulsoup4 = "^4.12.3"
 
 
 [build-system]
