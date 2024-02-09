@@ -1,17 +1,23 @@
-from flask import redirect
 from functools import partial
+
+from flask import redirect
 from gql import gql
+from pydantic import BaseModel
 
 
-def json_get_redirections(self):
+def json_db_get_redirections(self):
     return self.data.get("redirections", {})
 
 
-def google_get_redirections(self):
+def json_file_db_get_redirections(self):
+    return json_db_get_redirections(self)
+
+
+def google_json_db_get_redirections(self):
     return self.data.get("redirections", {})
 
 
-def graphql_get_redirections(self):
+def graph_ql_db_get_redirections(self):
     redirections = gql(
         """
         query MyQuery{
@@ -22,25 +28,27 @@ def graphql_get_redirections(self):
         }
         """
     )
-    return {x['source']:x['destination'] for x in self.client.execute(redirections)['redirections']}
-
-
-def get_proper_redirections(db_type):
-    redirections = {
-        "json_file": json_get_redirections,
-        "graph_ql": graphql_get_redirections,
-        "google_json": google_get_redirections
-
+    return {
+        x["source"]: x["destination"]
+        for x in self.client.execute(redirections)["redirections"]
     }
-    return redirections[db_type]
 
 
-def process(app):
-    app.db.get_redirections = get_proper_redirections(app.config["DB"]["TYPE"])
-    redirects = app.db.get_redirections(app.db)
-    for source, destiny in redirects.items():
-        func = partial(redirect, destiny, code=301)
-        func.__name__ = f"{source}-{destiny}"
-        app.route(rule=source)(func)
+class Redirection(BaseModel):
+    source: str
+    destiny: str
+
+
+def process(app, config):
+    redirections = [
+        Redirection.parse_obj({"source": source, "destiny": destiny})
+        for source, destiny in config.items()
+    ]
+    function_name = f"{app.db.module_name}_get_redirections"
+    app.db.extend("get_redirections", globals()[function_name])
+    for redirection in redirections:
+        func = partial(redirect, redirection.destiny, code=301)
+        func.__name__ = f"{redirection.source}-{redirection.destiny}"
+        app.route(rule=redirection.source)(func)
 
     return app

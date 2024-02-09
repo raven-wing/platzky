@@ -1,22 +1,41 @@
-#TODO rename file, extract it to another library, remove qgl and aiohttp from dependencies
+# TODO rename file, extract it to another library, remove qgl and aiohttp from dependencies
 
-from gql import gql, Client
-from gql.transport.aiohttp import AIOHTTPTransport
 import json
-from platzky.blog.db import DB
+
+from gql import Client, gql
+from gql.transport.aiohttp import AIOHTTPTransport
+from pydantic import Field
+
+from .db import DB, DBConfig
 
 
-def get_db(config):
-    endpoint = config["DB"]["CMS_ENDPOINT"]
-    token = config["DB"]["CMS_TOKEN"]
-    return GraphQL(endpoint, token)
+def db_config_type():
+    return GraphQlDbConfig
+
+
+class GraphQlDbConfig(DBConfig):
+    endpoint: str = Field(alias="CMS_ENDPOINT")
+    token: str = Field(alias="CMS_TOKEN")
+
+
+def get_db(config: GraphQlDbConfig):
+    return GraphQL(config.endpoint, config.token)
+
+
+def db_from_config(config: GraphQlDbConfig):
+    return GraphQL(config.endpoint, config.token)
 
 
 class GraphQL(DB):
     def __init__(self, endpoint, token):
-        full_token = 'bearer ' + token
-        transport = AIOHTTPTransport(url=endpoint, headers={'Authorization': full_token})
+        self.module_name = "graph_ql_db"
+        self.db_name = "GraphQLDb"
+        full_token = "bearer " + token
+        transport = AIOHTTPTransport(
+            url=endpoint, headers={"Authorization": full_token}
+        )
         self.client = Client(transport=transport)
+        super().__init__()
 
     def get_all_posts(self, lang):
         all_posts = gql(
@@ -34,12 +53,12 @@ class GraphQL(DB):
                   image {
                     url
                   }
-                }             
+                }
               }
             }
             """
         )
-        return self.client.execute(all_posts, variable_values={"lang": lang})['posts']
+        return self.client.execute(all_posts, variable_values={"lang": lang})["posts"]
 
     def get_menu_items(self):
         menu_items = gql(
@@ -52,7 +71,7 @@ class GraphQL(DB):
             }
             """
         )
-        return self.client.execute(menu_items)['menuItems']
+        return self.client.execute(menu_items)["menuItems"]
 
     def get_post(self, slug):
         post = gql(
@@ -76,13 +95,14 @@ class GraphQL(DB):
                     author
                     comment
                     date: createdAt
-                }                
+                }
               }
             }
-            """)
-        return self.client.execute(post, variable_values={"slug": slug})['post']
+            """
+        )
+        return self.client.execute(post, variable_values={"slug": slug})["post"]
 
-    #TODO Cleanup page logic of internationalization (now it depends on translation of slugs)
+    # TODO Cleanup page logic of internationalization (now it depends on translation of slugs)
     def get_page(self, slug):
         post = gql(
             """
@@ -96,8 +116,9 @@ class GraphQL(DB):
                 }
               }
             }
-            """)
-        return self.client.execute(post, variable_values={"slug": slug})['page']
+            """
+        )
+        return self.client.execute(post, variable_values={"slug": slug})["page"]
 
     def get_posts_by_tag(self, tag, lang):
         post = gql(
@@ -117,8 +138,11 @@ class GraphQL(DB):
                     }
               }
             }
-            """)
-        return self.client.execute(post, variable_values={"tag": tag, "lang": lang})['posts']
+            """
+        )
+        return self.client.execute(post, variable_values={"tag": tag, "lang": lang})[
+            "posts"
+        ]
 
     def get_all_providers(self):
         all_providers = gql(
@@ -151,7 +175,7 @@ class GraphQL(DB):
             """
         )
         query = self.client.execute(all_questions)
-        return query['questions']
+        return query["questions"]
 
     def add_comment(self, author_name, comment, post_slug):
         add_comment = gql(
@@ -167,7 +191,13 @@ class GraphQL(DB):
                     id
                 }
             }
-            """)
-        self.client.execute(add_comment, variable_values={
-            "author": author_name, "comment": comment, "slug": post_slug
-        })
+            """
+        )
+        self.client.execute(
+            add_comment,
+            variable_values={
+                "author": author_name,
+                "comment": comment,
+                "slug": post_slug,
+            },
+        )
