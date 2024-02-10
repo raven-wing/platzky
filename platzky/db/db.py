@@ -20,8 +20,9 @@ class DB:
                 if name in dir(superclass):
                     break
             else:
-                raise TypeError(f"Method {name} defined in {cls.__name__}  does not exist in superclasses")
-
+                raise TypeError(
+                    f"Method {name} defined in {cls.__name__}  does not exist in superclasses"
+                )
 
     def extend(self, function_name, function):
         """
@@ -72,14 +73,15 @@ class DB:
     def get_all_questions(self):  # TODO this should belong in plugin
         pass
 
-    def get_site_content(self): # TODO this should not be public
+    def get_site_content(self):  # TODO this should not be public
         pass
 
-    def _save_file(self): # TODO this should not be public
+    def _save_file(self):  # TODO this should not be public
         pass
 
-    def save_entry(self, entry): # TODO this should not be public
+    def save_entry(self, entry):  # TODO this should not be public
         pass
+
 
 class DBConfig(BaseModel):
     type: str = Field(alias="TYPE")

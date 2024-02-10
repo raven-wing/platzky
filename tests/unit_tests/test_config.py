@@ -2,6 +2,7 @@ from platzky.config import Config, languages_dict
 
 import pytest
 
+
 def test_parse_template_config() -> None:
     """Test that the template config can be parsed."""
     config = Config.parse_yaml("config-template.yml")
