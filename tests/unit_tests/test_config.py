@@ -1,5 +1,6 @@
 from platzky.config import Config, languages_dict
 
+import pytest
 
 def test_parse_template_config() -> None:
     """Test that the template config can be parsed."""
@@ -11,3 +12,9 @@ def test_parse_template_config() -> None:
         "pl": {"domain": None, "flag": "pl", "name": "polski"},
     }
     assert langs_dict == wanted_dict
+
+
+def test_parse_non_existing_config_file() -> None:
+    """Assure that parsing a non-existing config file raises an error and exits application."""
+    with pytest.raises(SystemExit):
+        Config.parse_yaml("non-existing-file.yml")
