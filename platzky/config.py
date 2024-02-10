@@ -1,6 +1,5 @@
 import sys
 import typing as t
-
 import yaml
 from pydantic import ConfigDict, BaseModel, Field
 

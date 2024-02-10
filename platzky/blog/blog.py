@@ -1,4 +1,6 @@
 from os.path import dirname
+    make_response, Blueprint, Markup
+from os.path import dirname
 
 from flask import Blueprint, make_response, render_template, request
 from markupsafe import Markup
@@ -14,6 +16,10 @@ def create_blog_blueprint(db, blog_prefix: str, locale_func):
         url_prefix=url_prefix,
         template_folder=f"{dirname(__file__)}/../templates",
     )
+
+    @blog.app_template_filter()
+    def markdown(text):
+        return Markup(text)
 
     @blog.app_template_filter()
     def markdown(text):
