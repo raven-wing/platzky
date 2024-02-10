@@ -70,7 +70,7 @@ def test_dynamic_content(test_app, content_type):
 
 
 @pytest.mark.parametrize("use_www", [True, False])
-def test_redirects(test_app, use_www):
+def test_www_redirects(test_app, use_www):
     config_data = {
         "APP_NAME": "testingApp",
         "SECRET_KEY": "secret",
@@ -94,11 +94,11 @@ def test_redirects(test_app, use_www):
     client.allow_subdomain_redirects = True
 
     if use_www:
-        url = "http://www.localhost/blog/page/test"
-        expected_redirect = "http://localhost/blog/page/test"
-    else:
         url = "http://localhost/blog/page/test"
         expected_redirect = "http://www.localhost/blog/page/test"
+    else:
+        url = "http://www.localhost/blog/page/test"
+        expected_redirect = "http://localhost/blog/page/test"
 
     response = client.get(url, follow_redirects=False)
 
