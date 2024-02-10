@@ -1,8 +1,6 @@
 import typing as t
 import urllib.parse
 from os.path import dirname
-from flask import request, render_template, make_response, Blueprint, current_app
-
 from flask import Blueprint, current_app, make_response, render_template, request
 
 

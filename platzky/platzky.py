@@ -47,13 +47,6 @@ class Engine(Flask):
     def get_locale(self) -> str:
         domain = request.headers["Host"]
         domain_to_lang = self.config.get("DOMAIN_TO_LANG")
-    db = db_driver.get_db(config_dict)
-    languages = config_dict["LANGUAGES"]
-    domain_langs = config_dict["DOMAIN_TO_LANG"]
-    return create_engine(config_dict, db, languages, domain_langs)
-
-
-def create_engine(config, db, languages, domain_langs):
 
         languages = self.config.get("LANGUAGES", {}).keys()
         backup_lang = session.get(
