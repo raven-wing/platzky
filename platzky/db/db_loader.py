@@ -19,7 +19,7 @@ def get_db_module(db_type):
     """
     db_dir = dirname(abspath(__file__))
     parent_module_name = ".".join(__name__.split(".")[:-1])
-    module_name = f"{parent_module_name}.{db_type}"
+    module_name = f"{parent_module_name}.{db_type}_db"
     spec = importlib.util.spec_from_file_location(
         module_name, os.path.join(db_dir, f"{db_type}_db.py")
     )
