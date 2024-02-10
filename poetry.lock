@@ -527,15 +527,20 @@ dotenv = ["python-dotenv"]
 name = "flask-babel"
 version = "4.0.0"
 description = "Adds i18n/l10n support for Flask applications."
+optional = false
 python-versions = ">=3.8,<4.0"
 files = [
     {file = "flask_babel-4.0.0-py3-none-any.whl", hash = "sha256:638194cf91f8b301380f36d70e2034c77ee25b98cb5d80a1626820df9a6d4625"},
     {file = "flask_babel-4.0.0.tar.gz", hash = "sha256:dbeab4027a3f4a87678a11686496e98e1492eb793cbdd77ab50f4e9a2602a593"},
 ]
+
+[package.dependencies]
 Babel = ">=2.12"
 Flask = ">=2.0"
 Jinja2 = ">=3.1"
 pytz = ">=2022.7"
+
+[[package]]
 name = "flask-minify"
 version = "0.39"
 description = "Flask extension to minify html, css, js and less."
@@ -1009,6 +1014,8 @@ files = [
 
 [package.dependencies]
 ply = "*"
+
+[[package]]
 name = "markupsafe"
 version = "2.1.5"
 description = "Safely add untrusted strings to HTML/XML markup."

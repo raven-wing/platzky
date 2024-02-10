@@ -3,6 +3,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from abc import abstractmethod
 
 class DB:
     def __init__(self):
@@ -31,54 +32,71 @@ class DB:
         bound = partial(function, self)
         setattr(self, function_name, bound)
 
+    @abstractmethod
     def get_all_posts(self, lang) -> Any:
         pass
 
+    @abstractmethod
     def get_menu_items(self):
         pass
 
+    @abstractmethod
     def get_post(self, slug):
         pass
 
+    @abstractmethod
     def get_page(self, slug):
         pass
 
+    @abstractmethod
     def get_posts_by_tag(self, tag, lang) -> Any:
         pass
 
+    @abstractmethod
     def get_menu(self):
         pass
 
+    @abstractmethod
     def add_comment(self, author_name, comment, post_slug):
         pass
 
+    @abstractmethod
     def get_logo_url(self):
         pass
 
+    @abstractmethod
     def get_primary_color(self):
         pass
 
+    @abstractmethod
     def get_secondary_color(self):
         pass
 
+    @abstractmethod
     def get_plugins_data(self):
         pass
 
+    @abstractmethod
     def get_font(self):
         pass
 
+    @abstractmethod
     def get_all_providers(self):  # TODO this should belong in plugin
         pass
 
+    @abstractmethod
     def get_all_questions(self):  # TODO this should belong in plugin
         pass
 
+    @abstractmethod
     def get_site_content(self):  # TODO this should not be public
         pass
 
+    @abstractmethod
     def _save_file(self):  # TODO this should not be public
         pass
 
+    @abstractmethod
     def save_entry(self, entry):  # TODO this should not be public
         pass
 
