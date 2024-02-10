@@ -67,3 +67,58 @@ def test_dynamic_content(test_app, content_type):
     content = get_content_text(response, content_type)
     assert "test1" in content
     assert "test2" in content
+
+
+def test_www_redirect():
+    config_data = {
+        "APP_NAME": "testingApp",
+        "SECRET_KEY": "secret",
+        "USE_WWW": True,
+        "BLOG_PREFIX": "/blog",
+        "TRANSLATION_DIRECTORIES": ["/some/fake/dir"],
+        "DB": {
+            "TYPE": "json",
+            "DATA": {
+                "site_content": {
+                    "pages": [
+                        {"title": "test", "slug": "test", "contentInMarkdown": "test"}
+                    ],
+                }
+            },
+        },
+    }
+    config = Config.parse_obj(config_data)
+    app = create_app_from_config(config)
+    client = app.test_client()
+    client.allow_subdomain_redirects = True
+    response = client.get("/blog/page/test", follow_redirects=False)
+
+    assert response.request.url == "http://localhost/blog/page/test"
+    assert response.location == "http://www.localhost/blog/page/test"
+
+def test_non_www_redirect():
+    config_data = {
+        "APP_NAME": "testingApp",
+        "SECRET_KEY": "secret",
+        "USE_WWW": False,
+        "BLOG_PREFIX": "/blog",
+        "TRANSLATION_DIRECTORIES": ["/some/fake/dir"],
+        "DB": {
+            "TYPE": "json",
+            "DATA": {
+                "site_content": {
+                    "pages": [
+                        {"title": "test", "slug": "test", "contentInMarkdown": "test"}
+                    ],
+                }
+            },
+        },
+    }
+    config = Config.parse_obj(config_data)
+    app = create_app_from_config(config)
+    client = app.test_client()
+    client.allow_subdomain_redirects = True
+    response = client.get("http://www.localhost/blog/page/test", follow_redirects=False)
+
+    assert response.request.url == "http://www.localhost/blog/page/test"
+    assert response.location == "http://localhost/blog/page/test"
