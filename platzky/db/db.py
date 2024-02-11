@@ -3,9 +3,10 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 
-class DB:
+
+class DB(ABC):
     def __init__(self):
         self.db_name: str = "DB"
         self.module_name: str = "db"
@@ -13,18 +14,16 @@ class DB:
 
     def __init_subclass__(cls, *args, **kw):
         super().__init_subclass__(*args, **kw)
-        for name, attr in cls.__dict__.items():
-            attr = getattr(cls, name)
-            if not callable(attr):
+        for name in cls.__dict__:
+            if name.startswith('_'):
                 continue
             for superclass in cls.__mro__[1:]:
                 if name in dir(superclass):
                     break
             else:
                 raise TypeError(
-                    f"Method {name} defined in {cls.__name__}  does not exist in superclasses"
+                    f"Method {name} defined in {cls.__name__} does not exist in superclasses"
                 )
-
     def extend(self, function_name, function):
         """
         Add a function to the DB object. The function must take the DB object as first parameter.
@@ -50,10 +49,6 @@ class DB:
 
     @abstractmethod
     def get_posts_by_tag(self, tag, lang) -> Any:
-        pass
-
-    @abstractmethod
-    def get_menu(self):
         pass
 
     @abstractmethod
@@ -90,14 +85,6 @@ class DB:
 
     @abstractmethod
     def get_site_content(self):  # TODO this should not be public
-        pass
-
-    @abstractmethod
-    def _save_file(self):  # TODO this should not be public
-        pass
-
-    @abstractmethod
-    def save_entry(self, entry):  # TODO this should not be public
         pass
 
 

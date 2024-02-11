@@ -50,7 +50,7 @@ class GoogleJsonDb(Json):
         self.module_name = "google_json_db"
         self.db_name = "GoogleJsonDb"
 
-    def save_entry(self, entry):
+    def __save_entry(self, entry):
         data = get_data(self.blob)
         data["data"].append(entry)
         self.blob.upload_from_string(json.dumps(data), content_type="application/json")

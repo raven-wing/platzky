@@ -1,9 +1,21 @@
 import pytest
 
+from platzky.db.json_db import Json
 from platzky.db.db import DB
 
 def test_db_extension():
-    db = DB()
+
+    db = Json({"DB": {
+            "TYPE": "json",
+            "DATA": { "site_content": { "pages": [
+                { "title": "test", "slug": "test", "contentInMarkdown": "test" },
+                {"title": "test2", "slug": "test2", "contentInMarkdown": "test2"}]
+
+            } }
+            }
+        })
+
+
 
     with pytest.raises(AttributeError):
         db.test()

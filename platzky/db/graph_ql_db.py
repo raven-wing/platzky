@@ -201,3 +201,17 @@ class GraphQL(DB):
                 "slug": post_slug,
             },
         )
+
+    def get_font(self):
+        return ""
+    def get_logo_url(self):
+        return ""
+    def get_primary_color(self):
+        return ""
+    def get_secondary_color(self):
+        return ""
+    def get_site_content(self):
+        return ""
+
+    def get_plugins_data(self):
+        return []
