@@ -15,7 +15,7 @@ class DB(ABC):
     def __init_subclass__(cls, *args, **kw):
         super().__init_subclass__(*args, **kw)
         for name in cls.__dict__:
-            if name.startswith('_'):
+            if name.startswith("_"):
                 continue
             for superclass in cls.__mro__[1:]:
                 if name in dir(superclass):
@@ -24,6 +24,7 @@ class DB(ABC):
                 raise TypeError(
                     f"Method {name} defined in {cls.__name__} does not exist in superclasses"
                 )
+
     def extend(self, function_name, function):
         """
         Add a function to the DB object. The function must take the DB object as first parameter.

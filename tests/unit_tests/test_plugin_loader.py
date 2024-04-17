@@ -12,21 +12,25 @@ def test_plugin_loader():
         "TRANSLATION_DIRECTORIES": ["/some/fake/dir"],
         "DB": {
             "TYPE": "json",
-            "DATA": { "site_content": { "pages": [
-                { "title": "test", "slug": "test", "contentInMarkdown": "test" },
-                {"title": "test2", "slug": "test2", "contentInMarkdown": "test2"}]
-
-            } }
-            }
-        }
-
+            "DATA": {
+                "site_content": {
+                    "pages": [
+                        {"title": "test", "slug": "test", "contentInMarkdown": "test"},
+                        {
+                            "title": "test2",
+                            "slug": "test2",
+                            "contentInMarkdown": "test2",
+                        },
+                    ]
+                }
+            },
+        },
+    }
 
     with_plugin_config_data = copy.deepcopy(without_plugin_config_data)
     with_plugin_config_data["DB"]["DATA"]["plugins"] = [
-        {
-            "name": "redirections",
-            "config": {"/page/test": "/page/test2"}
-            }]
+        {"name": "redirections", "config": {"/page/test": "/page/test2"}}
+    ]
 
     config_without_plugin = Config.parse_obj(without_plugin_config_data)
     config_with_plugin = Config.parse_obj(with_plugin_config_data)
@@ -34,7 +38,9 @@ def test_plugin_loader():
     app_without_plugin = create_app_from_config(config_without_plugin)
     app_with_plugin = create_app_from_config(config_with_plugin)
 
-    response = app_without_plugin.test_client().get("/page/test", follow_redirects=False)
+    response = app_without_plugin.test_client().get(
+        "/page/test", follow_redirects=False
+    )
     response2 = app_with_plugin.test_client().get("/page/test", follow_redirects=False)
 
     assert response.status_code == 200
