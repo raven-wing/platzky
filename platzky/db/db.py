@@ -1,9 +1,10 @@
 from functools import partial
-from typing import Any
+from typing import Any, Callable
 
 from pydantic import BaseModel, Field
 
 from abc import abstractmethod, ABC
+from ..models import MenuItem, Post, Page, Color
 
 
 class DB(ABC):
@@ -25,7 +26,7 @@ class DB(ABC):
                     f"Method {name} defined in {cls.__name__} does not exist in superclasses"
                 )
 
-    def extend(self, function_name, function):
+    def extend(self, function_name: str, function: Callable):
         """
         Add a function to the DB object. The function must take the DB object as first parameter.
         """
@@ -33,19 +34,19 @@ class DB(ABC):
         setattr(self, function_name, bound)
 
     @abstractmethod
-    def get_all_posts(self, lang) -> Any:
+    def get_all_posts(self, lang) -> list[Post]:
         pass
 
     @abstractmethod
-    def get_menu_items(self):
+    def get_menu_items(self) -> list[MenuItem]:
         pass
 
     @abstractmethod
-    def get_post(self, slug):
+    def get_post(self, slug) -> Post:
         pass
 
     @abstractmethod
-    def get_page(self, slug):
+    def get_page(self, slug) -> Page:
         pass
 
     @abstractmethod
@@ -53,19 +54,19 @@ class DB(ABC):
         pass
 
     @abstractmethod
-    def add_comment(self, author_name, comment, post_slug):
+    def add_comment(self, author_name, comment, post_slug) -> None:
         pass
 
     @abstractmethod
-    def get_logo_url(self):
+    def get_logo_url(self) -> str:
         pass
 
     @abstractmethod
-    def get_primary_color(self):
+    def get_primary_color(self) -> Color:
         pass
 
     @abstractmethod
-    def get_secondary_color(self):
+    def get_secondary_color(self) -> Color:
         pass
 
     @abstractmethod
@@ -73,7 +74,7 @@ class DB(ABC):
         pass
 
     @abstractmethod
-    def get_font(self):
+    def get_font(self) -> str:
         pass
 
     @abstractmethod

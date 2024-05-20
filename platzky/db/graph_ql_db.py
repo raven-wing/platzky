@@ -203,7 +203,7 @@ class GraphQL(DB):
         )
 
     def get_font(self):
-        return ""
+        return str("")
 
     def get_logo_url(self):
         return ""

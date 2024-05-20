@@ -11,17 +11,23 @@ import pytest
 from platzky.blog import blog
 from platzky.config import Config
 from platzky.platzky import create_engine
+from platzky.models import Post, Page
 
-mocked_post = {
+from freezegun import freeze_time
+
+from platzky.models import Comment
+
+mocked_post_json = {
     "title": "post title",
     "language": "en",
     "slug": "slug",
+    "author": "author",
     "tags": ["tag/1", "tagtag"],
-    "contentInRichText": {"markdown": "This is some content"},
+    "contentInMarkdown": "This is some content",
     "date": "2021-02-19",
     "coverImage": {
         "alternateText": "text which is alternative",
-        "image": {"url": "https://media.graphcms.com/XvmCDUjYTIq4c9wOIseo"},
+        "url": "https://media.graphcms.com/XvmCDUjYTIq4c9wOIseo",
     },
     "comments": [
         {
@@ -32,6 +38,7 @@ mocked_post = {
         }
     ],
 }
+mocked_post = Post.model_validate(mocked_post_json)
 
 
 @pytest.fixture
@@ -129,16 +136,13 @@ def test_not_existing_page(test_app):
 
 
 def test_page(test_app):
-    mocked_post["coverImage"]["url"] = mocked_post["coverImage"]["image"][
-        "url"
-    ]  # pyright: ignore
     test_app.application.db.get_page.return_value = mocked_post
     response = test_app.get("/prefix/page/blabla")
     assert response.status_code == 200
 
 
 def test_page_without_cover_image(test_app):
-    mocked_post.pop("coverImage")
+    mocked_post.coverImage = None
     test_app.application.db.get_page.return_value = mocked_post
     response = test_app.get("/prefix/page/blabla")
     assert response.status_code == 200
@@ -146,3 +150,14 @@ def test_page_without_cover_image(test_app):
 
 # TODO create those tests
 # def test_post_without_cover_image(test_app):
+
+
+@freeze_time("2022-01-01")
+def test_comment_formatting():
+    comment_raw = {
+             "date": "2021-02-19T00:00:00",
+             "comment": "komentarz",
+             "author": "autor"
+    }
+    comment = Comment.model_validate(comment_raw)
+    assert comment.time_delta == "10 months ago"

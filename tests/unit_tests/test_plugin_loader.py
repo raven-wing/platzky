@@ -15,22 +15,28 @@ def test_plugin_loader():
             "DATA": {
                 "site_content": {
                     "pages": [
-                        {"title": "test", "slug": "test", "contentInMarkdown": "test"},
-                        {
-                            "title": "test2",
-                            "slug": "test2",
-                            "contentInMarkdown": "test2",
-                        },
-                    ]
+                        {"title": "test",
+                         "slug": "test",
+                         "contentInMarkdown":"",
+                         "contentInRichText": "test",
+                         "comments": [],
+                         "tags": [],
+                         "coverImage": {
+                             "alternateText": "text which is alternative",
+                             "url": "https://media.graphcms.com/XvmCDUjYTIq4c9wOIseo",
+                         },
+                         "language": "en",
+                         "date": "2021-01-01",
+                         "author": "author",}
+                    ],
                 }
             },
         },
     }
 
     with_plugin_config_data = copy.deepcopy(without_plugin_config_data)
-    with_plugin_config_data["DB"]["DATA"]["plugins"] = [
-        {"name": "redirections", "config": {"/page/test": "/page/test2"}}
-    ]
+    with_plugin_config_data["DB"]["DATA"]["plugins"] = [{
+        "name": "redirections", "config": {"/page/test": "/page/test2"}}]
 
     config_without_plugin = Config.parse_obj(without_plugin_config_data)
     config_with_plugin = Config.parse_obj(with_plugin_config_data)
