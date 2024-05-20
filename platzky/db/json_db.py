@@ -15,7 +15,7 @@ class JsonDbConfig(DBConfig):
 
 
 def get_db(config):
-    json_db_config = JsonDbConfig.parse_obj(config)
+    json_db_config = JsonDbConfig.model_validate(config)
     return Json(json_db_config.data)
 
 
@@ -39,17 +39,17 @@ class Json(DB):
         if all_posts is None:
             raise ValueError("Posts data is missing")
         wanted_post = next((post for post in all_posts if post["slug"] == slug), None)
-        return Post.parse_obj(wanted_post)
+        return Post.model_validate(wanted_post)
 
     # TODO: add test for non-existing page
     def get_page(self, slug):
         list_of_pages = (page for page in self.get_site_content().get("pages") if page["slug"] == slug)
-        page = Post.parse_obj(next(list_of_pages))
+        page = Post.model_validate(next(list_of_pages))
         return page
 
     def get_menu_items(self) -> list[MenuItem]:
         menu_items_raw = self.get_site_content().get("menu_items", [])
-        menu_items_list = [ MenuItem.parse_obj(x) for x in menu_items_raw]
+        menu_items_list = [ MenuItem.model_validate(x) for x in menu_items_raw]
         return menu_items_list
 
     def get_posts_by_tag(self, tag, lang):

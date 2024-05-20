@@ -15,7 +15,7 @@ class JsonFileDbConfig(DBConfig):
 
 
 def get_db(config):
-    json_file_db_config = JsonFileDbConfig.parse_obj(config)
+    json_file_db_config = JsonFileDbConfig.model_validate(config)
     return JsonFile(json_file_db_config.path)
 
 

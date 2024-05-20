@@ -24,7 +24,7 @@ LanguagesMapping = t.Mapping[str, t.Mapping[str, str]]
 
 
 def languages_dict(languages: Languages) -> LanguagesMapping:
-    return {name: lang.dict() for name, lang in languages.items()}
+    return {name: lang.model_dump() for name, lang in languages.items()}
 
 
 class Config(StrictBaseModel):
@@ -44,16 +44,16 @@ class Config(StrictBaseModel):
     testing: bool = Field(default=False, alias="TESTING")
 
     @classmethod
-    def parse_obj(cls, obj: t.Any):
+    def model_validate(cls, obj: t.Any):
         db_cfg_type = get_db_module(obj["DB"]["TYPE"]).db_config_type()
-        obj["DB"] = db_cfg_type.parse_obj(obj["DB"])
-        return super().parse_obj(obj)
+        obj["DB"] = db_cfg_type.model_validate(obj["DB"])
+        return super().model_validate(obj)
 
     @classmethod
     def parse_yaml(cls, path: str) -> "Config":
         try:
             with open(path, "r") as f:
-                return cls.parse_obj(yaml.safe_load(f))
+                return cls.model_validate(yaml.safe_load(f))
         except FileNotFoundError:
             print(f"Config file not found: {path}", file=sys.stderr)
             raise SystemExit(1)

@@ -19,7 +19,7 @@ from .www_handler import redirect_nonwww_to_www, redirect_www_to_nonwww
 class Engine(Flask):
     def __init__(self, config: Config, db, import_name):
         super().__init__(import_name)
-        self.config.from_mapping(config.dict(by_alias=True))
+        self.config.from_mapping(config.model_dump(by_alias=True))
         self.db = db
         self.notifiers = []
         self.dynamic_body = ""

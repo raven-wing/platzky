@@ -37,7 +37,7 @@ def test_app():
             },
         },
     }
-    config = Config.parse_obj(config_data)
+    config = Config.model_validate(config_data)
     app = create_app_from_config(config)
     assert isinstance(app, Flask)
     return app
@@ -101,7 +101,7 @@ def test_www_redirects(test_app, use_www):
             },
         },
     }
-    config = Config.parse_obj(config_data)
+    config = Config.model_validate(config_data)
     app = create_app_from_config(config)
     client = app.test_client()
     client.allow_subdomain_redirects = True

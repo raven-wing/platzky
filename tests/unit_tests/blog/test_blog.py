@@ -47,7 +47,7 @@ def test_app():
     db_mock.get_post.return_value = mocked_post
     db_mock.get_posts_by_tag.return_value = [mocked_post]
     db_mock.get_all_posts.return_value = [mocked_post]
-    config = Config.parse_obj(
+    config = Config.model_validate(
         {
             "BLOG_PREFIX": "/prefix",  # TODO test without prefix in config (same for seo tests)
             "SECRET_KEY": "secret",

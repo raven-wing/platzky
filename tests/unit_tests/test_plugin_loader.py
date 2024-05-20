@@ -38,8 +38,8 @@ def test_plugin_loader():
     with_plugin_config_data["DB"]["DATA"]["plugins"] = [{
         "name": "redirections", "config": {"/page/test": "/page/test2"}}]
 
-    config_without_plugin = Config.parse_obj(without_plugin_config_data)
-    config_with_plugin = Config.parse_obj(with_plugin_config_data)
+    config_without_plugin = Config.model_validate(without_plugin_config_data)
+    config_with_plugin = Config.model_validate(with_plugin_config_data)
 
     app_without_plugin = create_app_from_config(config_without_plugin)
     app_with_plugin = create_app_from_config(config_with_plugin)
