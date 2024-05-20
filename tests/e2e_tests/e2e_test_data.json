@@ -2,38 +2,36 @@
   "site_content": {
     "posts": [
       {
-        "title": "tytył",
-        "language": "pl",
-        "slug": "adres",
+        "title": "The Fellowship of the Ring",
+        "author": "J.R.R. Tolkien",
+        "language": "en",
+        "slug": "fellows",
         "tags": [
           "tag/1"
         ],
-        "contentInRichText": {
-          "markdown": "zawartość"
-        },
-        "date": "2021-02-19",
+        "contentInMarkdown": "Once upon a time...",
+        "date": "1954-01-29",
         "coverImage": {
-          "alternateText": "text which is alternative",
-          "url": "https://media.graphcms.com/XvmCDUjYTIq4c9wOIseo"
+          "alternateText": "The Fellowship of the Ring cover",
+          "url": "https://upload.wikimedia.org/wikipedia/en/8/8e/The_Fellowship_of_the_Ring_cover.gif"
         },
         "comments": [
           {
             "date": "2021-02-19T00:00:00",
-            "comment": "komentarz",
-            "author": "autor"
+            "comment": "My precious!",
+            "author": "Gollum"
           }
         ]
       },
       {
         "title": "title",
+        "author": "autor",
         "language": "en",
         "slug": "slug",
         "tags": [
           "tag/3"
         ],
-        "contentInRichText": {
-          "markdown": "content"
-        },
+        "contentInMarkdown": "content",
         "date": "2021-02-19",
         "coverImage": {
           "alternateText": "alternate text",
@@ -52,6 +50,7 @@
     "pages": [
       {
         "title": "page title",
+        "author": "autor",
         "slug": "page",
         "contentInMarkdown": "page content",
         "coverImage": {
@@ -62,12 +61,16 @@
     ],
     "menu_items": [
       {
-        "name": "Find best mailing for you",
+        "name": "Home",
         "url": "/"
       },
       {
-        "name": "Page",
-        "url": "/page/page"
+        "name": "The Fellowship of the Ring",
+        "url": "/blog/fellows"
+      },
+      {
+        "name": "Non-existing page",
+        "url": "/non-existing"
       }
     ],
     "redirections": {

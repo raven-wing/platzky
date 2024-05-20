@@ -38,6 +38,7 @@ class Json(DB):
         all_posts = self.get_site_content().get("posts")
         if all_posts is None:
             raise ValueError("Posts data is missing")
+        print(slug)
         wanted_post = next((post for post in all_posts if post["slug"] == slug), None)
         return Post.model_validate(wanted_post)
 
