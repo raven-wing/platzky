@@ -31,15 +31,16 @@ class Json(DB):
         self.db_name = "JsonDb"
 
     def get_all_posts(self, lang):
-        return [post for post in self.data.get("posts", ()) if post["language"] == lang]
+        return [Post.model_validate(post) for post in self.get_site_content().get("posts", ()) if post["language"] == lang]
 
     def get_post(self, slug: str) -> Post:
         """Returns a post matching the given slug."""
         all_posts = self.get_site_content().get("posts")
         if all_posts is None:
             raise ValueError("Posts data is missing")
-        print(slug)
         wanted_post = next((post for post in all_posts if post["slug"] == slug), None)
+        if wanted_post is None:
+            raise ValueError(f"Post with slug {slug} not found")
         return Post.model_validate(wanted_post)
 
     # TODO: add test for non-existing page
@@ -54,7 +55,7 @@ class Json(DB):
         return menu_items_list
 
     def get_posts_by_tag(self, tag, lang):
-        return (post for post in self.data["posts"] if tag in post["tags"])
+        return (post for post in self.get_site_content()["posts"] if tag in post["tags"])
 
     def get_all_providers(self):
         return self.data["providers"]
@@ -86,12 +87,13 @@ class Json(DB):
             "comment": str(comment),
             "date": datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
         }
+
         post_index = next(
             i
-            for i in range(len(self.data["posts"]))
-            if self.data["posts"][i]["slug"] == post_slug
+            for i in range(len(self.get_site_content()["posts"]))
+            if self.get_site_content()["posts"][i]["slug"] == post_slug
         )
-        self.data["posts"][post_index]["comments"].append(comment)
+        self.get_site_content()["posts"][post_index]["comments"].append(comment)
 
     def get_plugins_data(self):
         return self.data.get("plugins", [])

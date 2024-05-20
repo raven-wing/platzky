@@ -24,9 +24,13 @@ def create_blog_blueprint(db, blog_prefix: str, locale_func):
         return render_template("404.html", title="404"), 404
 
     @blog.route("/", methods=["GET"])
-    def index():
+    def all_posts():
         lang = locale_func()
-        return render_template("blog.html", posts=db.get_all_posts(lang))
+        posts = db.get_all_posts(lang)
+        if not posts:
+            return page_not_found("no posts")
+        posts_sorted = sorted(posts, reverse=True)
+        return render_template("blog.html", posts=posts_sorted)
 
     @blog.route("/feed", methods=["GET"])
     def get_feed():
@@ -49,29 +53,35 @@ def create_blog_blueprint(db, blog_prefix: str, locale_func):
 
     @blog.route("/<post_slug>", methods=["GET"])
     def get_post(post_slug):
-        if post := db.get_post(post_slug):
+        try:
+            post = db.get_post(post_slug)
             return render_template(
-                "post.html",
-                post=post,
-                post_slug=post_slug,
-                form=comment_form.CommentForm(),
-                comment_sent=request.args.get("comment_sent"),
+                    "post.html",
+                    post=post,
+                    post_slug=post_slug,
+                    form=comment_form.CommentForm(),
+                    comment_sent=request.args.get("comment_sent")
             )
-        else:
-            return page_not_found("no such page")
+        except ValueError:
+            return page_not_found(f"no post with slug {post_slug}")
+        except Exception as e:
+            return page_not_found(str(e))
 
     @blog.route("/page/<path:page_slug>", methods=["GET"])
     def get_page(
         page_slug,
     ):  # TODO refactor to share code with get_post since they are very similar
-        if page := db.get_page(page_slug):
+        try:
+            page = db.get_page(page_slug)
             if cover_image := page.coverImage:
                 cover_image_url = cover_image.url
             else:
                 cover_image_url = None
             return render_template("page.html", page=page, cover_image=cover_image_url)
-        else:
-            return page_not_found("no such page")
+        except ValueError:
+            return page_not_found("no page with slug {page_slug}")
+        except Exception as e:
+            return page_not_found(str(e))
 
     @blog.route("/tag/<path:tag>", methods=["GET"])
     def get_posts_from_tag(tag):

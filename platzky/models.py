@@ -35,6 +35,12 @@ class Post(BaseModel):
     coverImage: Image
     date: str
 
+    def __lt__(self, other):
+        if isinstance(other, Post):
+            return self.date < other.date
+        return NotImplemented
+
+
     # def format_post(post):
     #     now = datetime.datetime.now()
     #     def comment_sort_key(comment_: Dict[str, Any]) -> Any:
