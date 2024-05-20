@@ -542,13 +542,13 @@ pytz = ">=2022.7"
 
 [[package]]
 name = "flask-minify"
-version = "0.39"
+version = "0.42"
 description = "Flask extension to minify html, css, js and less."
 optional = false
 python-versions = "*"
 files = [
-    {file = "Flask-Minify-0.39.tar.gz", hash = "sha256:c2b74452510e0262686c6d64b32739c4025ccefe4df339c470f7d3ec085c7c21"},
-    {file = "Flask_Minify-0.39-py3-none-any.whl", hash = "sha256:e5a85985fd09fe4358490bfc1189628679a83756ec0560d36f1d670dd31a472b"},
+    {file = "Flask-Minify-0.42.tar.gz", hash = "sha256:cdae9bd492b4200ebbf9fd0b08878452274ddca454f3eb1dff8b900629538c8b"},
+    {file = "Flask_Minify-0.42-py3-none-any.whl", hash = "sha256:54211e09e0d1596d2e2897bbb4ffd8c96bb269fa959d6ae5be83fc0da14f4358"},
 ]
 
 [package.dependencies]
@@ -557,6 +557,7 @@ htmlmin = "*"
 jsmin = "*"
 lesscpy = "*"
 rcssmin = "*"
+six = "*"
 xxhash = "*"
 
 [[package]]
@@ -2049,4 +2050,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "4e0a317a8daffb7789612906ff353063b30bf757b2024d54a3aa478aa17ff83f"
+content-hash = "0e4d39272a22e6fe228f3a43d0cb422af3e698473285773104c0420db2220d57"
