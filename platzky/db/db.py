@@ -75,6 +75,10 @@ class DB(ABC):
         pass
 
     @abstractmethod
+    def get_favicon_url(self) -> str:
+        pass
+
+    @abstractmethod
     def get_primary_color(self) -> Color:
         pass
 

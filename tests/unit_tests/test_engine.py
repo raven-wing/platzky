@@ -73,6 +73,17 @@ def test_if_name_is_shown_if_there_is_no_logo(test_app):
     assert branding.get_text() == "testing App Name"
 
 
+def test_favicon_is_applied(test_app):
+    test_app.db.data["site_content"]["favicon_url"] = "https://example.com/favicon.ico"
+    app = test_app.test_client()
+    response = app.get("/")
+    soup = BeautifulSoup(response.data, "html.parser")
+    found_ico = soup.find("link", rel="icon")
+    assert found_ico is not None
+    assert found_ico["href"] is not None
+    assert found_ico["href"] == "https://example.com/favicon.ico"
+
+
 def test_notifier(test_app):
     engine = test_app
     notifier_msg = None

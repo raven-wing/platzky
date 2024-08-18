@@ -226,6 +226,9 @@ class GraphQL(DB):
     def get_logo_url(self):
         return ""
 
+    def get_favicon_url(self):
+        return ""
+
     def get_primary_color(self) -> Color:
         return Color()
 
