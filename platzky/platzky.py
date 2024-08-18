@@ -87,12 +87,6 @@ def create_engine(config: Config, db) -> Engine:
             session["language"] = lang
             return redirect(request.referrer)
 
-    @app.route("/logo", methods=["GET"])
-    def logo():
-        return redirect(
-            "https://www.problematy.pl/wp-content/uploads/2023/08/kolor_poziom.png"
-        )
-
     def url_link(x: str) -> str:
         return urllib.parse.quote(x, safe="")
 
