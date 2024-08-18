@@ -128,7 +128,6 @@ def test_www_redirects(test_app, use_www):
             "TYPE": "json",
             "DATA": {
                 "site_content": {
-                    "logo_url": "https://example.com/logo.png",
                     "pages": [
                         {"title": "test", "slug": "test", "contentInMarkdown": "test"}
                     ],
