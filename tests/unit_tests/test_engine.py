@@ -1,6 +1,6 @@
 import pytest
 from flask import Flask
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 from platzky.config import Config
 from platzky.platzky import create_app_from_config
 
@@ -57,9 +57,9 @@ def test_logo_has_set_src(test_app):
     response = app.get("/")
     soup = BeautifulSoup(response.data, "html.parser")
     found_image = soup.find("img")
-    assert found_image is not None
-    assert found_image["src"] is not None
-    assert found_image["src"] == "https://example.com/logo.png"
+    assert isinstance(found_image, Tag)
+    assert found_image.get("src") is not None
+    assert found_image.get("src") == "https://example.com/logo.png"
 
 
 def test_if_name_is_shown_if_there_is_no_logo(test_app):
@@ -80,8 +80,9 @@ def test_favicon_is_applied(test_app):
     soup = BeautifulSoup(response.data, "html.parser")
     found_ico = soup.find("link", rel="icon")
     assert found_ico is not None
-    assert found_ico["href"] is not None
-    assert found_ico["href"] == "https://example.com/favicon.ico"
+    assert isinstance(found_ico, Tag)
+    assert found_ico.get("href") is not None
+    assert found_ico.get("href") == "https://example.com/favicon.ico"
 
 
 def test_notifier(test_app):
