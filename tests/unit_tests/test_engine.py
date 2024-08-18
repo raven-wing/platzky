@@ -17,7 +17,6 @@ def test_app():
             "TYPE": "json",
             "DATA": {
                 "site_content": {
-                    "logo_url": "https://example.com/logo.png",
                     "pages": [
                         {
                             "title": "test",
