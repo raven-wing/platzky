@@ -224,7 +224,8 @@ class GraphQL(DB):
         return str("")
 
     def get_logo_url(self):
-        logo = gql("""
+        logo = gql(
+            """
             query myquery {
               logos(stage: PUBLISHED) {
               logo {
@@ -235,14 +236,16 @@ class GraphQL(DB):
                 }
               }
             }
-            """)
+            """
+        )
         try:
             return self.client.execute(logo)["logos"][0]["logo"]["image"]["url"]
         except IndexError:
             return ""
 
     def get_favicon_url(self):
-        favicon = gql("""
+        favicon = gql(
+            """
             query myquery {
               favicons(stage: PUBLISHED) {
               favicon {
@@ -250,7 +253,8 @@ class GraphQL(DB):
                 }
               }
             }
-            """)
+            """
+        )
 
         return self.client.execute(favicon)["favicons"][0]["favicon"]["url"]
 
