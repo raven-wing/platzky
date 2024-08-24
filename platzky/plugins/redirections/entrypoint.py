@@ -36,7 +36,7 @@ class Redirection(BaseModel):
     destiny: str
 
 
-def parse_redirections(config: dict) -> list[Redirection]:
+def parse_redirections(config: dict[str, str]) -> list[Redirection]:
     return [Redirection(source=source, destiny=destiny) for source, destiny in config.items()]
 
 
@@ -58,7 +58,7 @@ def redirect_with_name(destiny, code, name):
     return named_redirect
 
 
-def process(app, config: dict) -> object:
+def process(app, config: dict[str, str]) -> object:
     redirections = parse_redirections(config)
     setup_routes(app, redirections)
     return app

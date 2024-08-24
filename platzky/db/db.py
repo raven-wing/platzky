@@ -87,7 +87,7 @@ class DB(ABC):
         pass
 
     @abstractmethod
-    def get_plugins_data(self) -> list:
+    def get_plugins_data(self) -> list[Any]:
         pass
 
     @abstractmethod

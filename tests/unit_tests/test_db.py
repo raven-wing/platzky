@@ -34,7 +34,7 @@ def test_db_extension():
     with pytest.raises(AttributeError):
 
         db.test()  # type: ignore
-    db.extend("test", lambda x: "test")
+    db.extend("test", lambda x: "test")  # type: Callable[[Any], str]
     result = db.test()  # type: ignore
     assert result == "test"
 
