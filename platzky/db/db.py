@@ -28,7 +28,7 @@ class DB(ABC):
                     f"Method {name} defined in {cls.__name__} does not exist in superclasses"
                 )
 
-    def extend(self, function_name: str, function: Callable) -> None:
+    def extend(self, function_name: str, function: Callable[..., Any]) -> None:
         """
         Add a function to the DB object. The function must take the DB object as first parameter.
 
