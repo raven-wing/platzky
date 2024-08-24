@@ -1,5 +1,6 @@
-from platzky.config import Config
 import copy
+
+from platzky.config import Config
 from platzky.platzky import create_app_from_config
 
 
@@ -48,9 +49,7 @@ def test_plugin_loader():
     app_without_plugin = create_app_from_config(config_without_plugin)
     app_with_plugin = create_app_from_config(config_with_plugin)
 
-    response = app_without_plugin.test_client().get(
-        "/page/test", follow_redirects=False
-    )
+    response = app_without_plugin.test_client().get("/page/test", follow_redirects=False)
     response2 = app_with_plugin.test_client().get("/page/test", follow_redirects=False)
 
     assert response.status_code == 200

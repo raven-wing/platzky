@@ -1,7 +1,7 @@
 import pytest
 
-from platzky.db.json_db import Json
 from platzky.db.db import DB
+from platzky.db.json_db import Json
 
 
 def test_db_extension():

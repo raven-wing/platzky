@@ -27,8 +27,7 @@ def graph_ql_db_get_redirections(self):
         """
     )
     return {
-        x["source"]: x["destination"]
-        for x in self.client.execute(redirections)["redirections"]
+        x["source"]: x["destination"] for x in self.client.execute(redirections)["redirections"]
     }
 
 
@@ -38,10 +37,7 @@ class Redirection(BaseModel):
 
 
 def parse_redirections(config: dict) -> list[Redirection]:
-    return [
-        Redirection(source=source, destiny=destiny)
-        for source, destiny in config.items()
-    ]
+    return [Redirection(source=source, destiny=destiny) for source, destiny in config.items()]
 
 
 def setup_routes(app, redirections):
