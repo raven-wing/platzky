@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="{{ current_language }}">
+<html lang="{{ current_language }}-{{ current_lang_country }}">
 <head>
   {% include "head_meta.html" %}
   {% block head_meta %}{% endblock %}
@@ -49,6 +49,26 @@
       max-width: 80vw;
       overflow-y: auto;
       color: white;
+      inline-size: 80vw;
+      overflow-wrap: break-word;
+      z-index: 999999999;
+    }
+
+    @media only screen and (min-width: 768px) {
+      #left-panel {
+        inline-size: calc(100vw * 0.1666666667);
+    }
+
+    .language-indicator-text {
+      color: white;
+      font-weight: normal;
+    }
+
+    #languages-menu {
+      background-color: {{ secondary_color }};
+      padding: 5px 10px;
+      border-radius: 5px;
+      color: white;
     }
 
     .offcanvas-lg.offcanvas-start {
@@ -68,6 +88,7 @@
     .dropdown-menu {
       z-index: 1;
     }
+
     .btn {
       padding: 0;
     }
@@ -86,13 +107,13 @@
 {% endblock %}
 <div class="container-fluid d-flex flex-column h-100 g-0">
   <div class="row header-row bg-light g-0">
-    <nav class="navbar navbar-expand-lg navbar-light p-3" id="mainNav">
+    <nav class="navbar navbar-expand-lg navbar-light px-3 py-1" id="mainNav">
       {% if self.left_panel() %}
       <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#left-panel" aria-label="Toggle left panel">
         <i class="fas fa-sliders-h"></i>
       </button>
       {% endif %}
-      <a class="navbar-brand" href="/">{% if logo_url %}<img src="{{ logo_url }}" alt="{{ app_name }} logo" class="logo">{% else %}{{_(app_name)}}{% endif %}</a>
+      <a class="navbar-brand" href="/" aria-label="{{_(link_to_home_page_aria_label)}}">{% if logo_url %}<img src="{{ logo_url }}" alt="{{ app_name }} logo" class="logo">{% else %}{{_(app_name)}}{% endif %}</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
               aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
         <i class="fas fa-bars"></i>
@@ -109,7 +130,8 @@
           <li class="nav-item dropdown">
             <div id="language-dropdown" class="btn-group">
               <button type="button" class="nav-link dropdown-toggle btn btn-link" id="languages-menu" role="button"
-                      data-bs-toggle="dropdown" aria-expanded="false">
+                      data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{_(language_switch_aria_label)}}">
+                <span class="language-indicator-text">{{ current_language }}</i>
                 <i class="fi fi-{{ current_flag }}"></i>
               </button>
               <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="languages-menu">
