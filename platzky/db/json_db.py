@@ -38,7 +38,7 @@ class Json(DB):
 
     def get_app_description(self, lang):
         description = self._get_site_content().get("app_description", {})
-        return description.get(lang, {})
+        return description.get(lang, None)
 
     def get_all_posts(self, lang):
         return [
