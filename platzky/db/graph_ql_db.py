@@ -270,7 +270,9 @@ class GraphQL(DB):
             """
         )
 
-        return self.client.execute(description_query, variable_values={"lang": lang})["applicationSetups"][0].get("applicationDescription", None)
+        return self.client.execute(description_query, variable_values={"lang": lang})[
+            "applicationSetups"
+        ][0].get("applicationDescription", None)
 
     def get_favicon_url(self):
         favicon = gql(
