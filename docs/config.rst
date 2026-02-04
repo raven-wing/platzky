@@ -237,7 +237,7 @@ mapping of flag alias to ``bool``:
     FEATURE_FLAGS:
       FAKE_LOGIN: true
 
-At runtime, flags are checked via ``engine.is_enabled(FakeLogin)``.
+At runtime, flags are checked via ``app.is_enabled(FakeLogin)``.
 
 Built-in feature flags
 """"""""""""""""""""""

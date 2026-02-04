@@ -19,7 +19,7 @@ from platzky.engine import Engine
 from platzky.feature_flags import FakeLogin
 from platzky.plugin.plugin_loader import plugify
 from platzky.seo import seo
-from platzky.www_handler import redirect_nonwww_to_www, redirect_www_to_nonwww
+from platzky.www_handler import _get_bare_domains, redirect_nonwww_to_www, redirect_www_to_nonwww
 
 _MISSING_OTEL_MSG = (
     "OpenTelemetry is not installed. Install with: "
@@ -93,18 +93,23 @@ def create_engine(config: Config, db: DB) -> Engine:
     """
     app = Engine(config, db, __name__)
 
+    known_domains = _get_bare_domains(
+        lang.domain for lang in config.languages.values() if lang.domain
+    )
+
     @app.before_request
     def handle_www_redirection() -> t.Optional[Response]:
         """Handle WWW subdomain redirection based on configuration.
 
         Redirects requests to/from www subdomain based on config.use_www setting.
+        Only applies to domains configured in language settings.
 
         Returns:
             Redirect response if redirection is needed, None otherwise
         """
         if config.use_www:
-            return redirect_nonwww_to_www()
-        return redirect_www_to_nonwww()
+            return redirect_nonwww_to_www(known_domains)
+        return redirect_www_to_nonwww(known_domains)
 
     @app.route("/lang/<string:lang>", methods=["GET"])
     def change_language(lang: str) -> Response | tuple[str, int]:

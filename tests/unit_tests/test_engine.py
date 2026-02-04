@@ -92,6 +92,9 @@ def test_www_redirects(use_www: bool):
         "USE_WWW": use_www,
         "BLOG_PREFIX": "/blog",
         "TRANSLATION_DIRECTORIES": ["/some/fake/dir"],
+        "LANGUAGES": {
+            "en": {"name": "English", "flag": "gb", "country": "GB", "domain": "www.localhost"},
+        },
         "DB": {
             "TYPE": "json",
             "DATA": {
@@ -117,6 +120,34 @@ def test_www_redirects(use_www: bool):
 
     assert response.request.url == url
     assert response.location == expected_redirect
+
+
+def test_www_redirect_skipped_for_unknown_domain():
+    config_data = {
+        "APP_NAME": "testingApp",
+        "SECRET_KEY": "secret",
+        "USE_WWW": True,
+        "BLOG_PREFIX": "/blog",
+        "TRANSLATION_DIRECTORIES": ["/some/fake/dir"],
+        "LANGUAGES": {
+            "en": {"name": "English", "flag": "gb", "country": "GB", "domain": "www.example.com"},
+        },
+        "DB": {
+            "TYPE": "json",
+            "DATA": {
+                "site_content": {
+                    "pages": [{"title": "test", "slug": "test", "contentInMarkdown": "test"}],
+                }
+            },
+        },
+    }
+    config = Config.model_validate(config_data)
+    app = create_app_from_config(config)
+    client = app.test_client()
+
+    response = client.get("http://localhost/blog/page/test", follow_redirects=False)
+
+    assert response.status_code != 301
 
 
 def test_that_default_page_title_is_app_name(test_app: Engine):
