@@ -19,7 +19,6 @@ from platzky.engine import Engine
 from platzky.feature_flags import FakeLogin
 from platzky.plugin.plugin_loader import plugify
 from platzky.seo import seo
-from platzky.www_handler import _get_bare_domains, redirect_nonwww_to_www, redirect_www_to_nonwww
 
 _MISSING_OTEL_MSG = (
     "OpenTelemetry is not installed. Install with: "
@@ -93,9 +92,9 @@ def create_engine(config: Config, db: DB) -> Engine:
     """
     app = Engine(config, db, __name__)
 
-    known_domains = _get_bare_domains(
-        lang.domain for lang in config.languages.values() if lang.domain
-    )
+    known_domains = {
+        lang.domain.removeprefix("www.") for lang in config.languages.values() if lang.domain
+    }
 
     @app.before_request
     def handle_www_redirection() -> t.Optional[Response]:
@@ -107,9 +106,17 @@ def create_engine(config: Config, db: DB) -> Engine:
         Returns:
             Redirect response if redirection is needed, None otherwise
         """
-        if config.use_www:
-            return redirect_nonwww_to_www(known_domains)
-        return redirect_www_to_nonwww(known_domains)
+        urlparts = urllib.parse.urlparse(request.url)
+        bare_host = urlparts.netloc.removeprefix("www.")
+        if bare_host not in known_domains:
+            return None
+        if config.use_www and not urlparts.netloc.startswith("www."):
+            return redirect(
+                urllib.parse.urlunparse(urlparts._replace(netloc=f"www.{bare_host}")), code=301
+            )
+        if not config.use_www and urlparts.netloc.startswith("www."):
+            return redirect(urllib.parse.urlunparse(urlparts._replace(netloc=bare_host)), code=302)
+        return None
 
     @app.route("/lang/<string:lang>", methods=["GET"])
     def change_language(lang: str) -> Response | tuple[str, int]:
