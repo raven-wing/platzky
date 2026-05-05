@@ -7,18 +7,24 @@ on:
       - next
     paths-ignore:
       - '**.md'
+      - '**.rst'
       - 'docs/**'
       - 'LICENSE'
       - '.gitignore'
+      - 'CHANGELOG.md'
+      - 'examples/**/*.json'
   push:
     branches:
       - main
       - next
     paths-ignore:
       - '**.md'
+      - '**.rst'
       - 'docs/**'
       - 'LICENSE'
       - '.gitignore'
+      - 'CHANGELOG.md'
+      - 'examples/**/*.json'
   workflow_call:
 
 concurrency:
@@ -74,6 +80,7 @@ jobs:
         github-token: ${{ secrets.GITHUB_TOKEN }}
 
   e2e:
+    needs: [lint, test]
     runs-on: ubuntu-latest
     permissions:
       contents: read

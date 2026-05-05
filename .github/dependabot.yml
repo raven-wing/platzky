@@ -1,9 +1,13 @@
 version: 2
 updates:
+  # Python dependency updates (Poetry)
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
       interval: "monthly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Warsaw"
     open-pull-requests-limit: 5
     groups:
       minor-and-patch:
@@ -14,10 +18,12 @@ updates:
           - "patch"
     labels:
       - "dependencies"
+      - "python"
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
 
+  # GitHub Actions updates
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
