@@ -137,7 +137,7 @@ class _DocumentPostRepository:
                 self._store.save(self._data)
             except BaseException:
                 if had_comments:
-                    comments.remove(comment_data)
+                    comments.pop()
                 else:
                     del post["comments"]
                 logger.exception("Failed to persist comment for post '%s'", post_slug)
