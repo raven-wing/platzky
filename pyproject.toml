@@ -76,8 +76,7 @@ build-backend = "poetry.core.masonry.api"
 source = ["platzky"]
 omit = [
     "tests/*",
-    "*/site-packages/*",
-    "platzky/db/blog_storage.py"
+    "*/site-packages/*"
 ]
 
 [tool.coverage.report]
@@ -86,7 +85,8 @@ exclude_lines = [
     "@abstractmethod",
     "@abc.abstractmethod",
     "if TYPE_CHECKING:",
-    "pragma: no cover"
+    "pragma: no cover",
+    "\\(Protocol\\)"
 ]
 show_missing = true
 
