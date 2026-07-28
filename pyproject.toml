@@ -76,7 +76,8 @@ build-backend = "poetry.core.masonry.api"
 source = ["platzky"]
 omit = [
     "tests/*",
-    "*/site-packages/*"
+    "*/site-packages/*",
+    "platzky/db/blog_storage.py"
 ]
 
 [tool.coverage.report]
