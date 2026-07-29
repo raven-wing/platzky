@@ -9,6 +9,7 @@ from platzky.db.db import DB, DBConfig
 from platzky.db.document_blog_storage import DocumentBlogStorage
 from platzky.db.exceptions import DBError
 from platzky.db.json_stores import JsonStore, MemoryStore
+from platzky.db.plugin_config_repository import DocumentPluginConfigRepository
 from platzky.models import Footer, MenuItem, Page, PageMeta, Post
 from platzky.plugin.plugin_config import PluginConfigBase
 
@@ -62,6 +63,7 @@ class Json(DB):
         # this point (only mutated in place) -- see `DocumentBlogStorage` for why
         # that matters (`FileStore.load()` isn't memoized).
         self.data: dict[str, Any] = self._blog_storage.data
+        self._plugins = DocumentPluginConfigRepository(self.data)
         self.module_name = "json_db"
         self.db_name = "JsonDb"
 
@@ -272,7 +274,7 @@ class Json(DB):
 
     def get_plugins_data(self) -> dict[str, PluginConfigBase]:
         """Retrieve configuration data for all plugins."""
-        return self._blog_storage.plugins.get_all()
+        return self._plugins.get_all()
 
     def health_check(self) -> None:
         """Perform a health check on the JSON database.
