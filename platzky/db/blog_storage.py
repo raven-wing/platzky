@@ -1,15 +1,14 @@
-"""Repository-shaped protocols for blog content: posts, pages, plugin config.
+"""Repository-shaped protocols for blog content: posts and pages.
 
-Blog content is one repository grouping under the broader storage
-decomposition described in `DB_LAYER_2_0_PROPOSAL.md` (2.6) — it only exists
-for apps that actually have a blog, unlike site chrome (branding, nav menu),
-which every app needs regardless of whether it uses blog content.
+Blog content only exists for apps that actually have a blog, unlike site
+settings (branding, nav menu) or plugin config, both of which every app needs
+regardless of whether it uses blog content — so this is kept separate from
+site-wide and plugin storage.
 """
 
 from typing import Protocol
 
 from platzky.models import Page, Post
-from platzky.plugin.plugin_config import PluginConfigBase
 
 
 class PostRepository(Protocol):
@@ -85,18 +84,6 @@ class PageRepository(Protocol):
         ...
 
 
-class PluginConfigRepository(Protocol):
-    """Repository for plugin configuration."""
-
-    def get_all(self) -> dict[str, PluginConfigBase]:
-        """Retrieve configuration data for all plugins, keyed by plugin name.
-
-        Returns:
-            Mapping of plugin name to its validated configuration.
-        """
-        ...
-
-
 class BlogStorage(Protocol):
     """Repository-shaped view over an app's blog content."""
 
@@ -108,9 +95,4 @@ class BlogStorage(Protocol):
     @property
     def pages(self) -> PageRepository:
         """Page repository."""
-        ...
-
-    @property
-    def plugins(self) -> PluginConfigRepository:
-        """Plugin config repository."""
         ...

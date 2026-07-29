@@ -16,7 +16,6 @@ from typing import Any
 from platzky.db.exceptions import DBError, NotFoundError
 from platzky.db.json_stores import JsonStore
 from platzky.models import Page, Post
-from platzky.plugin.plugin_config import PluginConfigBase
 
 logger = logging.getLogger(__name__)
 
@@ -171,29 +170,11 @@ class _DocumentPageRepository:
         return Page.model_validate(wanted_page)
 
 
-class _DocumentPluginConfigRepository:
-    """Plugin config repository backed by a shared, in-memory document."""
-
-    def __init__(self, data: dict[str, Any]) -> None:
-        self._data = data
-
-    def get_all(self) -> dict[str, PluginConfigBase]:
-        """Retrieve configuration data for all plugins, keyed by plugin name.
-
-        Returns:
-            Mapping of plugin name to its validated configuration.
-        """
-        return {
-            name: PluginConfigBase.model_validate(cfg)
-            for name, cfg in (self._data.get("plugins") or {}).items()
-        }
-
-
 class DocumentBlogStorage:
     """BlogStorage implementation backed by a JSON document held in a JsonStore."""
 
     def __init__(self, store: JsonStore) -> None:
-        """Load the document once and build the post/page/plugin repositories over it.
+        """Load the document once and build the post/page repositories over it.
 
         Args:
             store: Storage transport to load the document from and persist
@@ -203,4 +184,3 @@ class DocumentBlogStorage:
         self._write_lock = threading.Lock()
         self.posts = _DocumentPostRepository(self.data, store, self._write_lock)
         self.pages = _DocumentPageRepository(self.data)
-        self.plugins = _DocumentPluginConfigRepository(self.data)

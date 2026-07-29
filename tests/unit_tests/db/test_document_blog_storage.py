@@ -46,9 +46,6 @@ def sample_data() -> dict[str, Any]:
                 }
             ],
         },
-        "plugins": {
-            "my_plugin": {"is_active": True, "config": {"key": "value"}},
-        },
     }
 
 
@@ -142,17 +139,6 @@ class TestPages:
         storage = DocumentBlogStorage(MemoryStore({"site_content": {}}))
         with pytest.raises(NotFoundError):
             storage.pages.get("page-1")
-
-
-class TestPlugins:
-    def test_get_all_returns_validated_configs(self, storage: DocumentBlogStorage):
-        plugins = storage.plugins.get_all()
-        assert plugins["my_plugin"].is_active is True
-        assert plugins["my_plugin"].config == {"key": "value"}
-
-    def test_get_all_returns_empty_dict_when_missing(self):
-        storage = DocumentBlogStorage(MemoryStore({"site_content": {}}))
-        assert storage.plugins.get_all() == {}
 
 
 class TestSharedDocument:
