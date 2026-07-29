@@ -1,10 +1,8 @@
 """Plugin config repository implementation backed by a GraphQL (Hygraph) CMS."""
 
-import threading
+from gql import gql
 
-from gql import Client, gql
-from gql.transport.aiohttp import AIOHTTPTransport
-
+from platzky.db.graphql_client import make_lazy_graphql_client
 from platzky.plugin.plugin_config import PluginConfigBase
 
 
@@ -26,25 +24,7 @@ class GraphQLPluginConfigRepository:
             endpoint: GraphQL API endpoint URL.
             token: Authentication token for the API.
         """
-        self._endpoint = endpoint
-        self._headers = {"Authorization": "bearer " + token}
-        self._local = threading.local()
-
-    @property
-    def _client(self) -> Client:
-        """This thread's GraphQL client, built lazily on first access.
-
-        AIOHTTPTransport's connect/close cycle tracks a single session flag per
-        transport instance; sharing one Client across threads lets a second
-        thread's connect() race a first thread's still-open session, raising
-        TransportAlreadyConnected. A client per thread avoids that.
-        """
-        client = getattr(self._local, "client", None)
-        if client is None:
-            transport = AIOHTTPTransport(url=self._endpoint, headers=self._headers)
-            client = Client(transport=transport)
-            self._local.client = client
-        return client
+        self._get_client = make_lazy_graphql_client(endpoint, token)
 
     def get_all(self) -> dict[str, PluginConfigBase]:
         """Retrieve configuration data for all plugins, keyed by plugin name.
@@ -61,7 +41,7 @@ class GraphQLPluginConfigRepository:
               }
             }
             """)
-        raw = self._client.execute(plugins_query)["pluginConfigs"]
+        raw = self._get_client().execute(plugins_query)["pluginConfigs"]
         return {
             d["name"]: PluginConfigBase.model_validate({**(d.get("config") or {}), **d})
             for d in raw

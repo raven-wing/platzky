@@ -27,12 +27,12 @@ def _mongo_repository(plugins: dict[str, Any]) -> PluginConfigRepository:
 
 
 def _graphql_repository(plugins: dict[str, Any]) -> PluginConfigRepository:
-    with patch("platzky.db.graphql_plugin_config_repository.Client") as mock_client_class:
+    with patch("platzky.db.graphql_client.Client") as mock_client_class:
         mock_client = Mock()
         mock_client_class.return_value = mock_client
         repository = GraphQLPluginConfigRepository("https://test.endpoint", "test_token")
         # Trigger lazy client construction now, while Client is patched.
-        repository._client  # type: ignore[reportPrivateUsage]
+        repository._get_client()  # type: ignore[reportPrivateUsage]
     mock_client.execute.return_value = {
         "pluginConfigs": [
             {

@@ -12,11 +12,11 @@ def mock_client() -> Mock:
 
 @pytest.fixture
 def repository(mock_client: Mock) -> GraphQLPluginConfigRepository:
-    with patch("platzky.db.graphql_plugin_config_repository.Client", return_value=mock_client):
+    with patch("platzky.db.graphql_client.Client", return_value=mock_client):
         repo = GraphQLPluginConfigRepository(
             "https://test.endpoint", "test_token"
         )  # NOSONAR - hardcoded token acceptable in tests
-        repo._client  # type: ignore[reportPrivateUsage] # trigger lazy construction now, while Client is patched
+        repo._get_client()  # type: ignore[reportPrivateUsage] # trigger lazy construction now, while Client is patched
     return repo
 
 
