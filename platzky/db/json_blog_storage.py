@@ -1,6 +1,6 @@
 """BlogStorage implementation backed by a single shared JSON document.
 
-`DocumentBlogStorage` is the JSON-family (`JsonStore`) implementation of the
+`JsonBlogStorage` is the JSON-family (`JsonStore`) implementation of the
 `BlogStorage` protocol. It owns the loaded document and its write lock so a
 `Json`-family backend and this class always operate on the exact same
 in-memory dict — `FileStore.load()` re-reads and re-parses the file on every
@@ -38,7 +38,7 @@ def _site_content(data: dict[str, Any]) -> dict[str, Any]:
     return content
 
 
-class _DocumentPostRepository:
+class _JsonPostRepository:
     """Post repository backed by a shared, in-memory document."""
 
     def __init__(self, data: dict[str, Any], store: JsonStore, write_lock: threading.Lock) -> None:
@@ -143,7 +143,7 @@ class _DocumentPostRepository:
                 raise
 
 
-class _DocumentPageRepository:
+class _JsonPageRepository:
     """Page repository backed by a shared, in-memory document."""
 
     def __init__(self, data: dict[str, Any]) -> None:
@@ -170,7 +170,7 @@ class _DocumentPageRepository:
         return Page.model_validate(wanted_page)
 
 
-class DocumentBlogStorage:
+class JsonBlogStorage:
     """BlogStorage implementation backed by a JSON document held in a JsonStore."""
 
     def __init__(self, store: JsonStore) -> None:
@@ -182,5 +182,5 @@ class DocumentBlogStorage:
         """
         self.data: dict[str, Any] = store.load()
         self._write_lock = threading.Lock()
-        self.posts = _DocumentPostRepository(self.data, store, self._write_lock)
-        self.pages = _DocumentPageRepository(self.data)
+        self.posts = _JsonPostRepository(self.data, store, self._write_lock)
+        self.pages = _JsonPageRepository(self.data)

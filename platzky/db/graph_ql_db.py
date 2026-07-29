@@ -11,6 +11,7 @@ from pydantic import Field
 
 from platzky.db.db import DB, DBConfig
 from platzky.db.exceptions import NotFoundError
+from platzky.db.graphql_plugin_config_repository import GraphQLPluginConfigRepository
 from platzky.models import MenuItem, Page, Post
 from platzky.plugin.plugin_config import PluginConfigBase
 
@@ -159,6 +160,7 @@ class GraphQL(DB):
         self._endpoint = endpoint
         self._headers = {"Authorization": "bearer " + token}
         self._local = threading.local()
+        self._plugins_repository = GraphQLPluginConfigRepository(endpoint, token)
         super().__init__()
 
     def __getattr__(self, name: str) -> Client:
@@ -531,29 +533,8 @@ class GraphQL(DB):
             return "navy"
 
     def get_plugins_data(self) -> dict[str, PluginConfigBase]:
-        """Retrieve configuration data for all plugins.
-
-        Hygraph's PluginConfig schema only exposes ``name``, ``isActive``, and
-        ``config`` (a JSON scalar) — there's no room for a sibling field like
-        ``allowed_content_types``. Authors put permission fields directly
-        inside the ``config`` JSON instead; this spreads ``config``'s keys to
-        the top level so the engine's capability-specific config classes
-        (``ContentTransformerPluginConfig``, etc.) can find them by name.
-        """
-        plugins_data = gql("""
-            query MyQuery {
-              pluginConfigs(stage: PUBLISHED) {
-                name
-                is_active: isActive
-                config
-              }
-            }
-            """)
-        raw = self.client.execute(plugins_data)["pluginConfigs"]
-        return {
-            d["name"]: PluginConfigBase.model_validate({**(d.get("config") or {}), **d})
-            for d in raw
-        }
+        """Retrieve configuration data for all plugins."""
+        return self._plugins_repository.get_all()
 
     def health_check(self) -> None:
         """Perform a health check on the GraphQL database.

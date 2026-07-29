@@ -10,6 +10,7 @@ from pymongo.database import Database
 
 from platzky.db.db import DB, DBConfig
 from platzky.db.exceptions import NotFoundError
+from platzky.db.mongo_plugin_config_repository import MongoPluginConfigRepository
 from platzky.models import MenuItem, Page, Post
 from platzky.plugin.plugin_config import PluginConfigBase
 
@@ -66,6 +67,7 @@ class MongoDB(DB):
         self.pages: Collection[Any] = self.db.pages
         self.menu_items: Collection[Any] = self.db.menu_items
         self.plugins: Collection[Any] = self.db.plugins
+        self._plugins_repository = MongoPluginConfigRepository(self.plugins)
 
     def _get_site_config(self) -> dict[str, Any] | None:
         """Retrieve the site configuration document."""
@@ -218,9 +220,7 @@ class MongoDB(DB):
 
     def get_plugins_data(self) -> dict[str, PluginConfigBase]:
         """Retrieve configuration data for all plugins."""
-        plugins_doc = self.plugins.find_one({"_id": "config"})
-        raw = plugins_doc["data"] if plugins_doc and "data" in plugins_doc else {}
-        return {name: PluginConfigBase.model_validate(cfg) for name, cfg in (raw or {}).items()}
+        return self._plugins_repository.get_all()
 
     def get_font(self) -> str:
         """Get the font configuration for the application.

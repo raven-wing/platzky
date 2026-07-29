@@ -5,10 +5,10 @@ from typing import Any
 from pydantic import Field
 
 from platzky.db.db import DB, DBConfig
-from platzky.db.document_blog_storage import DocumentBlogStorage
 from platzky.db.exceptions import DBError
+from platzky.db.json_blog_storage import JsonBlogStorage
+from platzky.db.json_plugin_config_repository import JsonPluginConfigRepository
 from platzky.db.json_stores import JsonStore, MemoryStore
-from platzky.db.plugin_config_repository import DocumentPluginConfigRepository
 from platzky.models import MenuItem, Page, Post
 from platzky.plugin.plugin_config import PluginConfigBase
 
@@ -57,12 +57,12 @@ class Json(DB):
         """
         super().__init__()
         self._store: JsonStore = store
-        self._blog_storage = DocumentBlogStorage(store)
+        self._blog_storage = JsonBlogStorage(store)
         # Same dict object as `self._blog_storage.data`, never reassigned after
-        # this point (only mutated in place) -- see `DocumentBlogStorage` for why
+        # this point (only mutated in place) -- see `JsonBlogStorage` for why
         # that matters (`FileStore.load()` isn't memoized).
         self.data: dict[str, Any] = self._blog_storage.data
-        self._plugins = DocumentPluginConfigRepository(self.data)
+        self._plugins = JsonPluginConfigRepository(self.data)
         self.module_name = "json_db"
         self.db_name = "JsonDb"
 

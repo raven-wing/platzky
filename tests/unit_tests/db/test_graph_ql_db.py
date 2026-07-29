@@ -418,21 +418,6 @@ def test_get_secondary_color_no_themes(graph_ql_db: GraphQL, mock_client: Mock):
     assert graph_ql_db.get_secondary_color() == "navy"
 
 
-def test_get_plugins_data(graph_ql_db: GraphQL, mock_client: Mock):
-    mock_response = {
-        "pluginConfigs": [{"name": "plugin1", "is_active": True, "config": {"key": "value"}}]
-    }
-    mock_client.execute.return_value = mock_response
-
-    plugins_data = graph_ql_db.get_plugins_data()
-
-    assert len(plugins_data) == 1
-    assert "plugin1" in plugins_data
-    assert plugins_data["plugin1"].config == {"key": "value"}
-    assert plugins_data["plugin1"].is_active is True
-    mock_client.execute.assert_called_once()
-
-
 def test_health_check_success(graph_ql_db: GraphQL, mock_client: Mock):
     """Test health check when GraphQL endpoint is accessible"""
     mock_client.execute.return_value = {"__typename": "Query"}
