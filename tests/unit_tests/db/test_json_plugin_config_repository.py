@@ -1,10 +1,10 @@
-from platzky.db.plugin_config_repository import DocumentPluginConfigRepository
+from platzky.db.json_plugin_config_repository import JsonPluginConfigRepository
 
 
-class TestDocumentPluginConfigRepository:
+class TestJsonPluginConfigRepository:
     def test_get_all_returns_validated_configs(self):
         data = {"plugins": {"my_plugin": {"is_active": True, "config": {"key": "value"}}}}
-        repository = DocumentPluginConfigRepository(data)
+        repository = JsonPluginConfigRepository(data)
 
         plugins = repository.get_all()
 
@@ -12,9 +12,9 @@ class TestDocumentPluginConfigRepository:
         assert plugins["my_plugin"].config == {"key": "value"}
 
     def test_get_all_returns_empty_dict_when_missing(self):
-        repository = DocumentPluginConfigRepository({})
+        repository = JsonPluginConfigRepository({})
         assert repository.get_all() == {}
 
     def test_get_all_returns_empty_dict_when_plugins_is_none(self):
-        repository = DocumentPluginConfigRepository({"plugins": None})
+        repository = JsonPluginConfigRepository({"plugins": None})
         assert repository.get_all() == {}

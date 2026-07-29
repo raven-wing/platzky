@@ -5,8 +5,8 @@ from typing import Any
 import pytest
 
 from platzky.db.blog_storage import BlogStorage
-from platzky.db.document_blog_storage import DocumentBlogStorage
 from platzky.db.exceptions import DBError, NotFoundError, ReadOnlyStorageError
+from platzky.db.json_blog_storage import JsonBlogStorage
 from platzky.db.json_stores import FileStore, JsonStore, MemoryStore, ReadOnlyStore
 
 
@@ -65,50 +65,50 @@ def store(request: pytest.FixtureRequest, tmp_path: Path) -> JsonStore:
 
 
 @pytest.fixture
-def storage(store: JsonStore) -> DocumentBlogStorage:
-    return DocumentBlogStorage(store)
+def storage(store: JsonStore) -> JsonBlogStorage:
+    return JsonBlogStorage(store)
 
 
 class TestPosts:
-    def test_get_returns_matching_post(self, storage: DocumentBlogStorage):
+    def test_get_returns_matching_post(self, storage: JsonBlogStorage):
         post = storage.posts.get("post-1")
         assert post.slug == "post-1"
         assert post.title == "Title"
 
-    def test_get_raises_not_found_for_unknown_slug(self, storage: DocumentBlogStorage):
+    def test_get_raises_not_found_for_unknown_slug(self, storage: JsonBlogStorage):
         with pytest.raises(NotFoundError):
             storage.posts.get("missing")
 
     def test_get_raises_not_found_when_posts_key_missing(self):
-        storage = DocumentBlogStorage(MemoryStore({"site_content": {}}))
+        storage = JsonBlogStorage(MemoryStore({"site_content": {}}))
         with pytest.raises(NotFoundError):
             storage.posts.get("post-1")
 
-    def test_get_all_filters_by_language(self, storage: DocumentBlogStorage):
+    def test_get_all_filters_by_language(self, storage: JsonBlogStorage):
         posts = storage.posts.get_all("en")
         assert [p.slug for p in posts] == ["post-1"]
 
-    def test_get_by_tag_filters_by_tag_and_language(self, storage: DocumentBlogStorage):
+    def test_get_by_tag_filters_by_tag_and_language(self, storage: JsonBlogStorage):
         posts = storage.posts.get_by_tag("python", "en")
         assert [p.slug for p in posts] == ["post-1"]
 
-    def test_get_by_tag_excludes_other_language(self, storage: DocumentBlogStorage):
+    def test_get_by_tag_excludes_other_language(self, storage: JsonBlogStorage):
         assert storage.posts.get_by_tag("python", "pl") == []
 
-    def test_add_comment_persists_and_is_visible_via_get(self, storage: DocumentBlogStorage):
+    def test_add_comment_persists_and_is_visible_via_get(self, storage: JsonBlogStorage):
         storage.posts.add_comment("Alice", "Nice post!", "post-1")
         post = storage.posts.get("post-1")
         assert len(post.comments) == 1
         assert post.comments[0].author == "Alice"
         assert post.comments[0].comment == "Nice post!"
 
-    def test_add_comment_raises_not_found_for_unknown_slug(self, storage: DocumentBlogStorage):
+    def test_add_comment_raises_not_found_for_unknown_slug(self, storage: JsonBlogStorage):
         with pytest.raises(NotFoundError):
             storage.posts.add_comment("Alice", "Nice post!", "missing")
 
     def test_add_comment_rolls_back_on_save_failure(self):
         data = sample_data()
-        storage = DocumentBlogStorage(ReadOnlyStore(data))
+        storage = JsonBlogStorage(ReadOnlyStore(data))
 
         with pytest.raises(ReadOnlyStorageError):
             storage.posts.add_comment("Alice", "Nice post!", "post-1")
@@ -118,7 +118,7 @@ class TestPosts:
     def test_add_comment_rollback_removes_comments_key_if_it_was_absent(self):
         data = sample_data()
         del data["site_content"]["posts"][0]["comments"]
-        storage = DocumentBlogStorage(ReadOnlyStore(data))
+        storage = JsonBlogStorage(ReadOnlyStore(data))
 
         with pytest.raises(ReadOnlyStorageError):
             storage.posts.add_comment("Alice", "Nice post!", "post-1")
@@ -127,29 +127,29 @@ class TestPosts:
 
 
 class TestPages:
-    def test_get_returns_matching_page(self, storage: DocumentBlogStorage):
+    def test_get_returns_matching_page(self, storage: JsonBlogStorage):
         page = storage.pages.get("page-1")
         assert page.slug == "page-1"
 
-    def test_get_raises_not_found_for_unknown_slug(self, storage: DocumentBlogStorage):
+    def test_get_raises_not_found_for_unknown_slug(self, storage: JsonBlogStorage):
         with pytest.raises(NotFoundError):
             storage.pages.get("missing")
 
     def test_get_raises_not_found_when_pages_key_missing(self):
-        storage = DocumentBlogStorage(MemoryStore({"site_content": {}}))
+        storage = JsonBlogStorage(MemoryStore({"site_content": {}}))
         with pytest.raises(NotFoundError):
             storage.pages.get("page-1")
 
 
 class TestSharedDocument:
     def test_site_content_missing_raises_db_error(self):
-        storage = DocumentBlogStorage(MemoryStore({}))
+        storage = JsonBlogStorage(MemoryStore({}))
         with pytest.raises(DBError):
             storage.posts.get_all("en")
 
 
-def test_document_blog_storage_satisfies_blog_storage_protocol(
-    storage: DocumentBlogStorage,
+def test_json_blog_storage_satisfies_blog_storage_protocol(
+    storage: JsonBlogStorage,
 ) -> None:
     """Structural check: pyright rejects this assignment if the shape drifts."""
     conforms: BlogStorage = storage
