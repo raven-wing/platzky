@@ -13,29 +13,12 @@ import logging
 import threading
 from typing import Any
 
-from platzky.db.exceptions import DBError, NotFoundError
+from platzky.db.exceptions import NotFoundError
+from platzky.db.json_document import get_site_content as _site_content
 from platzky.db.json_stores import JsonStore
 from platzky.models import Page, Post
 
 logger = logging.getLogger(__name__)
-
-
-def _site_content(data: dict[str, Any]) -> dict[str, Any]:
-    """Return the site_content section of a loaded document.
-
-    Args:
-        data: The loaded document.
-
-    Returns:
-        The site_content section.
-
-    Raises:
-        DBError: If site_content is missing from the document.
-    """
-    content = data.get("site_content")
-    if content is None:
-        raise DBError("site_content section is missing from database")
-    return content
 
 
 class _JsonPostRepository:

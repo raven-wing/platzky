@@ -1,3 +1,4 @@
+from collections.abc import Iterator
 from unittest.mock import Mock, patch
 
 import pytest
@@ -14,15 +15,14 @@ def mock_client() -> Mock:
 
 
 @pytest.fixture
-def storage(mock_client: Mock) -> GraphQLBlogStorage:
+def storage(mock_client: Mock) -> Iterator[GraphQLBlogStorage]:
+    # Client stays patched for the whole test (not just fixture setup): the
+    # lazy client is built on the test's first real call, so the patch must
+    # still be active at that point, not just during construction.
     with patch("platzky.db.graphql_client.Client", return_value=mock_client):
-        blog_storage = GraphQLBlogStorage(
+        yield GraphQLBlogStorage(
             "https://test.endpoint", "test_token"
         )  # NOSONAR - hardcoded token acceptable in tests
-        # Trigger lazy client construction now, while Client is patched.
-        blog_storage.posts._get_client()  # type: ignore[reportPrivateUsage]
-        blog_storage.pages._get_client()  # type: ignore[reportPrivateUsage]
-    return blog_storage
 
 
 class TestPosts:
