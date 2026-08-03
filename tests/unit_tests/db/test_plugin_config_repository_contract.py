@@ -29,20 +29,22 @@ def _mongo_repository(plugins: dict[str, Any]) -> PluginConfigRepository:
 def _graphql_repository(plugins: dict[str, Any]) -> PluginConfigRepository:
     with patch("platzky.db.graphql_client.Client") as mock_client_class:
         mock_client = Mock()
+        mock_client.execute.return_value = {
+            "pluginConfigs": [
+                {
+                    "name": name,
+                    "is_active": cfg.get("is_active", False),
+                    "config": cfg.get("config", {}),
+                }
+                for name, cfg in plugins.items()
+            ]
+        }
         mock_client_class.return_value = mock_client
         repository = GraphQLPluginConfigRepository("https://test.endpoint", "test_token")
-        # Trigger lazy client construction now, while Client is patched.
-        repository._get_client()  # type: ignore[reportPrivateUsage]
-    mock_client.execute.return_value = {
-        "pluginConfigs": [
-            {
-                "name": name,
-                "is_active": cfg.get("is_active", False),
-                "config": cfg.get("config", {}),
-            }
-            for name, cfg in plugins.items()
-        ]
-    }
+        # Call the public get_all() once, while Client is still patched, so the
+        # lazily-built client is constructed (and cached) now rather than on
+        # the caller's later, unpatched call.
+        repository.get_all()
     return repository
 
 

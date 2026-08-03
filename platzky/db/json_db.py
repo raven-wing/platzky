@@ -5,10 +5,12 @@ from typing import Any
 from pydantic import Field
 
 from platzky.db.db import DB, DBConfig
-from platzky.db.exceptions import DBError
 from platzky.db.json_blog_storage import JsonBlogStorage
+from platzky.db.json_document import get_site_content
 from platzky.db.json_plugin_config_repository import JsonPluginConfigRepository
+from platzky.db.json_site_config_repository import JsonSiteConfigRepository
 from platzky.db.json_stores import JsonStore, MemoryStore
+from platzky.db.site_config_repository import SiteSettings
 from platzky.models import MenuItem, Page, Post
 from platzky.plugin.plugin_config import PluginConfigBase
 
@@ -63,20 +65,9 @@ class Json(DB):
         # that matters (`FileStore.load()` isn't memoized).
         self.data: dict[str, Any] = self._blog_storage.data
         self._plugins = JsonPluginConfigRepository(self.data)
+        self._site_config = JsonSiteConfigRepository(self.data)
         self.module_name = "json_db"
         self.db_name = "JsonDb"
-
-    def get_app_description(self, lang: str) -> str:
-        """Retrieve the application description for a specific language.
-
-        Args:
-            lang: Language code (e.g., 'en', 'pl')
-
-        Returns:
-            Application description text or empty string if not found
-        """
-        description = self._get_site_content().get("app_description", {})
-        return description.get(lang, "")
 
     def get_all_posts(self, lang: str) -> list[Post]:
         """Retrieve all posts for a specific language.
@@ -126,9 +117,7 @@ class Json(DB):
         Returns:
             List of MenuItem objects
         """
-        menu_items_raw = self._get_site_content().get("menu_items", {})
-        items_in_lang = menu_items_raw.get(lang, [])
-        return [MenuItem.model_validate(x) for x in items_in_lang]
+        return self._site_config.get_menu_items_in_lang(lang)
 
     def get_posts_by_tag(self, tag: str, lang: str) -> list[Post]:
         """Retrieve posts filtered by tag and language.
@@ -146,50 +135,15 @@ class Json(DB):
         Raises:
             DBError: If the site_content section is missing from the database
         """
-        content = self.data.get("site_content")
-        if content is None:
-            raise DBError("site_content section is missing from database")
-        return content
+        return get_site_content(self.data)
 
-    def get_logo_url(self) -> str:
-        """Retrieve the URL of the application logo.
+    def get_site_settings(self) -> SiteSettings:
+        """Retrieve branding and description settings for the app.
 
         Returns:
-            Logo image URL or empty string if not found
+            The app's site settings.
         """
-        return self._get_site_content().get("logo_url", "")
-
-    def get_favicon_url(self) -> str:
-        """Retrieve the URL of the application favicon.
-
-        Returns:
-            Favicon URL or empty string if not found
-        """
-        return self._get_site_content().get("favicon_url", "")
-
-    def get_font(self) -> str:
-        """Get the font configuration for the application.
-
-        Returns:
-            Font name or empty string if not configured
-        """
-        return self._get_site_content().get("font", "")
-
-    def get_primary_color(self) -> str:
-        """Retrieve the primary color for the application theme.
-
-        Returns:
-            Primary color value, defaults to 'white'
-        """
-        return self._get_site_content().get("primary_color", "white")
-
-    def get_secondary_color(self) -> str:
-        """Retrieve the secondary color for the application theme.
-
-        Returns:
-            Secondary color value, defaults to 'navy'
-        """
-        return self._get_site_content().get("secondary_color", "navy")
+        return self._site_config.get_site_settings()
 
     def get_home_page_path(self, locale: str) -> str | None:
         """Retrieve the site-relative path configured as the site's homepage.
@@ -204,10 +158,7 @@ class Json(DB):
         Returns:
             Homepage path, or None if no homepage override is configured.
         """
-        home_page_path = self._get_site_content().get("home_page_path")
-        if isinstance(home_page_path, dict):
-            return home_page_path.get(locale, home_page_path.get("default"))
-        return home_page_path
+        return self._site_config.get_home_page_path(locale)
 
     def add_comment(self, author_name: str, comment: str, post_slug: str) -> None:
         """Add a new comment to a post.
