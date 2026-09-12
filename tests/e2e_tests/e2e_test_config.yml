@@ -8,6 +8,7 @@ DB:
   PATH: tests/e2e_tests/e2e_test_data.json
 
 
+DEFAULT_LANGUAGE: en
 LANGUAGES:
   en:
     name: English
