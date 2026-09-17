@@ -37,8 +37,9 @@ class FigureShortcode(Shortcode):
         'Renders a <div class="platzky-figure">, with the text in its own '
         '<div class="platzky-figure-text">. Used on its own, or as a "[slideshow]" '
         'frame — a "[figure]" is always a single slide, however it is used. Without it, '
-        'each bare image in a "[slideshow]" is its own frame. Inside a slideshow, every '
-        "frame is sized to match the first one, so keep frames similar in size."
+        'each bare image in a "[slideshow]" is its own frame. A slideshow is as large as its '
+        "largest frame, so keep frames similar in size to avoid empty space around the "
+        "smaller ones."
     )
 
     def render(

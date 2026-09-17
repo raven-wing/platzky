@@ -94,27 +94,6 @@ body {
   margin-inline: auto;
 }
 
-/* Rotating frames share one grid cell here instead of being pinned onto the first frame's
-   box: the cell grows to the tallest frame. Pinned, a later caption that wraps to more lines
-   than the first one's overflowed the slideshow, which inside the scrolling .footer-content
-   showed as a scrollbar that came and went with the window width. Only the counts that
-   rotate: any other count is an ordinary sequence and must not stack. */
-#footer-row
-  .footer-content
-  .slideshow:is([data-slides="2"], [data-slides="3"], [data-slides="4"]) {
-  display: grid;
-}
-
-#footer-row
-  .footer-content
-  .slideshow:is([data-slides="2"], [data-slides="3"], [data-slides="4"])
-  > * {
-  grid-area: 1 / 1;
-  position: static;
-  width: auto;
-  height: auto;
-}
-
 /* In the footer a caption is the message, not small print, and sits level with the middle of
    its picture. Flex is safe here, unlike for figures in general (see shortcodes.css),
    because the text arrives as one .platzky-figure-text box: a link or a span inside it stays

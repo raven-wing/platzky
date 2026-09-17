@@ -68,14 +68,14 @@ describe('[slideshow] shortcode', () => {
     // shortcode writes, every one of these would fall back to a static, opaque image and
     // the slideshow would silently be a stack of pictures.
     slideshowOf('rotating one').should(($el) => {
-      expect(computed($el, 'position')).to.eq('relative');
+      expect(computed($el, 'display')).to.eq('grid');
     });
-    frameOf('rotating one').should(($el) => {
-      // The first frame stays in flow; it is what gives the slideshow its box.
-      expect(computed($el, 'position')).to.eq('static');
-    });
-    frameOf('rotating two').should(($el) => {
-      expect(computed($el, 'position')).to.eq('absolute');
+    // Every frame is placed in the same single grid cell; that is what stacks them.
+    ['rotating one', 'rotating two'].forEach((alt) => {
+      frameOf(alt).should(($el) => {
+        expect(computed($el, 'gridRowStart'), `${alt} row`).to.eq('1');
+        expect(computed($el, 'gridColumnStart'), `${alt} column`).to.eq('1');
+      });
     });
   });
 
@@ -112,8 +112,10 @@ describe('[slideshow] shortcode', () => {
     slideshowOf('promo one').then(($el) => {
       const [first, second] = [...$el[0].children];
       expect(first.tagName, 'a bare image is its own frame').to.eq('IMG');
-      expect(getComputedStyle(first).position).to.eq('static');
-      expect(getComputedStyle(second).position).to.eq('absolute');
+      [first, second].forEach((frame, i) => {
+        expect(getComputedStyle(frame).gridRowStart, `frame ${i + 1} row`).to.eq('1');
+        expect(getComputedStyle(frame).gridColumnStart, `frame ${i + 1} column`).to.eq('1');
+      });
 
       const boxes = [first, second].map((f) => f.getBoundingClientRect());
       ['x', 'y', 'width', 'height'].forEach((side) => {
@@ -202,15 +204,31 @@ describe('[slideshow] shortcode', () => {
   });
 
   it('lands every rotating slide on exactly the same box', () => {
-    // The bug no other assertion here can see: a slide can be correctly `position:
-    // absolute` and still be positioned against the wrong containing block, so the
-    // pictures end up side by side rather than on top of each other. Only geometry
-    // catches that, and it caught it twice while this was being built.
+    // The bug no other assertion here can see: a slide can be styled to stack and still
+    // land somewhere else, so the pictures end up side by side rather than on top of each
+    // other. Only geometry catches that, and it caught it twice while this was being built.
     slideshowOf('rotating one').then(($el) => {
       $el[0].querySelectorAll('img').forEach((img) => {
         expect(img.complete && img.naturalWidth > 0, `${img.alt} loaded`).to.be.true;
       });
       const [first, second] = [...$el[0].children].map((f) => f.getBoundingClientRect());
+      ['x', 'y', 'width', 'height'].forEach((side) => {
+        expect(Math.round(second[side]), side).to.eq(Math.round(first[side]));
+      });
+    });
+  });
+
+  it('grows to fit its tallest frame', () => {
+    // Frames used to be pinned onto the first frame's box, so a later frame with more text
+    // spilled out of the slideshow over whatever came next. The faded pair's second caption
+    // is written to be far longer than its first, beside a small picture.
+    slideshowOf('faded one').then(($el) => {
+      const frames = [...$el[0].children];
+      frames.forEach((frame, i) => {
+        expect(frame.scrollHeight, `frame ${i + 1} content fits its frame`)
+          .to.be.at.most(frame.clientHeight + 1);
+      });
+      const [first, second] = frames.map((f) => f.getBoundingClientRect());
       ['x', 'y', 'width', 'height'].forEach((side) => {
         expect(Math.round(second[side]), side).to.eq(Math.round(first[side]));
       });
