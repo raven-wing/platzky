@@ -11,7 +11,7 @@ from pydantic import Field
 
 from platzky.db.db import DB, DBConfig
 from platzky.db.exceptions import NotFoundError
-from platzky.models import MenuItem, Page, Post
+from platzky.models import Footer, MenuItem, Page, Post
 from platzky.plugin.plugin_config import PluginConfigBase
 
 
@@ -414,6 +414,20 @@ class GraphQL(DB):
             return self.client.execute(logo)["logos"][0]["logo"]["image"]["url"]
         except IndexError:
             return ""
+
+    def get_footer(self, lang: str) -> Footer:  # noqa: ARG002
+        """Retrieve the site-wide footer for a specific language.
+
+        The CMS schema has no footer content type, so this queries nothing and
+        shows no footer.
+
+        Args:
+            lang: Language code (e.g., 'en', 'pl'), unused
+
+        Returns:
+            An empty, non-collapsible footer
+        """
+        return Footer()
 
     def get_app_description(self, lang: str) -> str:
         """Retrieve the application description for a specific language.
