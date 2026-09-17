@@ -159,23 +159,15 @@ leaves, because nobody can see an absence. The same holds for any value outside 
 attribute's ``constraints``, such as ``width="100%"`` on ``[image]``, which takes a whole
 number of pixels.
 
-**``[figure]`` and ``[slideshow]``.** ``[figure]`` pairs a picture with the text beside it,
-emitting a ``<div class="platzky-figure">`` that boxes the text separately, so a stylesheet
-can lay the two out side by side without splitting a sentence. ``[slideshow]`` rotates
-between the frames it wraps on a timer, in CSS alone with no JavaScript: ``interval`` is how
-many milliseconds each frame is shown, floored at 1500 because a faster rotation runs at the
-limit of three flashes a second that WCAG 2.3.1 sets; ``width`` is either ``fit``, as wide
-as the frames, or ``full``, spanning its container; and ``animation`` picks which of the
-transitions listed above carries one frame into the next. The rotation pauses on hover and
-on focus, and under ``prefers-reduced-motion: reduce`` the frames still rotate but switch
-instantly, whichever animation was asked for.
+**``[figure]`` and ``[slideshow]``.** ``[figure]`` boxes its text separately from the
+picture, so a stylesheet can lay the two out side by side without splitting a sentence.
+``[slideshow]``'s ``interval`` floor of 1500 is a seizure-safety limit: a faster rotation
+runs at the three flashes a second that WCAG 2.3.1 sets.
 
-A frame is a bare ``[image]`` or a ``[figure]``, and a ``[figure]`` counts as one frame
-however much markup it holds — which is what ``[slideshow]`` reads ``children`` for. It
-writes the frame count onto the element as ``data-slides`` because the timings
-depend on it: with N frames each is shown for one Nth of the cycle, so ``shortcodes.css``
-carries one rule set per supported count. Four frames rotate at most; a slideshow wrapping
-more renders them as an ordinary sequence, logged, rather than dropping the extras.
+``[slideshow]`` writes its frame count onto the element as ``data-slides`` because the
+timings depend on it — with N frames each is shown for one Nth of the cycle, so
+``shortcodes.css`` carries one hand-written rule set per supported count. A count it has no
+rules for renders as an ordinary sequence instead, logged, rather than dropping the extras.
 
 All the built-in shortcodes are granted ``POST``, ``PAGE`` and ``FOOTER`` only — ``[hero]``
 emits a ``<div class="hero">`` header block, which only makes sense in a document body, so
