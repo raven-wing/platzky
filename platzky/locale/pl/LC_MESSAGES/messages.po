@@ -55,6 +55,14 @@ msgstr "Ikona zmiany języka, używana do zmiany języka strony"
 msgid "Close left panel"
 msgstr "Zamknij panel boczny"
 
+#: platzky/templates/base.html:127
+msgid "Hide footer"
+msgstr "Ukryj stopkę"
+
+#: platzky/templates/base.html:128
+msgid "Show footer"
+msgstr "Pokaż stopkę"
+
 #: platzky/templates/blog.html:5
 msgid ""
 "Find out our tips and tricks about email marketing. We prepared some soft"

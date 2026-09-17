@@ -22,13 +22,25 @@ def _content(**overrides: object) -> dict[str, Any]:
     }
 
 
-def _app(site_footer: dict[str, str] | None = None, **content_overrides: object) -> Engine:
+def _app(
+    site_footer: dict[str, str] | None = None,
+    collapsible: bool | None = None,
+    secondary_color: str | None = None,
+    **content_overrides: object,
+) -> Engine:
     site_content: dict[str, Any] = {
         "posts": [_content(**content_overrides)],
         "pages": [_content(**content_overrides)],
     }
+    if secondary_color is not None:
+        site_content["secondary_color"] = secondary_color
+    footer: dict[str, Any] = {}
     if site_footer is not None:
-        site_content["footer"] = site_footer
+        footer["content"] = site_footer
+    if collapsible is not None:
+        footer["collapsible"] = collapsible
+    if footer:
+        site_content["footer"] = footer
     config = Config.model_validate(
         {
             "APP_NAME": "testApp",
@@ -85,3 +97,39 @@ def test_template_footer_block_beats_site_footer():
         html = render_template_string(template)
     assert "From template" in html
     assert "Site footer" not in html
+
+
+@pytest.mark.parametrize("collapsible", [None, False])
+def test_footer_is_not_collapsible_unless_configured(collapsible: bool | None):
+    html = _html(_app(site_footer={"en": "Site footer"}, collapsible=collapsible), "/blog/slug")
+    assert "Site footer" in html
+    assert "<details" not in html
+
+
+@pytest.mark.parametrize("url", CONTENT_URLS)
+def test_collapsible_footer_starts_open_with_content_inside(url: str):
+    html = _html(_app(site_footer={"en": "Site footer"}, collapsible=True), url)
+    details = html[html.index("<details open>") : html.index("</details>")]
+    assert '<summary class="footer-toggle">' in details
+    assert "Site footer" in details
+
+
+def test_collapsible_footer_keeps_content_footer_override():
+    html = _html(
+        _app(site_footer={"en": "Site footer"}, collapsible=True, footer="Own"), "/blog/slug"
+    )
+    details = html[html.index("<details open>") : html.index("</details>")]
+    assert "Own" in details
+    assert "Site footer" not in html
+
+
+def test_collapsible_footer_hidden_when_content_footer_is_empty():
+    html = _html(_app(site_footer={"en": "Site footer"}, collapsible=True, footer=""), "/blog/slug")
+    assert 'id="footer-row"' not in html
+    assert "<details" not in html
+
+
+def test_footer_background_is_the_theme_secondary_color():
+    html = _html(_app(site_footer={"en": "Site footer"}, secondary_color="goldenrod"), "/blog/slug")
+    rule = html[html.index("#footer-row") :]
+    assert "goldenrod" in rule[: rule.index("}")]

@@ -96,8 +96,17 @@ class MongoDB(DB):
         """
         site_config = self._get_site_config()
         if site_config and "footer" in site_config:
-            return site_config["footer"].get(lang, "")
+            return site_config["footer"].get("content", {}).get(lang, "")
         return ""
+
+    def get_footer_collapsible(self) -> bool:
+        """Retrieve whether readers may collapse the site-wide footer.
+
+        Returns:
+            True if ``footer.collapsible`` is set, False otherwise
+        """
+        site_config = self._get_site_config()
+        return bool(site_config and site_config.get("footer", {}).get("collapsible", False))
 
     def get_all_posts(self, lang: str) -> list[Post]:
         """Retrieve all posts for a specific language.

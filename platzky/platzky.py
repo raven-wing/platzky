@@ -334,17 +334,19 @@ def create_engine(
         return {"dynamic_head": app.dynamic_head}
 
     @app.context_processor
-    def site_footer() -> dict[str, Markup]:
+    def site_footer() -> dict[str, Markup | bool]:
         """Provide the site-wide footer, rendered for the current locale, to all templates.
 
         Returns:
-            Dictionary with the rendered footer; empty when none is configured
+            Dictionary with the rendered ``footer`` (empty when none is configured) and
+            ``footer_collapsible``, whether readers may collapse it
         """
         text = app.db.get_footer(app.get_locale())
-        if not text:
-            return {"footer": Markup("")}
-        # Markup vouches: the footer is written by someone with CMS write access.
-        return {"footer": Markup(app.transform_content(Markup(text), FOOTER))}
+        return {
+            # Markup vouches: the footer is written by someone with CMS write access.
+            "footer": Markup(app.transform_content(Markup(text), FOOTER)),
+            "footer_collapsible": app.db.get_footer_collapsible(),
+        }
 
     @app.errorhandler(404)
     def page_not_found(_e: HTTPException) -> tuple[str, int]:

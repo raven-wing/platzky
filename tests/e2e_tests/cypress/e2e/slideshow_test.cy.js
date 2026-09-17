@@ -230,12 +230,10 @@ describe('[slideshow] shortcode', () => {
     // A [figure] exists so a caption can travel with its image. Measured rather than
     // asserted on the CSS, because "beside" is a fact about where the text ended up.
     cy.get('img[alt="rotating one"]').then(($img) => {
-      const figure = $img[0].closest('.platzky-figure');
+      const caption = $img[0].closest('.platzky-figure').querySelector('.platzky-figure-text');
       const picture = $img[0].getBoundingClientRect();
-      const range = document.createRange();
-      range.selectNodeContents(figure);
       // Text starts to the right of the picture and overlaps it vertically.
-      const words = [...figure.childNodes]
+      const words = [...caption.childNodes]
         .filter((n) => n.nodeType === Node.TEXT_NODE && n.textContent.trim())
         .map((n) => {
           const r = document.createRange();
@@ -255,10 +253,12 @@ describe('[slideshow] shortcode', () => {
     // caption containing a link would have broken the same way.
     cy.get('img[alt="rotating one"]').then(($img) => {
       const figure = $img[0].closest('.platzky-figure');
+      const caption = figure.querySelector('.platzky-figure-text');
       expect(getComputedStyle(figure).display).to.not.eq('flex');
+      expect(getComputedStyle(caption).display).to.not.eq('flex');
       // The pieces of the word abut: no gap is inserted between a text node and the span
       // that interrupts it.
-      const pieces = [...figure.childNodes].filter(
+      const pieces = [...caption.childNodes].filter(
         (n) => n.nodeType === Node.TEXT_NODE || n.nodeName === 'SPAN'
       );
       const rects = pieces.map((n) => {
@@ -283,7 +283,7 @@ describe('[slideshow] shortcode', () => {
       expect(getComputedStyle($img[0]).float).to.eq('left');
 
       const picture = $img[0].getBoundingClientRect();
-      const text = [...figure.childNodes]
+      const text = [...figure.querySelector('.platzky-figure-text').childNodes]
         .filter((n) => n.nodeType === Node.TEXT_NODE && n.textContent.trim())
         .map((n) => {
           const r = document.createRange();
@@ -292,6 +292,42 @@ describe('[slideshow] shortcode', () => {
         })[0];
       expect(text.left).to.be.greaterThan(picture.right - 1);
       expect(text.top).to.be.lessThan(picture.bottom);
+    });
+  });
+
+  it('fades each frame out before the next fades in when asked to', () => {
+    // animation="fade" exists so two captions never show through each other: the opposite
+    // of "never fades to blank", sampled the same way.
+    frameOf('faded one').should(($el) => {
+      expect(computed($el, 'animationName')).to.eq('platzky-slideshow-fade-2');
+    });
+
+    const samples = [];
+    const sample = () =>
+      cy.get('img[alt="faded one"]').then(($img) => {
+        const frames = [...$img[0].closest('.slideshow').children];
+        samples.push(frames.map((f) => Number(getComputedStyle(f).opacity)));
+      });
+    // Across more than one 2s interval, so a transition is certain to fall inside the window.
+    for (let i = 0; i < 30; i++) {
+      sample();
+      cy.wait(100);
+    }
+
+    cy.then(() => {
+      const overlapping = samples.filter(([first, second]) => first > 0.1 && second > 0.1);
+      expect(overlapping, 'samples with both frames partly visible').to.have.length(0);
+      // And the window really did contain a transition, or the assertion above is vacuous.
+      const handingOver = samples.filter(([first, second]) => first < 0.9 && second < 0.9);
+      expect(handingOver.length, 'samples caught mid-transition').to.be.greaterThan(0);
+    });
+  });
+
+  it('switches frames without a transition when asked to', () => {
+    // animation="cut" keeps the cross-fade's timings but steps them, so the opacity jumps.
+    frameOf('cut one').should(($el) => {
+      expect(computed($el, 'animationName')).to.eq('platzky-slideshow-2');
+      expect(computed($el, 'animationTimingFunction')).to.match(/^steps\(1/);
     });
   });
 
@@ -355,7 +391,7 @@ describe('[slideshow] shortcode', () => {
   it('leaves a slideshow that did not ask for it fitting its frames', () => {
     // Shrink-wrapping is what "fit" means, so assert it directly: the container is exactly
     // as wide as the frame inside it. Comparing against the parent would not work here —
-    // this slideshow's parent is the affiliate <a>, and an inline box reports no width.
+    // this slideshow's parent is the affiliate <a>, a block as wide as the column.
     slideshowOf('promo one').then(($el) => {
       const slideshow = $el[0];
       expect(slideshow.getAttribute('data-width')).to.eq('fit');

@@ -87,7 +87,15 @@ class Json(DB):
             Footer content or empty string if not found
         """
         footer = self._get_site_content().get("footer", {})
-        return footer.get(lang, "")
+        return footer.get("content", {}).get(lang, "")
+
+    def get_footer_collapsible(self) -> bool:
+        """Retrieve whether readers may collapse the site-wide footer.
+
+        Returns:
+            True if ``footer.collapsible`` is set, False otherwise
+        """
+        return bool(self._get_site_content().get("footer", {}).get("collapsible", False))
 
     def get_all_posts(self, lang: str) -> list[Post]:
         """Retrieve all posts for a specific language.

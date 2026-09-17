@@ -101,13 +101,21 @@ class TestJsonDb:
         assert db.get_app_description("fr") == ""
 
     def test_get_footer(self):
-        db = Json(MemoryStore({"site_content": {"footer": {"en": "Footer", "pl": "Stopka"}}}))
+        footer = {"content": {"en": "Footer", "pl": "Stopka"}}
+        db = Json(MemoryStore({"site_content": {"footer": footer}}))
         assert db.get_footer("en") == "Footer"
         assert db.get_footer("pl") == "Stopka"
         assert db.get_footer("fr") == ""
 
     def test_get_footer_not_configured(self, db: Json):
         assert db.get_footer("en") == ""
+
+    def test_get_footer_collapsible(self):
+        db = Json(MemoryStore({"site_content": {"footer": {"collapsible": True}}}))
+        assert db.get_footer_collapsible() is True
+
+    def test_get_footer_collapsible_not_configured(self, db: Json):
+        assert db.get_footer_collapsible() is False
 
     def test_get_all_posts(self, db: Json):
         posts = db.get_all_posts("en")

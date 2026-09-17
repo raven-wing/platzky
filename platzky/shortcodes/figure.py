@@ -9,6 +9,7 @@ from platzky.shortcodes.shortcode import Shortcode
 from platzky.shortcodes.urls import IMAGE_URL_POLICY
 
 FIGURE_CSS_CLASS = "platzky-figure"
+FIGURE_TEXT_CSS_CLASS = "platzky-figure-text"
 
 
 class FigureShortcode(Shortcode):
@@ -33,7 +34,8 @@ class FigureShortcode(Shortcode):
         "[/slideshow]"
     )
     notes = (
-        'Renders a <div class="platzky-figure">. Used on its own, or as a "[slideshow]" '
+        'Renders a <div class="platzky-figure">, with the text in its own '
+        '<div class="platzky-figure-text">. Used on its own, or as a "[slideshow]" '
         'frame — a "[figure]" is always a single slide, however it is used. Without it, '
         'each bare image in a "[slideshow]" is its own frame. Inside a slideshow, every '
         "frame is sized to match the first one, so keep frames similar in size."
@@ -47,6 +49,9 @@ class FigureShortcode(Shortcode):
     ) -> str:
         """Wrap an image and its caption in a figure the stylesheet lays out.
 
+        The caption gets a box of its own so a stylesheet can place it beside the picture as
+        one item — with flex, say — without splitting a sentence at every link or span in it.
+
         Args:
             attrs: Parsed shortcode attributes (image, alt, width, height).
             content: The caption, already rendered. Embedded as-is per the ``render``
@@ -54,7 +59,8 @@ class FigureShortcode(Shortcode):
             children: Unused — the layout does not depend on what the caption wrapped.
 
         Returns:
-            The image and caption wrapped in a ``<div>`` carrying ``FIGURE_CSS_CLASS``.
+            The image, and the caption in a ``<div>`` carrying ``FIGURE_TEXT_CSS_CLASS``
+            when there is one, wrapped in a ``<div>`` carrying ``FIGURE_CSS_CLASS``.
 
         Raises:
             UrlNotPermitted: If the image URL is missing, or not one the policy permits.
@@ -66,7 +72,8 @@ class FigureShortcode(Shortcode):
         if height := escape(attrs.height):
             extra += f' height="{height}"'
         img = f'<img src="{escape(attrs.image)}" alt="{escape(attrs.alt)}"{extra}>'
-        return f'<div class="{FIGURE_CSS_CLASS}">{img}{content}</div>'
+        text = f'<div class="{FIGURE_TEXT_CSS_CLASS}">{content}</div>' if content else ""
+        return f'<div class="{FIGURE_CSS_CLASS}">{img}{text}</div>'
 
 
 figure_shortcode = FigureShortcode()

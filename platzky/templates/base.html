@@ -119,8 +119,19 @@
   </div>
 
   {% if self.footer() | trim %}
-  <footer class="row g-0" id="footer-row">
-    {% block footer %}{{ footer }}{% endblock %}
+  <footer id="footer-row">
+    {% if footer_collapsible %}
+    <details open>
+      <summary class="footer-toggle">
+        <i class="fas fa-chevron-down" aria-hidden="true"></i>
+        <span class="footer-toggle-hide visually-hidden">{{ _("Hide footer") }}</span>
+        <span class="footer-toggle-show visually-hidden">{{ _("Show footer") }}</span>
+      </summary>
+      <div class="footer-content">{{ self.footer() }}</div>
+    </details>
+    {% else %}
+    <div class="footer-content">{% block footer %}{{ footer }}{% endblock %}</div>
+    {% endif %}
   </footer>
   {% endif %}
 

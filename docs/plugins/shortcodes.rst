@@ -160,13 +160,17 @@ attribute's ``constraints``, such as ``width="100%"`` on ``[image]``, which take
 number of pixels.
 
 **``[figure]`` and ``[slideshow]``.** ``[figure]`` pairs a picture with the text beside it,
-emitting a ``<div class="platzky-figure">``. ``[slideshow]`` cross-fades between the frames
-it wraps on a timer, in CSS alone with no JavaScript: ``interval`` is how many milliseconds
-each frame is shown, floored at 1500 because a faster rotation runs at the limit of three
-flashes a second that WCAG 2.3.1 sets, and ``width`` is either ``fit``, as wide as the
-frames, or ``full``, spanning its container. The rotation pauses on hover and on focus,
-and under ``prefers-reduced-motion: reduce`` the frames still rotate but without the
-cross-fade.
+emitting a ``<div class="platzky-figure">`` with the text in its own
+``<div class="platzky-figure-text">``, so a stylesheet can lay the two out as boxes without
+splitting a sentence. ``[slideshow]`` rotates between the frames it wraps on a timer, in CSS
+alone with no JavaScript: ``interval`` is how many milliseconds each frame is shown, floored
+at 1500 because a faster rotation runs at the limit of three flashes a second that WCAG
+2.3.1 sets; ``width`` is either ``fit``, as wide as the frames, or ``full``, spanning its
+container; and ``animation`` is how one frame gives way to the next — ``crossfade``, the
+default, dissolves one into the other, ``fade`` fades each out before the next fades in so
+captions never overlap, and ``cut`` switches instantly. The rotation pauses on hover and on
+focus, and under ``prefers-reduced-motion: reduce`` the frames still rotate but switch
+instantly, whichever animation was asked for.
 
 A frame is a bare ``[image]`` or a ``[figure]``, and a ``[figure]`` counts as one frame
 however much markup it holds — which is what ``[slideshow]`` reads ``children`` for. It
@@ -175,7 +179,7 @@ depend on it: with N frames each is shown for one Nth of the cycle, so ``shortco
 carries one rule set per supported count. Four frames rotate at most; a slideshow wrapping
 more renders them as an ordinary sequence, logged, rather than dropping the extras.
 
-All the built-in shortcodes are granted ``POST`` and ``PAGE`` only — ``[hero]`` emits a
+All the built-in shortcodes are granted ``POST``, ``PAGE`` and ``FOOTER`` only — ``[hero]`` emits a
 ``<div class="hero">`` header block, which only makes sense in a document body, so the
 built-in transformer names its types rather than claiming to suit any kind of content.
 

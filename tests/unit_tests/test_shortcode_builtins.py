@@ -468,14 +468,25 @@ class TestFigureShortcode:
     def test_wraps_its_image_and_caption_in_a_figure_div(self) -> None:
         result = _apply('[figure image="/a.jpg" alt="cover"]The first chapter.[/figure]')
         assert result == (
-            '<div class="platzky-figure"><img src="/a.jpg" alt="cover">The first chapter.</div>'
+            '<div class="platzky-figure"><img src="/a.jpg" alt="cover">'
+            '<div class="platzky-figure-text">The first chapter.</div></div>'
         )
 
     def test_alt_defaults_to_empty(self) -> None:
         result = _apply('[figure image="/a.jpg"]The first chapter.[/figure]')
         assert result == (
-            '<div class="platzky-figure"><img src="/a.jpg" alt="">The first chapter.</div>'
+            '<div class="platzky-figure"><img src="/a.jpg" alt="">'
+            '<div class="platzky-figure-text">The first chapter.</div></div>'
         )
+
+    def test_caption_keeps_its_inline_markup_in_one_box(self) -> None:
+        """A link inside the caption stays in the text box, so a layout cannot split it off."""
+        result = _apply('[figure image="/a.jpg"]Read [link url="/x"]more[/link].[/figure]')
+        assert '<div class="platzky-figure-text">Read <a href="/x">more</a>.</div>' in result
+
+    def test_a_figure_without_text_has_no_empty_text_box(self) -> None:
+        result = _apply('[figure image="/a.jpg"][/figure]')
+        assert result == '<div class="platzky-figure"><img src="/a.jpg" alt=""></div>'
 
     def test_missing_image_renders_nothing(self) -> None:
         """The image is required: without one, a figure is dropped like a bare [image] is."""
@@ -548,4 +559,29 @@ class TestSlideshowWidth:
     def test_an_invalid_width_with_injected_markup_still_renders_nothing(self) -> None:
         """Nothing written for an unrecognised width ever reaches the page, injected or not."""
         result = _apply('[slideshow width="full<script>"][image url="/a.jpg"][/slideshow]')
+        assert result == ""
+
+
+class TestSlideshowAnimation:
+    def test_defaults_to_crossfade(self) -> None:
+        """Existing slideshows keep dissolving one frame into the next."""
+        result = _apply('[slideshow][image url="/a.jpg"][/slideshow]')
+        assert 'data-animation="crossfade"' in result
+
+    @pytest.mark.parametrize("animation", ["crossfade", "fade", "cut"])
+    def test_a_supported_animation_is_written_onto_the_element(self, animation: str) -> None:
+        result = _apply(f'[slideshow animation="{animation}"][image url="/a.jpg"][/slideshow]')
+        assert f'data-animation="{animation}"' in result
+
+    def test_an_unknown_animation_drops_the_whole_slideshow(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """The stylesheet has no rules for it, so it is refused rather than silently ignored."""
+        with caplog.at_level(logging.WARNING):
+            result = _apply('[slideshow animation="slide"][image url="/a.jpg"][/slideshow]')
+        assert result == ""
+        assert "[slideshow] rendered nothing" in caplog.text
+
+    def test_an_invalid_animation_with_injected_markup_still_renders_nothing(self) -> None:
+        result = _apply('[slideshow animation="fade<script>"][image url="/a.jpg"][/slideshow]')
         assert result == ""

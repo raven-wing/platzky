@@ -29,9 +29,213 @@ body {
   overflow: hidden;
 }
 
-/* Keeps its natural height; #main-row gives up the space instead. */
+/* Keeps its natural height; #main-row gives up the space instead. Not a Bootstrap .row: a
+   flex container would split mixed text and links into separate items. Side padding
+   matches the navbar's px-3.
+
+   The background is the theme's secondary colour, set in dynamic_css.html -- not here,
+   since this sheet loads after that one and would override it. The text is near-black
+   because the secondary colour varies by site: grey text falls below 4.5:1 on a mid-tone
+   one such as goldenrod. */
 #footer-row {
   flex-shrink: 0;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  font-size: 0.875rem;
+  color: #212529;
+}
+
+/* Capped so a long footer cannot squeeze a full-height app (e.g. a map) out of #main-row;
+   it scrolls instead. On the content rather than the footer, so a collapsible footer's
+   toggle stays outside the cap.
+
+   Centred: text lines by text-align, shrink-wrapped blocks such as .slideshow by auto
+   margins.
+
+   Every rule here is prefixed with #footer-row: shortcodes.css styles the same elements
+   with more specific selectors (e.g. .platzky-figure > img:first-child), and a bare
+   .footer-content selector would lose to them. */
+#footer-row .footer-content {
+  max-height: 25vh;
+  overflow-y: auto;
+  text-align: center;
+}
+
+#footer-row .footer-content > * {
+  margin-inline: auto;
+}
+
+/* Text beside a picture reads from its edge instead, as centred wrapped lines look ragged. */
+#footer-row .footer-content .platzky-figure {
+  text-align: start;
+}
+
+/* blog.css spaces every <p> for prose; the footer is chrome. */
+#footer-row .footer-content p {
+  margin: 0;
+}
+
+/* An unsized photo would fill the width and overflow the cap above. Instead it may use the
+   content's whole height and up to 40% of its width, which leaves the rest for text beside
+   it. width: auto and object-fit keep the aspect ratio when a width or height attribute is
+   also set. */
+#footer-row .footer-content img {
+  max-height: 25vh;
+  max-width: 40%;
+  width: auto;
+  object-fit: contain;
+}
+
+/* Centred, at a fixed width rather than its content's: sized by its content, the slideshow
+   would be as wide as its longest caption, and the picture -- a percentage of that width --
+   would change size with the wording. Not for width="full", which sizes itself. */
+#footer-row .footer-content .slideshow:not([data-width="full"]) {
+  width: min(100%, 40rem);
+  margin-inline: auto;
+}
+
+/* Rotating frames share one grid cell here instead of being pinned onto the first frame's
+   box: the cell grows to the tallest frame. Pinned, a later caption that wraps to more lines
+   than the first one's overflowed the slideshow, which inside the scrolling .footer-content
+   showed as a scrollbar that came and went with the window width. Only the counts that
+   rotate: any other count is an ordinary sequence and must not stack. */
+#footer-row
+  .footer-content
+  .slideshow:is([data-slides="2"], [data-slides="3"], [data-slides="4"]) {
+  display: grid;
+}
+
+#footer-row
+  .footer-content
+  .slideshow:is([data-slides="2"], [data-slides="3"], [data-slides="4"])
+  > * {
+  grid-area: 1 / 1;
+  position: static;
+  width: auto;
+  height: auto;
+}
+
+/* In the footer a caption is the message, not small print, and sits level with the middle of
+   its picture. Flex is safe here, unlike for figures in general (see shortcodes.css),
+   because the text arrives as one .platzky-figure-text box: a link or a span inside it stays
+   part of the sentence. The cost is that long text no longer flows under the picture, which
+   a footer caption should not need. */
+#footer-row .footer-content .platzky-figure {
+  display: flex;
+  align-items: center;
+  color: #343a40;
+  font-size: 1rem;
+}
+
+/* A long caption must not squeeze the picture; its max-width already leaves the text room.
+   The white frame sets the photo off the coloured footer; Bootstrap's border-box sizing
+   keeps it inside the size limits above. */
+#footer-row .footer-content .platzky-figure > img {
+  flex-shrink: 0;
+  border: 4px solid #fff;
+  border-radius: 2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+/* blog.css sizes .btn for page bodies; one in a caption sits on the text line. */
+#footer-row .footer-content .btn {
+  margin-left: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  vertical-align: baseline;
+}
+
+/* A button inside a link is that link's call to action, so it reacts to hovering anywhere
+   on the link. */
+#footer-row .footer-content a:hover .btn {
+  filter: brightness(0.92);
+}
+
+/* Toggle for a collapsible footer: native <details>, so it needs no JavaScript and resets
+   to open on every page load. A small arrow straddling the footer's top border, so it adds
+   no row of its own and a collapsed footer is a thin strip; its label is for screen readers
+   only (visually-hidden), and the arrow swaps with the open state in CSS.
+
+   The negative top margin is the footer's padding-top, its border and half the button, which
+   centres the button on the border line. position + z-index lift its top half above
+   #main-row, which is positioned and would otherwise paint over it. 28px clears the WCAG
+   2.5.8 minimum target size of 24px. */
+#footer-row summary.footer-toggle {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin: calc(-0.75rem - 15px) auto 0;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  background: #fff;
+  color: #adb5bd;
+  font-size: 0.75rem;
+  list-style: none;
+  cursor: pointer;
+}
+
+#footer-row summary.footer-toggle::-webkit-details-marker {
+  display: none;
+}
+
+#footer-row summary.footer-toggle:hover {
+  border-color: rgba(0, 0, 0, 0.25);
+  color: #495057;
+}
+
+#footer-row summary.footer-toggle:focus-visible {
+  outline: 2px solid #0085a1;
+  outline-offset: 2px;
+}
+
+/* Only the screen-reader label swaps; the arrow turns instead, so it can animate. */
+#footer-row details[open] .footer-toggle-show,
+#footer-row details:not([open]) .footer-toggle-hide {
+  display: none;
+}
+
+#footer-row summary.footer-toggle i {
+  transition: transform 0.3s ease;
+}
+
+#footer-row details:not([open]) summary.footer-toggle i {
+  transform: rotate(180deg);
+}
+
+/* Slides the content open and shut. ::details-content is the box <details> hides its content
+   in; interpolate-size lets its height transition to and from auto, and allow-discrete holds
+   content-visibility until the slide has finished closing. Browsers without either open and
+   close instantly instead. */
+#footer-row details {
+  interpolate-size: allow-keywords;
+}
+
+#footer-row details::details-content {
+  block-size: 0;
+  overflow: hidden;
+  transition:
+    block-size 0.3s ease,
+    content-visibility 0.3s allow-discrete;
+}
+
+#footer-row details[open]::details-content {
+  block-size: auto;
+}
+
+/* The gap under the arrow sits inside the sliding box, so it opens and closes with it. */
+#footer-row details .footer-content {
+  margin-top: 0.25rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #footer-row summary.footer-toggle i,
+  #footer-row details::details-content {
+    transition: none;
+  }
 }
 
 /* Portal target for overlays that must escape #main-row's stacking context.

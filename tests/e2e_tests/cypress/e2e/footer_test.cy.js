@@ -10,6 +10,22 @@ describe('Footer', () => {
     cy.get('#footer-row').should('contain.text', 'Polska stopka')
   })
 
+  it('collapses and expands when its toggle is clicked', () => {
+    cy.visit('/blog/')
+    // The labels are visually hidden for screen readers, so check which one is displayed.
+    cy.get('#footer-row details').should('have.attr', 'open')
+    cy.get('#footer-row .footer-toggle-hide').should('not.have.css', 'display', 'none')
+    cy.get('#footer-row .footer-toggle-show').should('have.css', 'display', 'none')
+
+    cy.get('#footer-row summary').click()
+    cy.get('#footer-row details').should('not.have.attr', 'open')
+    cy.get('#footer-row .footer-toggle-hide').should('have.css', 'display', 'none')
+    cy.get('#footer-row .footer-toggle-show').should('not.have.css', 'display', 'none')
+
+    cy.get('#footer-row summary').click()
+    cy.get('#footer-row details').should('have.attr', 'open')
+  })
+
   it('lets a page replace the site-wide footer', () => {
     cy.visit('/blog/page/strona')
     cy.get('#footer-row').should('contain.text', 'Stopka strony')

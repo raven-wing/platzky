@@ -347,6 +347,7 @@ def test_get_app_description_missing(graph_ql_db: GraphQL, mock_client: Mock):
 
 def test_get_footer_is_not_supported_and_queries_nothing(graph_ql_db: GraphQL, mock_client: Mock):
     assert graph_ql_db.get_footer("en") == ""
+    assert graph_ql_db.get_footer_collapsible() is False
     mock_client.execute.assert_not_called()
 
 

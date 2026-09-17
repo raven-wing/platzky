@@ -72,6 +72,16 @@ class DB(ABC):
         """
         return ""
 
+    def get_footer_collapsible(self) -> bool:
+        """Retrieve whether readers may collapse the site-wide footer.
+
+        Not abstract: a backend without footer support never makes it collapsible.
+
+        Returns:
+            True if the footer should be rendered collapsible, False otherwise
+        """
+        return False
+
     @abstractmethod
     def get_all_posts(self, lang: str) -> list[Post]:
         """Retrieve all posts for a specific language.

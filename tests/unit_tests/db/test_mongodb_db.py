@@ -90,7 +90,10 @@ class TestMongoDB:
 
     def test_get_footer(self, db: MongoDB):
         mock_find_one = cast(Mock, db.site_content.find_one)
-        mock_find_one.return_value = {"_id": "config", "footer": {"en": "Footer", "pl": "Stopka"}}
+        mock_find_one.return_value = {
+            "_id": "config",
+            "footer": {"content": {"en": "Footer", "pl": "Stopka"}},
+        }
 
         assert db.get_footer("en") == "Footer"
         assert db.get_footer("pl") == "Stopka"
@@ -104,6 +107,21 @@ class TestMongoDB:
     def test_get_footer_no_data(self, db: MongoDB):
         cast(Mock, db.site_content.find_one).return_value = None
         assert db.get_footer("en") == ""
+
+    def test_get_footer_collapsible(self, db: MongoDB):
+        mock_find_one = cast(Mock, db.site_content.find_one)
+        mock_find_one.return_value = {"_id": "config", "footer": {"collapsible": True}}
+
+        assert db.get_footer_collapsible() is True
+        mock_find_one.assert_called_with({"_id": "config"})
+
+    def test_get_footer_collapsible_not_configured(self, db: MongoDB):
+        cast(Mock, db.site_content.find_one).return_value = {"_id": "config"}
+        assert db.get_footer_collapsible() is False
+
+    def test_get_footer_collapsible_no_data(self, db: MongoDB):
+        cast(Mock, db.site_content.find_one).return_value = None
+        assert db.get_footer_collapsible() is False
 
     def test_get_all_posts(self, db: MongoDB):
         # Mock posts data

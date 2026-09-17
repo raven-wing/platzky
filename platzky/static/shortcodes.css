@@ -70,6 +70,16 @@ article {
     max-width: 100%;
 }
 
+/* A link around a whole slideshow or figure -- the affiliate shape -- is a block, so what it
+   wraps is laid out against the column rather than against an inline box, and the captions
+   inside keep the prose colour instead of turning into one long underlined link. */
+a:has(> .slideshow),
+a:has(> .platzky-figure) {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+}
+
 /* A [figure] holds a picture and whatever belongs beside it: the image floats and the
    rest flows around it.
 
@@ -194,6 +204,46 @@ article {
     animation-delay: calc(var(--platzky-slideshow-interval, 4000ms) * -1);
 }
 
+/* animation="fade": the outgoing frame is fully gone before the next one appears, so two
+   captions never show through each other. The cross-fade's transition window is split in
+   half -- the first half fades this frame out, and the second, which the next frame's delay
+   lines up with, fades that one in -- so the cycle and the delays above stay as they are. */
+@keyframes platzky-slideshow-fade-2 {
+    0%, 42% { opacity: 1; }
+    46%, 96% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+@keyframes platzky-slideshow-fade-3 {
+    0%, 28% { opacity: 1; }
+    30.667%, 97.333% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+@keyframes platzky-slideshow-fade-4 {
+    0%, 21% { opacity: 1; }
+    23%, 98% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+.slideshow[data-slides="2"][data-animation="fade"] > * {
+    animation-name: platzky-slideshow-fade-2;
+}
+
+.slideshow[data-slides="3"][data-animation="fade"] > * {
+    animation-name: platzky-slideshow-fade-3;
+}
+
+.slideshow[data-slides="4"][data-animation="fade"] > * {
+    animation-name: platzky-slideshow-fade-4;
+}
+
+/* animation="cut": the cross-fade's timings, stepped, so each frame switches at the end of
+   its transition window with nothing in between. */
+.slideshow[data-slides][data-animation="cut"] > * {
+    animation-timing-function: steps(1, end);
+}
+
 /* A reader who has stopped to look, or tabbed into the slideshow, is not helped by the
    picture changing under them. */
 .slideshow:hover > *,
@@ -201,10 +251,27 @@ article {
     animation-play-state: paused;
 }
 
-/* The rotation is content, not decoration, so it keeps running; it is the dissolve that
-   is motion. steps(1, end) turns every fade into a cut without touching the timings. */
+/* The rotation is content, not decoration, so it keeps running; it is the transition that
+   is motion, so every animation becomes a cut.
+
+   The selectors match the specificity of the rules they override and come after them. A
+   bare `.slideshow > *` loses to `.slideshow[data-slides="2"] > *`, media query or not, so
+   it never applied. A stepped fade would leave a blank gap between frames, so fade falls
+   back to the cross-fade keyframes, which step to a clean cut. */
 @media (prefers-reduced-motion: reduce) {
-    .slideshow > * {
+    .slideshow[data-slides] > * {
         animation-timing-function: steps(1, end);
+    }
+
+    .slideshow[data-slides="2"][data-animation="fade"] > * {
+        animation-name: platzky-slideshow-2;
+    }
+
+    .slideshow[data-slides="3"][data-animation="fade"] > * {
+        animation-name: platzky-slideshow-3;
+    }
+
+    .slideshow[data-slides="4"][data-animation="fade"] > * {
+        animation-name: platzky-slideshow-4;
     }
 }
