@@ -133,3 +133,13 @@ def test_footer_background_is_the_theme_secondary_color():
     html = _html(_app(site_footer={"en": "Site footer"}, secondary_color="goldenrod"), "/blog/slug")
     rule = html[html.index("#footer-row") :]
     assert "goldenrod" in rule[: rule.index("}")]
+
+
+@pytest.mark.parametrize("url", [*CONTENT_URLS, "/blog/no-such-page"])
+def test_malformed_site_footer_hides_footer_instead_of_breaking_the_page(url: str):
+    app = _app(site_footer={"en": '[link url="/x"]Never closed'})
+    response = app.test_client().get(url)
+    html = response.get_data(as_text=True)
+    assert response.status_code in (200, 404)
+    assert 'id="footer-row"' not in html
+    assert "Never closed" not in html

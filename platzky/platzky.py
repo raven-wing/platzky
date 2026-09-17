@@ -31,7 +31,7 @@ from platzky.plugin.login import LoginPluginBase
 from platzky.plugin.plugin import PluginBase
 from platzky.plugin.plugin_loader import plugify
 from platzky.seo import seo
-from platzky.shortcodes import Shortcode
+from platzky.shortcodes import Shortcode, ShortcodeError
 from platzky.shortcodes.builtins import get_builtin_shortcodes
 from platzky.www_handler import redirect_nonwww_to_www, redirect_www_to_nonwww
 
@@ -342,9 +342,17 @@ def create_engine(
             ``footer_collapsible``, whether readers may collapse it
         """
         text = app.db.get_footer(app.get_locale())
-        return {
+        try:
             # Markup vouches: the footer is written by someone with CMS write access.
-            "footer": Markup(app.transform_content(Markup(text), FOOTER)),
+            rendered = Markup(app.transform_content(Markup(text), FOOTER))
+        except ShortcodeError:
+            # This runs on every render, so a malformed footer would otherwise 500 every
+            # page on the site, the 404 handler included. Drop the footer instead: the
+            # log names the bracket at fault, and the rest of the site stays up.
+            logger.exception("Site-wide footer could not be rendered; showing no footer")
+            rendered = Markup("")
+        return {
+            "footer": rendered,
             "footer_collapsible": app.db.get_footer_collapsible(),
         }
 
