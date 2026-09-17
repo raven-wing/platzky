@@ -6,6 +6,7 @@ import threading
 from typing import Any
 
 from pydantic import Field
+from typing_extensions import override
 
 from platzky.db.db import DB, DBConfig
 from platzky.db.exceptions import DBError, NotFoundError
@@ -77,6 +78,7 @@ class Json(DB):
         description = self._get_site_content().get("app_description", {})
         return description.get(lang, "")
 
+    @override
     def get_footer(self, lang: str) -> Footer:
         """Retrieve the site-wide footer for a specific language.
 

@@ -7,6 +7,7 @@ from pydantic import Field
 from pymongo import MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
+from typing_extensions import override
 
 from platzky.db.db import DB, DBConfig
 from platzky.db.exceptions import NotFoundError
@@ -85,6 +86,7 @@ class MongoDB(DB):
             return site_config["app_description"].get(lang, "")
         return ""
 
+    @override
     def get_footer(self, lang: str) -> Footer:
         """Retrieve the site-wide footer for a specific language.
 

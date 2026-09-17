@@ -8,6 +8,7 @@ from typing import Any
 from gql import Client, gql
 from gql.transport.aiohttp import AIOHTTPTransport
 from pydantic import Field
+from typing_extensions import override
 
 from platzky.db.db import DB, DBConfig
 from platzky.db.exceptions import NotFoundError
@@ -415,7 +416,8 @@ class GraphQL(DB):
         except IndexError:
             return ""
 
-    def get_footer(self, lang: str) -> Footer:  # noqa: ARG002
+    @override
+    def get_footer(self, lang: str) -> Footer:
         """Retrieve the site-wide footer for a specific language.
 
         The CMS schema has no footer content type, so this queries nothing and
