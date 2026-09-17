@@ -341,10 +341,10 @@ def create_engine(
             Dictionary with the rendered ``footer`` (empty when none is configured) and
             ``footer_collapsible``, whether readers may collapse it
         """
-        text = app.db.get_footer(app.get_locale())
+        footer = app.db.get_footer(app.get_locale())
         try:
             # Markup vouches: the footer is written by someone with CMS write access.
-            rendered = Markup(app.transform_content(Markup(text), FOOTER))
+            rendered = Markup(app.transform_content(Markup(footer.content), FOOTER))
         except ShortcodeError:
             # This runs on every render, so a malformed footer would otherwise 500 every
             # page on the site, the 404 handler included. Drop the footer instead: the
@@ -353,7 +353,7 @@ def create_engine(
             rendered = Markup("")
         return {
             "footer": rendered,
-            "footer_collapsible": app.db.get_footer_collapsible(),
+            "footer_collapsible": footer.collapsible,
         }
 
     @app.errorhandler(404)

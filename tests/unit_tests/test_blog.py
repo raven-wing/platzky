@@ -18,7 +18,7 @@ from platzky.blog import blog
 from platzky.config import Config
 from platzky.db.exceptions import NotFoundError
 from platzky.engine import Engine
-from platzky.models import Comment, Image, Post
+from platzky.models import Comment, Footer, Image, Post
 from platzky.platzky import create_engine
 
 mocked_post_json = {
@@ -52,7 +52,7 @@ def test_app():
     db_mock.get_post.return_value = mocked_post
     db_mock.get_posts_by_tag.return_value = [mocked_post]
     db_mock.get_all_posts.return_value = [mocked_post]
-    db_mock.get_footer.return_value = ""
+    db_mock.get_footer.return_value = Footer()
     config = Config.model_validate(
         {
             "BLOG_PREFIX": "/prefix",  # TODO test without prefix in config (same for seo tests)

@@ -10,7 +10,7 @@ from pymongo.database import Database
 
 from platzky.db.db import DB, DBConfig
 from platzky.db.exceptions import NotFoundError
-from platzky.models import MenuItem, Page, Post
+from platzky.models import Footer, MenuItem, Page, Post
 from platzky.plugin.plugin_config import PluginConfigBase
 
 
@@ -85,28 +85,23 @@ class MongoDB(DB):
             return site_config["app_description"].get(lang, "")
         return ""
 
-    def get_footer(self, lang: str) -> str:
-        """Retrieve the site-wide footer content for a specific language.
+    def get_footer(self, lang: str) -> Footer:
+        """Retrieve the site-wide footer for a specific language.
 
         Args:
             lang: Language code (e.g., 'en', 'pl')
 
         Returns:
-            Footer content or empty string if not found
+            The footer, empty and not collapsible if none is configured
         """
         site_config = self._get_site_config()
-        if site_config and "footer" in site_config:
-            return site_config["footer"].get("content", {}).get(lang, "")
-        return ""
-
-    def get_footer_collapsible(self) -> bool:
-        """Retrieve whether readers may collapse the site-wide footer.
-
-        Returns:
-            True if ``footer.collapsible`` is set, False otherwise
-        """
-        site_config = self._get_site_config()
-        return bool(site_config and site_config.get("footer", {}).get("collapsible", False))
+        if not site_config or "footer" not in site_config:
+            return Footer()
+        footer = site_config["footer"]
+        return Footer(
+            content=footer.get("content", {}).get(lang, ""),
+            collapsible=bool(footer.get("collapsible", False)),
+        )
 
     def get_all_posts(self, lang: str) -> list[Post]:
         """Retrieve all posts for a specific language.

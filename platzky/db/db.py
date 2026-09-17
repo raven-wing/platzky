@@ -7,7 +7,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from platzky.models import MenuItem, Page, Post
+from platzky.models import Footer, MenuItem, Page, Post
 from platzky.plugin.plugin_config import PluginConfigBase
 
 
@@ -59,8 +59,8 @@ class DB(ABC):
         """
         pass
 
-    def get_footer(self, lang: str) -> str:  # noqa: ARG002
-        """Retrieve the site-wide footer content for a specific language.
+    def get_footer(self, lang: str) -> Footer:  # noqa: ARG002
+        """Retrieve the site-wide footer for a specific language.
 
         Not abstract: a backend without footer support shows no footer.
 
@@ -68,19 +68,9 @@ class DB(ABC):
             lang: Language code (e.g., 'en', 'pl')
 
         Returns:
-            Footer content in shortcode markup, or empty string if not configured
+            The footer, empty and not collapsible when none is configured
         """
-        return ""
-
-    def get_footer_collapsible(self) -> bool:
-        """Retrieve whether readers may collapse the site-wide footer.
-
-        Not abstract: a backend without footer support never makes it collapsible.
-
-        Returns:
-            True if the footer should be rendered collapsible, False otherwise
-        """
-        return False
+        return Footer()
 
     @abstractmethod
     def get_all_posts(self, lang: str) -> list[Post]:

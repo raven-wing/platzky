@@ -173,6 +173,18 @@ class Post(BaseModel):
 Page = Post  # Page is an alias for Post (static pages use the same structure)
 
 
+class Footer(BaseModel):
+    """The site-wide footer and how it is presented.
+
+    Attributes:
+        content: Footer content in shortcode markup, for one language. Empty shows no footer.
+        collapsible: Whether readers may collapse the footer
+    """
+
+    content: str = ""
+    collapsible: bool = False
+
+
 class Color(BaseModel):
     """Represents an RGBA color value.
 

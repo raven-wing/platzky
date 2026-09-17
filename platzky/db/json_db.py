@@ -10,7 +10,7 @@ from pydantic import Field
 from platzky.db.db import DB, DBConfig
 from platzky.db.exceptions import DBError, NotFoundError
 from platzky.db.json_stores import JsonStore, MemoryStore
-from platzky.models import MenuItem, Page, Post
+from platzky.models import Footer, MenuItem, Page, Post
 from platzky.plugin.plugin_config import PluginConfigBase
 
 logger = logging.getLogger(__name__)
@@ -77,25 +77,20 @@ class Json(DB):
         description = self._get_site_content().get("app_description", {})
         return description.get(lang, "")
 
-    def get_footer(self, lang: str) -> str:
-        """Retrieve the site-wide footer content for a specific language.
+    def get_footer(self, lang: str) -> Footer:
+        """Retrieve the site-wide footer for a specific language.
 
         Args:
             lang: Language code (e.g., 'en', 'pl')
 
         Returns:
-            Footer content or empty string if not found
+            The footer, empty and not collapsible if none is configured
         """
         footer = self._get_site_content().get("footer", {})
-        return footer.get("content", {}).get(lang, "")
-
-    def get_footer_collapsible(self) -> bool:
-        """Retrieve whether readers may collapse the site-wide footer.
-
-        Returns:
-            True if ``footer.collapsible`` is set, False otherwise
-        """
-        return bool(self._get_site_content().get("footer", {}).get("collapsible", False))
+        return Footer(
+            content=footer.get("content", {}).get(lang, ""),
+            collapsible=bool(footer.get("collapsible", False)),
+        )
 
     def get_all_posts(self, lang: str) -> list[Post]:
         """Retrieve all posts for a specific language.
