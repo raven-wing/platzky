@@ -143,3 +143,13 @@ def test_malformed_site_footer_hides_footer_instead_of_breaking_the_page(url: st
     assert response.status_code in (200, 404)
     assert 'id="footer-row"' not in html
     assert "Never closed" not in html
+
+
+def test_template_footer_block_shows_when_no_site_footer_is_configured():
+    """The footer-row guard reads the block's output, not the ``footer`` variable."""
+    app = _app()
+    template = '{% extends "base.html" %}{% block footer %}From template{% endblock %}'
+    with app.test_request_context():
+        html = render_template_string(template)
+    assert 'id="footer-row"' in html
+    assert "From template" in html
