@@ -9,7 +9,7 @@ from platzky.shortcodes.shortcode import Shortcode
 from platzky.shortcodes.urls import IMAGE_URL_POLICY
 
 FIGURE_CSS_CLASS = "platzky-figure"
-FIGURE_TEXT_CSS_CLASS = "platzky-figure-text"
+FIGURE_CAPTION_CSS_CLASS = "platzky-figure-caption"
 
 
 class FigureShortcode(Shortcode):
@@ -34,8 +34,8 @@ class FigureShortcode(Shortcode):
         "[/slideshow]"
     )
     notes = (
-        'Renders a <div class="platzky-figure">, with the text in its own '
-        '<div class="platzky-figure-text">. Used on its own, or as a "[slideshow]" '
+        'Renders a <div class="platzky-figure">, with the caption in its own '
+        '<div class="platzky-figure-caption">. Used on its own, or as a "[slideshow]" '
         'frame — a "[figure]" is always a single slide, however much it holds, and is the '
         'only thing a "[slideshow]" accepts. A slideshow is as large as its largest frame, '
         "so keep frames similar in size to avoid empty space around the smaller ones."
@@ -59,7 +59,7 @@ class FigureShortcode(Shortcode):
             children: Unused — the layout does not depend on what the caption wrapped.
 
         Returns:
-            The image, and the caption in a ``<div>`` carrying ``FIGURE_TEXT_CSS_CLASS``
+            The image, and the caption in a ``<div>`` carrying ``FIGURE_CAPTION_CSS_CLASS``
             when there is one, wrapped in a ``<div>`` carrying ``FIGURE_CSS_CLASS``.
 
         Raises:
@@ -72,8 +72,8 @@ class FigureShortcode(Shortcode):
         if height := escape(attrs.height):
             extra += f' height="{height}"'
         img = f'<img src="{escape(attrs.image)}" alt="{escape(attrs.alt)}"{extra}>'
-        text = f'<div class="{FIGURE_TEXT_CSS_CLASS}">{content}</div>' if content else ""
-        return f'<div class="{FIGURE_CSS_CLASS}">{img}{text}</div>'
+        caption = f'<div class="{FIGURE_CAPTION_CSS_CLASS}">{content}</div>' if content else ""
+        return f'<div class="{FIGURE_CSS_CLASS}">{img}{caption}</div>'
 
 
 figure_shortcode = FigureShortcode()

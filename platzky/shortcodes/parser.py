@@ -395,27 +395,45 @@ def _filter_around_html(text: str, filters: Sequence[Callable[[str], str]]) -> s
     return text
 
 
-def _unpermitted_child(node: _Element) -> str | None:
-    """Name what an element holds that its ``permitted_children`` does not allow.
+def _is_permitted_child(child: _Node, permitted: frozenset[str]) -> bool:
+    """Whether a child is one its parent's ``permitted_children`` allows.
+
+    Args:
+        child: The child node to judge.
+        permitted: Tag names the parent accepts.
+
+    Returns:
+        True if the child may stay. Whitespace text is always allowed — it is how an
+        author lays tags out over several lines, not something they wrote.
+    """
+    return not child.text.strip() if isinstance(child, _Text) else child.shortcode.name in permitted
+
+
+def _unpermitted_children(node: _Element) -> tuple[_Node, ...]:
+    """Collect the children an element's ``permitted_children`` does not allow.
 
     Args:
         node: The element to check, with its children still parsed rather than rendered.
 
     Returns:
-        A description of the first offending child, for the refusal message, or None when
-        the element declares no restriction or holds nothing that breaks it.
+        Every offending child, in document order. Empty when the element declares no
+        restriction, or holds nothing that breaks it.
     """
     permitted = node.shortcode.permitted_children
-    if permitted is None:
-        return None
-    for child in node.children:
-        if isinstance(child, _Text):
-            # Whitespace is how an author lays tags out over several lines, not content.
-            if child.text.strip():
-                return f"text {child.text.strip()[:30]!r}"
-        elif child.shortcode.name not in permitted:
-            return f"[{child.shortcode.name}]"
-    return None
+    return tuple(
+        child
+        for child in node.children
+        if permitted is not None and not _is_permitted_child(child, permitted)
+    )
+
+
+def _describe_child(child: _Node) -> str:
+    """Name a child the way a refusal message should, for an author reading the log."""
+    return (
+        f"text {child.text.strip()[:30]!r}"
+        if isinstance(child, _Text)
+        else f"[{child.shortcode.name}]"
+    )
 
 
 def _render_node(node: _Node) -> str:
@@ -436,17 +454,15 @@ def _render_node(node: _Node) -> str:
         return node.text
     if isinstance(node, _RawElement):
         return _render_element(node.shortcode, node.raw_attrs, node.content, ())
-    if offender := _unpermitted_child(node):
-        permitted = ", ".join(
-            f"[{name}]" for name in sorted(node.shortcode.permitted_children or ())
-        )
-        # Refused whole rather than per child: dropping only the offender would leave a
+    if unpermitted := _unpermitted_children(node):
+        # Refused whole rather than per child: dropping only the offenders would leave a
         # wrapper whose structure the author still got wrong, rendered as if it were right.
+        # Every offender is named, so one log line is one trip back to the content.
         logger.warning(
             "[%s] rendered nothing: it accepts only %s as children, and holds %s.",
             node.shortcode.name,
-            permitted,
-            offender,
+            ", ".join(f"[{name}]" for name in sorted(node.shortcode.permitted_children or ())),
+            ", ".join(_describe_child(child) for child in unpermitted),
         )
         return ""
     rendered = [(child, _render_node(child)) for child in node.children]

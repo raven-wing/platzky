@@ -505,20 +505,20 @@ class TestFigureShortcode:
         result = _apply('[figure image="/a.jpg" alt="cover"]The first chapter.[/figure]')
         assert result == (
             '<div class="platzky-figure"><img src="/a.jpg" alt="cover">'
-            '<div class="platzky-figure-text">The first chapter.</div></div>'
+            '<div class="platzky-figure-caption">The first chapter.</div></div>'
         )
 
     def test_alt_defaults_to_empty(self) -> None:
         result = _apply('[figure image="/a.jpg"]The first chapter.[/figure]')
         assert result == (
             '<div class="platzky-figure"><img src="/a.jpg" alt="">'
-            '<div class="platzky-figure-text">The first chapter.</div></div>'
+            '<div class="platzky-figure-caption">The first chapter.</div></div>'
         )
 
     def test_caption_keeps_its_inline_markup_in_one_box(self) -> None:
         """A link inside the caption stays in the text box, so a layout cannot split it off."""
         result = _apply('[figure image="/a.jpg"]Read [link url="/x"]more[/link].[/figure]')
-        assert '<div class="platzky-figure-text">Read <a href="/x">more</a>.</div>' in result
+        assert '<div class="platzky-figure-caption">Read <a href="/x">more</a>.</div>' in result
 
     def test_a_figure_without_text_has_no_empty_text_box(self) -> None:
         result = _apply('[figure image="/a.jpg"][/figure]')

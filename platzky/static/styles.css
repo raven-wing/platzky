@@ -70,7 +70,7 @@ body {
 /* Text beside a picture reads from its edge instead, as centred wrapped lines look ragged.
    In the footer a caption is the message, not small print, and sits level with the middle of
    its picture. Flex is safe here, unlike for figures in general (see shortcodes.css),
-   because the text arrives as one .platzky-figure-text box: a link or a span inside it stays
+   because the text arrives as one .platzky-figure-caption box: a link or a span inside it stays
    part of the sentence. The cost is that long text no longer flows under the picture, which
    a footer caption should not need. The colour is inherited from #footer-row, so a caption
    cannot drift out of contrast with the footer around it. */
