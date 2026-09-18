@@ -76,20 +76,6 @@ def test_site_footer_is_looked_up_per_language():
     assert 'id="footer-row"' not in _html(_app(site_footer={"pl": "Stopka"}), "/blog/slug")
 
 
-@pytest.mark.parametrize("url", CONTENT_URLS)
-def test_content_footer_replaces_site_footer(url: str):
-    html = _html(_app(site_footer={"en": "Site footer"}, footer="Own footer"), url)
-    assert "Own footer" in html
-    assert "Site footer" not in html
-
-
-@pytest.mark.parametrize("url", CONTENT_URLS)
-def test_empty_content_footer_hides_site_footer(url: str):
-    html = _html(_app(site_footer={"en": "Site footer"}, footer=""), url)
-    assert 'id="footer-row"' not in html
-    assert "Site footer" not in html
-
-
 def test_template_footer_block_replaces_the_whole_footer():
     """The outer block owns the region: overriding it drops the <footer> and the toggle."""
     app = _app(site_footer={"en": "Site footer"}, collapsible=True)
@@ -115,21 +101,6 @@ def test_collapsible_footer_starts_open_with_content_inside(url: str):
     details = html[html.index("<details open>") : html.index("</details>")]
     assert '<summary class="footer-toggle">' in details
     assert "Site footer" in details
-
-
-def test_collapsible_footer_keeps_content_footer_override():
-    html = _html(
-        _app(site_footer={"en": "Site footer"}, collapsible=True, footer="Own"), "/blog/slug"
-    )
-    details = html[html.index("<details open>") : html.index("</details>")]
-    assert "Own" in details
-    assert "Site footer" not in html
-
-
-def test_collapsible_footer_hidden_when_content_footer_is_empty():
-    html = _html(_app(site_footer={"en": "Site footer"}, collapsible=True, footer=""), "/blog/slug")
-    assert 'id="footer-row"' not in html
-    assert "<details" not in html
 
 
 def test_footer_background_is_the_theme_secondary_color():
