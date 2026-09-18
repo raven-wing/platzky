@@ -88,9 +88,11 @@ def post_contents_on_page(response: TestResponse) -> bool:
 
 
 def _render_with_footer(test_app: FlaskClient, footer: str) -> str:
-    template = '{% extends "base.html" %}{% block footer %}' + footer + "{% endblock %}"
-    with test_app.application.test_request_context():
-        return render_template_string(template)
+    """Render base.html with a site-wide footer configured."""
+    app = cast(Engine, test_app.application)
+    cast(MagicMock, app.db.get_footer).return_value = Footer(content=footer)
+    with app.test_request_context():
+        return render_template_string('{% extends "base.html" %}')
 
 
 def test_footer_is_not_rendered_when_page_does_not_fill_it(test_app: FlaskClient):
@@ -103,10 +105,6 @@ def test_footer_is_rendered_below_main_row_when_page_fills_it(test_app: FlaskCli
     assert 'id="footer-row"' in html
     assert "<p>under the content</p>" in html
     assert html.index('id="main-row"') < html.index('id="footer-row"')
-
-
-def test_whitespace_only_footer_is_not_rendered(test_app: FlaskClient):
-    assert 'id="footer-row"' not in _render_with_footer(test_app, "  \n  ")
 
 
 def test_usual_post(test_app: FlaskClient):

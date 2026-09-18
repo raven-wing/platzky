@@ -72,6 +72,19 @@ def test_site_footer_renders_builtin_shortcodes(url: str):
     assert "[link" not in html
 
 
+@pytest.mark.parametrize("written", ["  \n  ", "\n", "   "])
+def test_whitespace_only_site_footer_is_no_footer(written: str):
+    """Normalised as it is read, so nothing downstream has to ask twice whether it is set."""
+    assert 'id="footer-row"' not in _html(_app(site_footer={"en": written}), "/blog/slug")
+
+
+def test_whitespace_only_content_footer_hides_the_site_footer():
+    """An editor who cleared a post's footer field meant to hide it, not to store a newline."""
+    html = _html(_app(site_footer={"en": "Site footer"}, footer="  \n  "), "/blog/slug")
+    assert 'id="footer-row"' not in html
+    assert "Site footer" not in html
+
+
 def test_site_footer_is_looked_up_per_language():
     assert 'id="footer-row"' not in _html(_app(site_footer={"pl": "Stopka"}), "/blog/slug")
 
@@ -90,13 +103,16 @@ def test_empty_content_footer_hides_site_footer(url: str):
     assert "Site footer" not in html
 
 
-def test_template_footer_block_beats_site_footer():
-    app = _app(site_footer={"en": "Site footer"})
-    template = '{% extends "base.html" %}{% block footer %}From template{% endblock %}'
+def test_template_footer_block_replaces_the_whole_footer():
+    """The outer block owns the region: overriding it drops the <footer> and the toggle."""
+    app = _app(site_footer={"en": "Site footer"}, collapsible=True)
+    template = '{% extends "base.html" %}{% block footer %}<p>Mine</p>{% endblock %}'
     with app.test_request_context():
         html = render_template_string(template)
-    assert "From template" in html
+    assert "<p>Mine</p>" in html
     assert "Site footer" not in html
+    assert 'id="footer-row"' not in html
+    assert "<details" not in html
 
 
 @pytest.mark.parametrize("collapsible", [None, False])
@@ -143,13 +159,3 @@ def test_malformed_site_footer_hides_footer_instead_of_breaking_the_page(url: st
     assert response.status_code in (200, 404)
     assert 'id="footer-row"' not in html
     assert "Never closed" not in html
-
-
-def test_template_footer_block_shows_when_no_site_footer_is_configured():
-    """The footer-row guard reads the block's output, not the ``footer`` variable."""
-    app = _app()
-    template = '{% extends "base.html" %}{% block footer %}From template{% endblock %}'
-    with app.test_request_context():
-        html = render_template_string(template)
-    assert 'id="footer-row"' in html
-    assert "From template" in html
