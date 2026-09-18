@@ -39,12 +39,6 @@ def _reject_style_breakout(css: str) -> str:
 
 CssField = Annotated[str, AfterValidator(_reject_style_breakout)]
 
-#: Footer markup, with surrounding whitespace removed as it is read. A CMS field an
-#: editor cleared by pressing enter holds "\n", which is not a footer but is not empty
-#: either; normalising it here means every reader gets one answer to "is there a footer",
-#: rather than each guard along the way having to ask twice.
-FooterField = Annotated[str, AfterValidator(str.strip)]
-
 
 class CmsModule(BaseModel):
     """Represents a CMS module with basic metadata."""
@@ -147,7 +141,7 @@ class Post(BaseModel):
     tags: list[str] = Field(default_factory=list)
     date: DateTimeField | None = None
     css: CssField = ""
-    footer: FooterField | None = None
+    footer: str | None = None
 
     def __lt__(self, other: object) -> bool:
         """Compare posts by date for sorting.
@@ -187,7 +181,7 @@ class Footer(BaseModel):
         collapsible: Whether readers may collapse the footer
     """
 
-    content: FooterField = ""
+    content: str = ""
     collapsible: bool = False
 
 

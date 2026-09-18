@@ -72,19 +72,6 @@ def test_site_footer_renders_builtin_shortcodes(url: str):
     assert "[link" not in html
 
 
-@pytest.mark.parametrize("written", ["  \n  ", "\n", "   "])
-def test_whitespace_only_site_footer_is_no_footer(written: str):
-    """Normalised as it is read, so nothing downstream has to ask twice whether it is set."""
-    assert 'id="footer-row"' not in _html(_app(site_footer={"en": written}), "/blog/slug")
-
-
-def test_whitespace_only_content_footer_hides_the_site_footer():
-    """An editor who cleared a post's footer field meant to hide it, not to store a newline."""
-    html = _html(_app(site_footer={"en": "Site footer"}, footer="  \n  "), "/blog/slug")
-    assert 'id="footer-row"' not in html
-    assert "Site footer" not in html
-
-
 def test_site_footer_is_looked_up_per_language():
     assert 'id="footer-row"' not in _html(_app(site_footer={"pl": "Stopka"}), "/blog/slug")
 
