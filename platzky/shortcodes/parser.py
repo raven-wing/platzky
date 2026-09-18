@@ -396,7 +396,7 @@ def _filter_around_html(text: str, filters: Sequence[Callable[[str], str]]) -> s
 
 
 def _is_permitted_child(child: _Node, permitted: frozenset[str]) -> bool:
-    """Whether a child is one its parent's ``permitted_children`` allows.
+    """Whether a child is one its parent's ``children_restricted_to`` allows.
 
     Args:
         child: The child node to judge.
@@ -410,7 +410,7 @@ def _is_permitted_child(child: _Node, permitted: frozenset[str]) -> bool:
 
 
 def _unpermitted_children(node: _Element) -> tuple[_Node, ...]:
-    """Collect the children an element's ``permitted_children`` does not allow.
+    """Collect the children an element's ``children_restricted_to`` does not allow.
 
     Args:
         node: The element to check, with its children still parsed rather than rendered.
@@ -419,7 +419,7 @@ def _unpermitted_children(node: _Element) -> tuple[_Node, ...]:
         Every offending child, in document order. Empty when the element declares no
         restriction, or holds nothing that breaks it.
     """
-    permitted = node.shortcode.permitted_children
+    permitted = node.shortcode.children_restricted_to
     return tuple(
         child
         for child in node.children
@@ -461,7 +461,7 @@ def _render_node(node: _Node) -> str:
         logger.warning(
             "[%s] rendered nothing: it accepts only %s as children, and holds %s.",
             node.shortcode.name,
-            ", ".join(f"[{name}]" for name in sorted(node.shortcode.permitted_children or ())),
+            ", ".join(f"[{name}]" for name in sorted(node.shortcode.children_restricted_to or ())),
             ", ".join(_describe_child(child) for child in unpermitted),
         )
         return ""

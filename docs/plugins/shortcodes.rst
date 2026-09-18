@@ -161,8 +161,12 @@ number of pixels.
 
 **``[figure]`` and ``[slideshow]``.** ``[figure]`` boxes its text separately from the
 picture, so a stylesheet can lay the two out side by side without splitting a sentence.
-``[slideshow]``'s ``interval`` floor of 1500 is a readability limit, not a standards one: a
-frame shown for less is gone before it can be read. WCAG sets no minimum interval.
+``[slideshow]``'s ``interval`` floor of 500 is platzky's own, and deliberately stricter than
+the standards ask. WCAG sets no minimum interval; the nearest number is in `2.3.1 Three
+Flashes or Below Threshold
+<https://www.w3.org/WAI/WCAG22/Understanding/three-flashes-or-below-threshold.html>`_ —
+"anything that flashes more than three times in any one second period" — which governs
+flashing rather than pacing, and which a cross-fade between photographs does not meet.
 
 ``[slideshow]`` writes its frame count onto the element as ``data-slides`` because the
 timings depend on it — with N frames each is shown for one Nth of the cycle, so

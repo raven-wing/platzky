@@ -11,12 +11,23 @@ from platzky.shortcodes.shortcode import Shortcode
 logger = logging.getLogger(__name__)
 
 DEFAULT_INTERVAL_MS = 4000
-# A readability floor, not a standards one: a frame faster than this is gone before it can
-# be read. WCAG sets no minimum interval -- 2.3.1 governs flashing (three opposing luminance
-# changes a second, which a cross-fade is not), and the criterion that does apply to an
-# auto-advancing slideshow is 2.2.2 Pause, Stop, Hide, which asks for a pause control rather
-# than a pace. See TODO.md: pausing on hover and focus alone does not satisfy it.
-MIN_INTERVAL_MS = 1500
+# Ours, deliberately higher than anything the standards ask for. WCAG sets no minimum
+# interval at all; the nearest number is in 2.3.1 Three Flashes or Below Threshold
+# (https://www.w3.org/WAI/WCAG22/Understanding/three-flashes-or-below-threshold.html):
+#
+#     "Web pages do not contain anything that flashes more than three times in any one
+#      second period, or the flash is below the general flash and red flash thresholds."
+#
+# That governs flashing, not pacing. A flash there is a pair of opposing changes in
+# relative luminance meeting a size threshold, which a cross-fade between photographs is
+# not -- and even read as pacing, three flashes a second permits about six slide changes a
+# second. We take 500ms: an order of magnitude slower than the threshold, and long enough
+# that a frame registers before the next one arrives.
+#
+# The criterion that does apply to an auto-advancing slideshow is 2.2.2 Pause, Stop, Hide,
+# which asks for a pause control rather than a pace -- see TODO.md, since pausing on hover
+# and focus alone does not satisfy it.
+MIN_INTERVAL_MS = 500
 MAX_INTERVAL_MS = 60000
 
 DEFAULT_WIDTH = "fit"
@@ -56,7 +67,7 @@ class SlideshowShortcode(Shortcode):
             ),
         ]
     )
-    permitted_children = frozenset({"figure"})
+    children_restricted_to = frozenset({"figure"})
     example = (
         '[slideshow interval="4000"]\n'
         '  [figure image="/a.jpg"]The first slide.[/figure]\n'
