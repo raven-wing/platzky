@@ -161,8 +161,8 @@ number of pixels.
 
 **``[figure]`` and ``[slideshow]``.** ``[figure]`` boxes its text separately from the
 picture, so a stylesheet can lay the two out side by side without splitting a sentence.
-``[slideshow]``'s ``interval`` floor of 1500 is a seizure-safety limit: a faster rotation
-runs at the three flashes a second that WCAG 2.3.1 sets.
+``[slideshow]``'s ``interval`` floor of 1500 is a readability limit, not a standards one: a
+frame shown for less is gone before it can be read. WCAG sets no minimum interval.
 
 ``[slideshow]`` writes its frame count onto the element as ``data-slides`` because the
 timings depend on it — with N frames each is shown for one Nth of the cycle, so

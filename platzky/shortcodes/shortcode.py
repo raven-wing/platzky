@@ -211,6 +211,15 @@ class Shortcode(ABC):
     #: as well, so an application storing a bare value needs no declaration.
     content_key: ClassVar[str] = "content"
 
+    #: Tag names this shortcode accepts as its element children, for a wrapper whose
+    #: structure is the point — ``[slideshow]``, whose every frame is a ``[figure]``.
+    #: ``None``, the default, accepts any child and any text. Declaring a set makes the
+    #: element refuse itself when it holds anything else, including text that is not
+    #: whitespace: a wrapper that silently rendered a stray word as a frame would give an
+    #: author no clue why the result looked wrong. Checked by the parser, which is where a
+    #: child's identity still exists -- ``render`` sees children already rendered to markup.
+    permitted_children: ClassVar[frozenset[str] | None] = None
+
     #: Whether a closing tag is expected. The default wraps content, because most
     #: shortcodes do and because it is the safe default to get wrong: a block shortcode
     #: mistakenly left as ``"block"`` still renders, whereas a void one declared ``"block"``

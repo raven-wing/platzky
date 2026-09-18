@@ -395,6 +395,29 @@ def _filter_around_html(text: str, filters: Sequence[Callable[[str], str]]) -> s
     return text
 
 
+def _unpermitted_child(node: _Element) -> str | None:
+    """Name what an element holds that its ``permitted_children`` does not allow.
+
+    Args:
+        node: The element to check, with its children still parsed rather than rendered.
+
+    Returns:
+        A description of the first offending child, for the refusal message, or None when
+        the element declares no restriction or holds nothing that breaks it.
+    """
+    permitted = node.shortcode.permitted_children
+    if permitted is None:
+        return None
+    for child in node.children:
+        if isinstance(child, _Text):
+            # Whitespace is how an author lays tags out over several lines, not content.
+            if child.text.strip():
+                return f"text {child.text.strip()[:30]!r}"
+        elif child.shortcode.name not in permitted:
+            return f"[{child.shortcode.name}]"
+    return None
+
+
 def _render_node(node: _Node) -> str:
     """Render one node to HTML, innermost element first.
 
@@ -413,6 +436,19 @@ def _render_node(node: _Node) -> str:
         return node.text
     if isinstance(node, _RawElement):
         return _render_element(node.shortcode, node.raw_attrs, node.content, ())
+    if offender := _unpermitted_child(node):
+        permitted = ", ".join(
+            f"[{name}]" for name in sorted(node.shortcode.permitted_children or ())
+        )
+        # Refused whole rather than per child: dropping only the offender would leave a
+        # wrapper whose structure the author still got wrong, rendered as if it were right.
+        logger.warning(
+            "[%s] rendered nothing: it accepts only %s as children, and holds %s.",
+            node.shortcode.name,
+            permitted,
+            offender,
+        )
+        return ""
     rendered = [(child, _render_node(child)) for child in node.children]
     content = "".join(html for _, html in rendered)
     children = tuple(

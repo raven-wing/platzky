@@ -11,7 +11,12 @@ from platzky.shortcodes.shortcode import Shortcode
 logger = logging.getLogger(__name__)
 
 DEFAULT_INTERVAL_MS = 4000
-MIN_INTERVAL_MS = 1500  # seizure-safety floor (WCAG 2.3.1: at most three flashes a second)
+# A readability floor, not a standards one: a frame faster than this is gone before it can
+# be read. WCAG sets no minimum interval -- 2.3.1 governs flashing (three opposing luminance
+# changes a second, which a cross-fade is not), and the criterion that does apply to an
+# auto-advancing slideshow is 2.2.2 Pause, Stop, Hide, which asks for a pause control rather
+# than a pace. See TODO.md: pausing on hover and focus alone does not satisfy it.
+MIN_INTERVAL_MS = 1500
 MAX_INTERVAL_MS = 60000
 
 DEFAULT_WIDTH = "fit"
@@ -27,9 +32,7 @@ class SlideshowShortcode(Shortcode):
     """Rotate between the frames it wraps, on a timer, using no JavaScript."""
 
     name = "slideshow"
-    description = (
-        "Rotate between the [figure]s inside it, or between bare images. Rotates up to four."
-    )
+    description = "Rotate between the [figure]s inside it. Rotates up to four."
     attributes = ShortcodeAttrs(
         [
             ShortcodeAttr(
@@ -53,12 +56,19 @@ class SlideshowShortcode(Shortcode):
             ),
         ]
     )
-    example = '[slideshow interval="4000"][image url="/a.jpg"][image url="/b.jpg"][/slideshow]'
+    permitted_children = frozenset({"figure"})
+    example = (
+        '[slideshow interval="4000"]\n'
+        '  [figure image="/a.jpg"]The first slide.[/figure]\n'
+        '  [figure image="/b.jpg"]The second.[/figure]\n'
+        "[/slideshow]"
+    )
     notes = (
-        'Each frame is a bare image or a "[figure]"; up to four frames rotate, more render '
-        "as an ordinary sequence instead. The rotation is pure CSS and pauses on hover or "
-        'focus; with "prefers-reduced-motion: reduce", slides still rotate but switch '
-        "instantly, whichever animation is set."
+        'Every frame is a "[figure]", one slide each; a slideshow holding anything else, '
+        "a stray word included, renders nothing and says so in the log. Up to four frames "
+        "rotate, more render as an ordinary sequence instead. The rotation is pure CSS and "
+        'pauses on hover or focus; with "prefers-reduced-motion: reduce", slides still '
+        "rotate but switch instantly, whichever animation is set."
     )
 
     def render(self, attrs: ShortcodeAttrs, content: Markup, children: Sequence[Markup]) -> str:
