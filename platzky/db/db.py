@@ -7,7 +7,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from platzky.models import MenuItem, Page, Post
+from platzky.models import Footer, MenuItem, Page, Post
 from platzky.plugin.plugin_config import PluginConfigBase
 
 
@@ -53,6 +53,17 @@ class DB(ABC):
     @abstractmethod
     def get_app_description(self, lang: str) -> str:
         """Retrieve the application description for a specific language.
+
+        Args:
+            lang: Language code (e.g., 'en', 'pl')
+        """
+        pass
+
+    @abstractmethod
+    def get_footer(self, lang: str) -> Footer:
+        """Retrieve the site-wide footer for a specific language.
+
+        A backend without footer support returns an empty ``Footer()``.
 
         Args:
             lang: Language code (e.g., 'en', 'pl')

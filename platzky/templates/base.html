@@ -118,6 +118,25 @@
     </div>
   </div>
 
+  {% block footer %}
+  {% if footer %}
+  <footer id="footer-row">
+    {% if footer_collapsible %}
+    <details open>
+      <summary class="footer-toggle">
+        <i class="fas fa-chevron-down" aria-hidden="true"></i>
+        <span class="footer-toggle-hide visually-hidden">{{ _("Hide footer") }}</span>
+        <span class="footer-toggle-show visually-hidden">{{ _("Show footer") }}</span>
+      </summary>
+    {% endif %}
+    <div class="footer-content">{{ footer }}</div>
+    {% if footer_collapsible %}
+    </details>
+    {% endif %}
+  </footer>
+  {% endif %}
+  {% endblock %}
+
 </div>
 </body>
 </html>

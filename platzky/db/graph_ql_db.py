@@ -8,10 +8,11 @@ from typing import Any
 from gql import Client, gql
 from gql.transport.aiohttp import AIOHTTPTransport
 from pydantic import Field
+from typing_extensions import override
 
 from platzky.db.db import DB, DBConfig
 from platzky.db.exceptions import NotFoundError
-from platzky.models import MenuItem, Page, Post
+from platzky.models import Footer, MenuItem, Page, Post
 from platzky.plugin.plugin_config import PluginConfigBase
 
 
@@ -414,6 +415,21 @@ class GraphQL(DB):
             return self.client.execute(logo)["logos"][0]["logo"]["image"]["url"]
         except IndexError:
             return ""
+
+    @override
+    def get_footer(self, lang: str) -> Footer:
+        """Retrieve the site-wide footer for a specific language.
+
+        The CMS schema has no footer content type, so this queries nothing and
+        shows no footer.
+
+        Args:
+            lang: Language code (e.g., 'en', 'pl'), unused
+
+        Returns:
+            An empty, non-collapsible footer
+        """
+        return Footer()
 
     def get_app_description(self, lang: str) -> str:
         """Retrieve the application description for a specific language.

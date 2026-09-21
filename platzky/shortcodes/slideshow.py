@@ -6,15 +6,24 @@ from collections.abc import Sequence
 from markupsafe import Markup
 
 from platzky.shortcodes import IntRange, OneOf, ShortcodeAttr, ShortcodeAttrs
-from platzky.shortcodes.shortcode import Shortcode
+from platzky.shortcodes.shortcode import OnlyChildren, Shortcode
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_INTERVAL_MS = 4000
-MIN_INTERVAL_MS = 1500  # seizure-safety floor (WCAG 2.3.1: at most three flashes a second)
+# Our min interval is, deliberately higher than anything the standards ask for.
+# WCAG sets no minimum interval at all, but the nearest number is in 2.3.1 Three Flashes
+# or Below Threshold (https://www.w3.org/WAI/WCAG22/Understanding/three-flashes-or-below-threshold.html):
+#
+#     "Web pages do not contain anything that flashes more than three times in any one
+#      second period, or the flash is below the general flash and red flash thresholds."
+#
+MIN_INTERVAL_MS = 500
 MAX_INTERVAL_MS = 60000
 
 DEFAULT_WIDTH = "fit"
+
+DEFAULT_ANIMATION = "crossfade"
 
 # Not a free setting: shortcodes.css has one hand-written rule set per slide count (2-4).
 # Raising this without adding the matching CSS leaves larger slideshows unanimated, unlogged.
@@ -22,12 +31,10 @@ MAX_SLIDES = 4
 
 
 class SlideshowShortcode(Shortcode):
-    """Cross-fade between the frames it wraps, on a timer, using no JavaScript."""
+    """Rotate between the frames it wraps, on a timer."""
 
     name = "slideshow"
-    description = (
-        "Cross-fade between the [figure]s inside it, or between bare images. Rotates up to four."
-    )
+    description = "Rotate between the [figure]s inside it. Rotates up to four."
     attributes = ShortcodeAttrs(
         [
             ShortcodeAttr(
@@ -42,14 +49,28 @@ class SlideshowShortcode(Shortcode):
                 default=DEFAULT_WIDTH,
                 constraints=OneOf("fit", "full"),
             ),
+            ShortcodeAttr(
+                "animation",
+                '"crossfade" dissolves one frame into the next; "fade" fades each out before '
+                'the next fades in, so captions never overlap; "cut" switches instantly.',
+                default=DEFAULT_ANIMATION,
+                constraints=OneOf("crossfade", "fade", "cut"),
+            ),
         ]
     )
-    example = '[slideshow interval="4000"][image url="/a.jpg"][image url="/b.jpg"][/slideshow]'
+    child_policy = OnlyChildren(frozenset({"figure"}))
+    example = (
+        '[slideshow interval="4000"]\n'
+        '  [figure image="/a.jpg"]The first slide.[/figure]\n'
+        '  [figure image="/b.jpg"]The second.[/figure]\n'
+        "[/slideshow]"
+    )
     notes = (
-        'Each frame is a bare image or a "[figure]"; up to four frames rotate, more render '
-        "as an ordinary sequence instead. The rotation is pure CSS and pauses on hover or "
-        'focus; with "prefers-reduced-motion: reduce", slides still rotate but without the '
-        "cross-fade."
+        'Every frame is a "[figure]", one slide each; a slideshow holding anything else, '
+        "a stray word included, renders nothing and says so in the log. Up to four frames "
+        "rotate, more render as an ordinary sequence instead. The rotation is pure CSS and "
+        'pauses on hover or focus; with "prefers-reduced-motion: reduce", slides still '
+        "rotate but switch instantly, whichever animation is set."
     )
 
     def render(self, attrs: ShortcodeAttrs, content: Markup, children: Sequence[Markup]) -> str:
@@ -62,8 +83,8 @@ class SlideshowShortcode(Shortcode):
         frames render as an ordinary sequence.
 
         Args:
-            attrs: Parsed attributes; ``interval`` and ``width`` already checked against
-                their ``constraints``.
+            attrs: Parsed attributes; ``interval``, ``width`` and ``animation`` already
+                checked against their ``constraints``.
             content: The frames' already-rendered markup. Embedded as-is per the ``render``
                 contract; its ``Markup`` type says the escaping decision is made.
             children: One entry per frame, so a ``[figure]`` counts once however much
@@ -82,11 +103,12 @@ class SlideshowShortcode(Shortcode):
                 slides,
                 MAX_SLIDES,
             )
-        # slides is a length, and interval and width only got past their constraints as
-        # bare digits and a known word, so none can carry a ';' or a '"' out of the
-        # attribute it lands in.
+        # slides is a length, and interval, width and animation only got past their
+        # constraints as bare digits and known words, so none can carry a ';' or a '"' out
+        # of the attribute it lands in.
         return (
             f'<div class="slideshow" data-slides="{slides}" data-width="{attrs.width}" '
+            f'data-animation="{attrs.animation}" '
             f'style="--platzky-slideshow-interval: {attrs.interval}ms">{content}</div>'
         )
 

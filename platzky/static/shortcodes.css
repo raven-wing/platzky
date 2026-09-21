@@ -19,13 +19,9 @@
    or more than four) simply renders as an ordinary sequence: a missing rule must never be
    able to hide an image an author wrote. */
 /* Block, so a slideshow in prose sits on its own line as an image would, but only as wide
-   as its content: a full-width container would leave the in-flow first image at the left
-   while the stacked ones -- positioned against the container, not against that image --
-   sat somewhere else entirely, and the slides would never overlap. fit-content is what
-   gets both; inline-block shrink-wraps too, but then the block runs on with the text
-   around it. */
+   as its content, which is what fit-content gives; inline-block shrink-wraps too, but then
+   the block runs on with the text around it. */
 .slideshow {
-    position: relative;
     display: block;
     width: fit-content;
     max-width: 100%;
@@ -70,6 +66,16 @@ article {
     max-width: 100%;
 }
 
+/* A link around a whole slideshow or figure -- the affiliate shape -- is a block, so what it
+   wraps is laid out against the column rather than against an inline box, and the captions
+   inside keep the prose colour instead of turning into one long underlined link. */
+a:has(> .slideshow),
+a:has(> .platzky-figure) {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+}
+
 /* A [figure] holds a picture and whatever belongs beside it: the image floats and the
    rest flows around it.
 
@@ -95,21 +101,36 @@ article {
     max-height: 100%;
 }
 
-/* Only a rotating slideshow stacks its images. The first stays in flow and is what gives
-   the container its box; the rest are lifted onto it and pinned to all four of its edges,
-   which is what makes them land exactly on the first rather than near it. object-fit keeps
-   a slide of a different shape from being stretched to match. */
-.slideshow[data-slides="2"] > *:not(:first-child),
-.slideshow[data-slides="3"] > *:not(:first-child),
-.slideshow[data-slides="4"] > *:not(:first-child) {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
+/* Only a rotating slideshow stacks its frames. They all share one grid cell, so they land
+   exactly on each other, and the cell grows to the largest of them. The frames used to be
+   pinned onto the first frame's box instead, so a later one with more text -- a caption
+   that wrapped to more lines -- spilled out of the slideshow over whatever came next.
+
+   A [figure] frame stretches to fill the cell. A bare image is sized to it as well, and
+   object-fit keeps an image of a different shape from being stretched to match. */
+.slideshow[data-slides="2"],
+.slideshow[data-slides="3"],
+.slideshow[data-slides="4"] {
+    display: grid;
+}
+
+.slideshow[data-slides="2"] > *,
+.slideshow[data-slides="3"] > *,
+.slideshow[data-slides="4"] > * {
+    grid-area: 1 / 1;
+}
+
+.slideshow[data-slides="2"] > img,
+.slideshow[data-slides="3"] > img,
+.slideshow[data-slides="4"] > img {
     width: 100%;
     height: 100%;
     object-fit: contain;
+}
+
+.slideshow[data-slides="2"] > *:not(:first-child),
+.slideshow[data-slides="3"] > *:not(:first-child),
+.slideshow[data-slides="4"] > *:not(:first-child) {
     opacity: 0;
 }
 
@@ -194,6 +215,46 @@ article {
     animation-delay: calc(var(--platzky-slideshow-interval, 4000ms) * -1);
 }
 
+/* animation="fade": the outgoing frame is fully gone before the next one appears, so two
+   captions never show through each other. The cross-fade's transition window is split in
+   half -- the first half fades this frame out, and the second, which the next frame's delay
+   lines up with, fades that one in -- so the cycle and the delays above stay as they are. */
+@keyframes platzky-slideshow-fade-2 {
+    0%, 42% { opacity: 1; }
+    46%, 96% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+@keyframes platzky-slideshow-fade-3 {
+    0%, 28% { opacity: 1; }
+    30.667%, 97.333% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+@keyframes platzky-slideshow-fade-4 {
+    0%, 21% { opacity: 1; }
+    23%, 98% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+.slideshow[data-slides="2"][data-animation="fade"] > * {
+    animation-name: platzky-slideshow-fade-2;
+}
+
+.slideshow[data-slides="3"][data-animation="fade"] > * {
+    animation-name: platzky-slideshow-fade-3;
+}
+
+.slideshow[data-slides="4"][data-animation="fade"] > * {
+    animation-name: platzky-slideshow-fade-4;
+}
+
+/* animation="cut": the cross-fade's timings, stepped, so each frame switches at the end of
+   its transition window with nothing in between. */
+.slideshow[data-slides][data-animation="cut"] > * {
+    animation-timing-function: steps(1, end);
+}
+
 /* A reader who has stopped to look, or tabbed into the slideshow, is not helped by the
    picture changing under them. */
 .slideshow:hover > *,
@@ -201,10 +262,27 @@ article {
     animation-play-state: paused;
 }
 
-/* The rotation is content, not decoration, so it keeps running; it is the dissolve that
-   is motion. steps(1, end) turns every fade into a cut without touching the timings. */
+/* The rotation is content, not decoration, so it keeps running; it is the transition that
+   is motion, so every animation becomes a cut.
+
+   The selectors match the specificity of the rules they override and come after them. A
+   bare `.slideshow > *` loses to `.slideshow[data-slides="2"] > *`, media query or not, so
+   it never applied. A stepped fade would leave a blank gap between frames, so fade falls
+   back to the cross-fade keyframes, which step to a clean cut. */
 @media (prefers-reduced-motion: reduce) {
-    .slideshow > * {
+    .slideshow[data-slides] > * {
         animation-timing-function: steps(1, end);
+    }
+
+    .slideshow[data-slides="2"][data-animation="fade"] > * {
+        animation-name: platzky-slideshow-2;
+    }
+
+    .slideshow[data-slides="3"][data-animation="fade"] > * {
+        animation-name: platzky-slideshow-3;
+    }
+
+    .slideshow[data-slides="4"][data-animation="fade"] > * {
+        animation-name: platzky-slideshow-4;
     }
 }

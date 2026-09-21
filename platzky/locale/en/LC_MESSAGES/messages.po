@@ -52,6 +52,14 @@ msgstr ""
 msgid "Close left panel"
 msgstr ""
 
+#: platzky/templates/base.html:127
+msgid "Hide footer"
+msgstr ""
+
+#: platzky/templates/base.html:128
+msgid "Show footer"
+msgstr ""
+
 #: platzky/templates/blog.html:5
 msgid ""
 "Find out our tips and tricks about email marketing. We prepared some soft"

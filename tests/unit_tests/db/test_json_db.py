@@ -8,7 +8,7 @@ from pydantic import ValidationError
 from platzky.db.exceptions import DBError, NotFoundError, ReadOnlyStorageError
 from platzky.db.json_db import Json, JsonDbConfig, db_from_config
 from platzky.db.json_stores import MemoryStore, ReadOnlyStore
-from platzky.models import MenuItem, Page, Post
+from platzky.models import Footer, MenuItem, Page, Post
 
 
 class TestJsonDbConfig:
@@ -99,6 +99,23 @@ class TestJsonDb:
         assert db.get_app_description("en") == "English description"
         assert db.get_app_description("de") == "Deutsche Beschreibung"
         assert db.get_app_description("fr") == ""
+
+    def test_get_footer(self):
+        footer = {"content": {"en": "Footer", "pl": "Stopka"}}
+        db = Json(MemoryStore({"site_content": {"footer": footer}}))
+        assert db.get_footer("en").content == "Footer"
+        assert db.get_footer("pl").content == "Stopka"
+        assert db.get_footer("fr").content == ""
+
+    def test_get_footer_not_configured(self, db: Json):
+        assert db.get_footer("en") == Footer()
+
+    def test_get_footer_collapsible(self):
+        db = Json(MemoryStore({"site_content": {"footer": {"collapsible": True}}}))
+        assert db.get_footer("en").collapsible is True
+
+    def test_get_footer_collapsible_not_configured(self, db: Json):
+        assert db.get_footer("en").collapsible is False
 
     def test_get_all_posts(self, db: Json):
         posts = db.get_all_posts("en")

@@ -6,15 +6,17 @@ from collections.abc import Mapping, Sequence
 import pytest
 from markupsafe import Markup
 
-from platzky.content_types import BUILTIN_CONTENT_TYPES, POST, ContentType
+from platzky.content_types import BUILTIN_CONTENT_TYPES, POST, CmsAuthored, ContentType
 from platzky.plugin.content_transformer import (
     ContentTransformerPluginBase,
     ContentTransformerRegistry,
 )
 from platzky.shortcodes import (
+    AnyChildren,
     IntRange,
     ManyOf,
     OneOf,
+    OnlyChildren,
     Shortcode,
     ShortcodeAttr,
     ShortcodeAttrs,
@@ -39,7 +41,7 @@ def _apply_shortcodes(content: str, shortcodes: dict[str, Shortcode]) -> str:
     plugin = _TestPlugin({})
     registry = ContentTransformerRegistry(BUILTIN_CONTENT_TYPES)
     registry.grant(plugin, frozenset({POST}))
-    return registry.transform_content([plugin], Markup(content), POST)
+    return registry.transform_content([plugin], CmsAuthored(content), POST)
 
 
 def _sc(tag: str) -> Shortcode:
@@ -567,3 +569,34 @@ class TestRawKind:
         short, long = _sc("box"), _sc("boxed")
         result = _apply_shortcodes("[boxed]q[/boxed]", {"box": short, "boxed": long})
         assert result == "[RENDERED:boxed:q]"
+
+
+class TestChildPolicy:
+    def test_any_children_accepts_every_tag_and_text(self):
+        policy = AnyChildren()
+        assert policy.is_tag_allowed("figure") is True
+        assert policy.is_tag_allowed("anything-at-all") is True
+        assert policy.is_text_allowed() is True
+
+    def test_only_children_accepts_the_named_tags(self):
+        policy = OnlyChildren(frozenset({"figure"}))
+        assert policy.is_tag_allowed("figure") is True
+        assert policy.is_tag_allowed("image") is False
+
+    def test_only_children_refuses_text(self):
+        """Declaring a structure means a stray word is as wrong as a stray tag."""
+        assert OnlyChildren(frozenset({"figure"})).is_text_allowed() is False
+
+    def test_only_children_of_nothing_accepts_nothing(self):
+        policy = OnlyChildren(frozenset())
+        assert policy.is_tag_allowed("figure") is False
+        assert policy.is_text_allowed() is False
+
+    def test_allowed_names_the_tags_in_a_stable_order(self):
+        assert OnlyChildren(frozenset({"image", "figure"})).allowed == "only [figure], [image]"
+
+    def test_allowed_says_so_when_nothing_is_accepted(self):
+        assert OnlyChildren(frozenset()).allowed == "no children"
+
+    def test_allowed_of_any_children_names_no_restriction(self):
+        assert AnyChildren().allowed == "any child"

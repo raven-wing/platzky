@@ -5,7 +5,7 @@ import pytest
 
 from platzky.db.exceptions import NotFoundError
 from platzky.db.mongodb_db import MongoDB, MongoDbConfig, db_from_config
-from platzky.models import MenuItem, Post
+from platzky.models import Footer, MenuItem, Post
 
 
 class TestMongoDbConfig:
@@ -87,6 +87,40 @@ class TestMongoDB:
     def test_get_app_description_no_data(self, db: MongoDB):
         cast(Mock, db.site_content.find_one).return_value = None
         assert db.get_app_description("en") == ""
+
+    def test_get_footer(self, db: MongoDB):
+        mock_find_one = cast(Mock, db.site_content.find_one)
+        mock_find_one.return_value = {
+            "_id": "config",
+            "footer": {"content": {"en": "Footer", "pl": "Stopka"}},
+        }
+
+        assert db.get_footer("en").content == "Footer"
+        assert db.get_footer("pl").content == "Stopka"
+        assert db.get_footer("fr").content == ""
+        mock_find_one.assert_called_with({"_id": "config"})
+
+    def test_get_footer_not_configured(self, db: MongoDB):
+        cast(Mock, db.site_content.find_one).return_value = {"_id": "config"}
+        assert db.get_footer("en") == Footer()
+
+    def test_get_footer_no_data(self, db: MongoDB):
+        cast(Mock, db.site_content.find_one).return_value = None
+        assert db.get_footer("en") == Footer()
+
+    def test_get_footer_is_read_in_a_single_query(self, db: MongoDB):
+        mock_find_one = cast(Mock, db.site_content.find_one)
+        mock_find_one.return_value = {
+            "_id": "config",
+            "footer": {"content": {"en": "Footer"}, "collapsible": True},
+        }
+
+        assert db.get_footer("en") == Footer(content="Footer", collapsible=True)
+        mock_find_one.assert_called_once_with({"_id": "config"})
+
+    def test_get_footer_collapsible_not_configured(self, db: MongoDB):
+        cast(Mock, db.site_content.find_one).return_value = {"_id": "config"}
+        assert db.get_footer("en").collapsible is False
 
     def test_get_all_posts(self, db: MongoDB):
         # Mock posts data

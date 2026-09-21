@@ -7,10 +7,11 @@ from pydantic import Field
 from pymongo import MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
+from typing_extensions import override
 
 from platzky.db.db import DB, DBConfig
 from platzky.db.exceptions import NotFoundError
-from platzky.models import MenuItem, Page, Post
+from platzky.models import Footer, MenuItem, Page, Post
 from platzky.plugin.plugin_config import PluginConfigBase
 
 
@@ -84,6 +85,25 @@ class MongoDB(DB):
         if site_config and "app_description" in site_config:
             return site_config["app_description"].get(lang, "")
         return ""
+
+    @override
+    def get_footer(self, lang: str) -> Footer:
+        """Retrieve the site-wide footer for a specific language.
+
+        Args:
+            lang: Language code (e.g., 'en', 'pl')
+
+        Returns:
+            The footer, empty and not collapsible if none is configured
+        """
+        site_config = self._get_site_config()
+        if not site_config or "footer" not in site_config:
+            return Footer()
+        footer = site_config["footer"]
+        return Footer(
+            content=footer.get("content", {}).get(lang, ""),
+            collapsible=bool(footer.get("collapsible", False)),
+        )
 
     def get_all_posts(self, lang: str) -> list[Post]:
         """Retrieve all posts for a specific language.

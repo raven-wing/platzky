@@ -18,7 +18,12 @@ from html.parser import HTMLParser
 
 from markupsafe import Markup
 
-from platzky.shortcodes.shortcode import ElementRefused, Shortcode, ShortcodeError
+from platzky.shortcodes.shortcode import (
+    ChildPolicy,
+    ElementRefused,
+    Shortcode,
+    ShortcodeError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -395,6 +400,47 @@ def _filter_around_html(text: str, filters: Sequence[Callable[[str], str]]) -> s
     return text
 
 
+def _is_child_allowed(child: _Node, policy: ChildPolicy) -> bool:
+    """Whether a child is one its parent's ``child_policy`` allows.
+
+    Args:
+        child: The child node to judge.
+        policy: What the parent accepts between its tags.
+
+    Returns:
+        True if the child may stay. Whitespace text is allowed whatever the policy — it is
+        how an author lays tags out over several lines, not something they wrote.
+    """
+    return (
+        (not child.text.strip() or policy.is_text_allowed())
+        if isinstance(child, _Text)
+        else policy.is_tag_allowed(child.shortcode.name)
+    )
+
+
+def _disallowed_children(node: _Element) -> tuple[_Node, ...]:
+    """Collect the children an element's ``child_policy`` does not allow.
+
+    Args:
+        node: The element to check, with its children still parsed rather than rendered.
+
+    Returns:
+        Every offending child, in document order. Empty when the policy accepts everything
+        the element holds.
+    """
+    policy = node.shortcode.child_policy
+    return tuple(child for child in node.children if not _is_child_allowed(child, policy))
+
+
+def _describe_child(child: _Node) -> str:
+    """Name a child the way a refusal message should, for an author reading the log."""
+    return (
+        f"text {child.text.strip()[:30]!r}"
+        if isinstance(child, _Text)
+        else f"[{child.shortcode.name}]"
+    )
+
+
 def _render_node(node: _Node) -> str:
     """Render one node to HTML, innermost element first.
 
@@ -413,6 +459,17 @@ def _render_node(node: _Node) -> str:
         return node.text
     if isinstance(node, _RawElement):
         return _render_element(node.shortcode, node.raw_attrs, node.content, ())
+    if disallowed := _disallowed_children(node):
+        # Refused whole rather than per child: dropping only the offenders would leave a
+        # wrapper whose structure the author still got wrong, rendered as if it were right.
+        # Every offender is named, so one log line is one trip back to the content.
+        logger.warning(
+            "[%s] rendered nothing: it accepts %s, and holds %s.",
+            node.shortcode.name,
+            node.shortcode.child_policy.allowed,
+            ", ".join(_describe_child(child) for child in disallowed),
+        )
+        return ""
     rendered = [(child, _render_node(child)) for child in node.children]
     content = "".join(html for _, html in rendered)
     children = tuple(

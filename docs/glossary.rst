@@ -45,8 +45,8 @@ decides what*. The terms are defined once here and used consistently everywhere 
       registry, and it — not a plugin — decides routing.
 
    content type
-      The name of a kind of content: platzky's own ``"post"``, ``"page"`` and
-      ``"comment"``, or one an :term:`application` brings for content platzky has no
+      The name of a kind of content: platzky's own ``"post"``, ``"page"``,
+      ``"comment"`` and ``"footer"``, or one an :term:`application` brings for content platzky has no
       concept of (see :ref:`new-content-types`). The vocabulary is open and a content type
       is just its name, so a plugin can accept a kind of content without importing the
       package that brought it.
@@ -69,10 +69,12 @@ decides what*. The terms are defined once here and used consistently everywhere 
 
    vouching
       Asserting that content came from someone with write access, by passing it as
-      ``Markup`` rather than ``str``. Only the caller knows a piece of content's
-      provenance, so vouching is a deliberate act and plain ``str`` is treated as hostile
-      and escaped. Vouched content is also parsed strictly: whoever wrote a malformed tag
-      can go and fix it.
+      :class:`~platzky.content_types.CmsAuthored` rather than ``str``. Only the caller
+      knows a piece of content's provenance, so vouching is a deliberate act and plain
+      ``str`` is treated as hostile and escaped. A bare ``Markup`` does not vouch either:
+      it means "already escaped, render as is", which is a different claim from "someone
+      with CMS access wrote this". Vouched content is also parsed strictly: whoever wrote
+      a malformed tag can go and fix it.
 
    content transformer
       A plugin subclassing

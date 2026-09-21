@@ -10,6 +10,7 @@ from flask import make_response, redirect, render_template, request, session
 from flask.typing import ResponseReturnValue
 from flask_minify import Minify
 from flask_wtf import CSRFProtect
+from markupsafe import Markup
 from werkzeug.exceptions import HTTPException, MethodNotAllowed, NotFound
 from werkzeug.wrappers import Response
 
@@ -19,7 +20,7 @@ from platzky.config import (
     Config,
     languages_dict,
 )
-from platzky.content_types import PAGE, POST, ContentType
+from platzky.content_types import FOOTER, PAGE, POST, CmsAuthored, ContentType
 from platzky.db.db import DB
 from platzky.db.db_loader import get_db
 from platzky.engine import Engine
@@ -30,7 +31,7 @@ from platzky.plugin.login import LoginPluginBase
 from platzky.plugin.plugin import PluginBase
 from platzky.plugin.plugin_loader import plugify
 from platzky.seo import seo
-from platzky.shortcodes import Shortcode
+from platzky.shortcodes import Shortcode, ShortcodeError
 from platzky.shortcodes.builtins import get_builtin_shortcodes
 from platzky.www_handler import redirect_nonwww_to_www, redirect_www_to_nonwww
 
@@ -87,11 +88,12 @@ _builtin_tag_list = ", ".join(f"[{name}]" for name in _builtin_shortcodes)
 
 
 class _BuiltinShortcodeTransformer(ContentTransformerPluginBase):
-    """Built-in shortcodes, always registered for posts and pages."""
+    """Built-in shortcodes, always registered for posts, pages and footers."""
 
     accepted_content_types: Mapping[ContentType, str] = {
         POST: f"Renders the built-in shortcodes ({_builtin_tag_list}) an author wrote in a post.",
         PAGE: f"Renders the built-in shortcodes ({_builtin_tag_list}) an author wrote in a page.",
+        FOOTER: f"Renders the built-in shortcodes ({_builtin_tag_list}) written in a footer.",
     }
     shortcodes = _builtin_shortcodes
 
@@ -144,6 +146,31 @@ def _get_safe_redirect_url(referrer: t.Optional[str], current_host: str) -> str:
     if referrer_parsed.netloc == current_host:
         return referrer
     return "/"
+
+
+def _rendered_footer(app: Engine, content: str) -> Markup:
+    """Render footer markup for a template, or nothing at all if it cannot be rendered.
+
+    Args:
+        app: The application, for its content transformers.
+        content: The footer as an author wrote it, in shortcode markup.
+
+    Returns:
+        The rendered footer, empty when a shortcode in it is malformed.
+    """
+    # Only someone with CMS access can write the footer, so its HTML is embedded as
+    # written. Passing a plain str instead would escape the author's tags into visible
+    # text, and would have the shortcode parser treat their mistakes as a stranger's.
+    authored = CmsAuthored(content)
+    try:
+        rendered = app.transform_content(authored, FOOTER)
+    except ShortcodeError:
+        # This is called on every page render, so one malformed tag would otherwise 500
+        # the whole site, the 404 handler included. Drop the footer instead; the log names
+        # the bracket at fault.
+        logger.exception("Site-wide footer could not be rendered; showing no footer")
+        rendered = Markup("")
+    return rendered
 
 
 def _www_redirection_response(config: Config) -> t.Optional[Response]:
@@ -330,6 +357,20 @@ def create_engine(
             Dictionary with dynamic_head content for injection into page head
         """
         return {"dynamic_head": app.dynamic_head}
+
+    @app.context_processor
+    def site_footer() -> dict[str, Markup | bool]:
+        """Provide the site-wide footer, rendered for the current locale, to all templates.
+
+        Returns:
+            Dictionary with the rendered ``footer`` (empty when none is configured) and
+            ``footer_collapsible``, whether readers may collapse it
+        """
+        footer = app.db.get_footer(app.get_locale())
+        return {
+            "footer": _rendered_footer(app, footer.content),
+            "footer_collapsible": footer.collapsible,
+        }
 
     @app.errorhandler(404)
     def page_not_found(_e: HTTPException) -> tuple[str, int]:
