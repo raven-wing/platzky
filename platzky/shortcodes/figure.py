@@ -1,8 +1,6 @@
 """Built-in figure shortcode."""
 
-from collections.abc import Sequence
-
-from markupsafe import Markup, escape
+from markupsafe import escape
 
 from platzky.shortcodes import IntRange, ShortcodeAttr, ShortcodeAttrs
 from platzky.shortcodes.shortcode import Shortcode
@@ -41,12 +39,7 @@ class FigureShortcode(Shortcode):
         "so keep frames similar in size to avoid empty space around the smaller ones."
     )
 
-    def render(
-        self,
-        attrs: ShortcodeAttrs,
-        content: str,
-        children: Sequence[Markup],  # noqa: ARG002
-    ) -> str:
+    def render(self, attrs: ShortcodeAttrs, content: str) -> str:
         """Wrap an image and its caption in a figure the stylesheet lays out.
 
         The caption gets a box of its own so a stylesheet can place it beside the picture as
@@ -56,7 +49,6 @@ class FigureShortcode(Shortcode):
             attrs: Parsed shortcode attributes (image, alt, width, height).
             content: The caption, already rendered. Embedded as-is per the ``render``
                 contract.
-            children: Unused — the layout does not depend on what the caption wrapped.
 
         Returns:
             The image, and the caption in a ``<div>`` carrying ``FIGURE_CAPTION_CSS_CLASS``
