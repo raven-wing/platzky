@@ -65,7 +65,8 @@ for more information.
 :Default: ``False``
 
 Enable debug mode. When enabled, the server will reload on code changes and provide
-detailed error pages.
+detailed error pages. The ``platzky`` logger is also set to ``DEBUG``; if the application has
+not configured any logging handler, Platzky adds one that writes to stderr.
 
 .. warning::
     Never enable debug mode in production as it can expose sensitive information.

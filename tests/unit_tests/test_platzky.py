@@ -1,5 +1,6 @@
+import logging
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -209,3 +210,62 @@ class TestPlatzky:
             match="Cannot register FakeLoginPlugin in production",
         ):
             create_app_from_config(config)
+
+
+class TestDebugLogging:
+    @pytest.fixture(autouse=True)
+    def platzky_logger(self) -> Iterator[logging.Logger]:
+        platzky_logger = logging.getLogger("platzky")
+        level, handlers = platzky_logger.level, platzky_logger.handlers[:]
+        yield platzky_logger
+        platzky_logger.setLevel(level)
+        platzky_logger.handlers = handlers
+
+    @staticmethod
+    def _create_app(debug: bool) -> None:
+        config = Config.model_validate(
+            {
+                "APP_NAME": "testing App Name",
+                "SECRET_KEY": "secret",
+                "DEBUG": debug,
+                "DB": {"TYPE": "json", "DATA": {}},
+            }
+        )
+        with patch("platzky.platzky.get_db", return_value=MagicMock()):
+            create_app_from_config(config)
+
+    def test_enables_debug_level(self, platzky_logger: logging.Logger):
+        self._create_app(debug=True)
+
+        assert platzky_logger.level == logging.DEBUG
+
+    def test_ignores_flask_debug_env(
+        self, monkeypatch: pytest.MonkeyPatch, platzky_logger: logging.Logger
+    ):
+        monkeypatch.setenv("FLASK_DEBUG", "1")
+        level_before = platzky_logger.level
+
+        self._create_app(debug=False)
+
+        assert platzky_logger.level == level_before
+
+    def test_adds_one_handler_when_none_configured(
+        self, monkeypatch: pytest.MonkeyPatch, platzky_logger: logging.Logger
+    ):
+        monkeypatch.setattr(logging.getLogger(), "handlers", [])
+        platzky_logger.handlers = []
+
+        self._create_app(debug=True)
+        self._create_app(debug=True)
+
+        assert len(platzky_logger.handlers) == 1
+
+    def test_keeps_application_handlers(
+        self, monkeypatch: pytest.MonkeyPatch, platzky_logger: logging.Logger
+    ):
+        monkeypatch.setattr(logging.getLogger(), "handlers", [logging.NullHandler()])
+        platzky_logger.handlers = []
+
+        self._create_app(debug=True)
+
+        assert platzky_logger.handlers == []
