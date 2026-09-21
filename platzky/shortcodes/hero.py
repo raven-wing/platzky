@@ -1,6 +1,6 @@
 """Built-in hero shortcode."""
 
-from platzky.shortcodes.shortcode import Shortcode, ShortcodeAttrs
+from platzky.shortcodes.shortcode import Content, Shortcode, ShortcodeAttrs
 
 
 class HeroShortcode(Shortcode):
@@ -10,7 +10,7 @@ class HeroShortcode(Shortcode):
     description = "Wrap content in a hero/header block, anywhere in the body."
     example = "[hero]<h1>Headline</h1><p>Subheading text</p>[/hero]"
 
-    def render(self, attrs: ShortcodeAttrs, content: str) -> str:  # noqa: ARG002
+    def render(self, attrs: ShortcodeAttrs, content: Content) -> str:  # noqa: ARG002
         """Wrap the inner content in a ``.hero`` container, used as-is.
 
         Args:

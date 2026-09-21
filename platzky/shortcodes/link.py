@@ -5,7 +5,7 @@ from typing import ClassVar
 from markupsafe import escape
 
 from platzky.shortcodes import ManyOf, ShortcodeAttr, ShortcodeAttrs
-from platzky.shortcodes.shortcode import Shortcode
+from platzky.shortcodes.shortcode import Content, Shortcode
 from platzky.shortcodes.urls import LINK_URL_POLICY, UrlPolicy
 
 #: The words a ``[link]`` tag's own ``rel`` attribute may contain. An allowlist, because
@@ -62,7 +62,7 @@ class LinkShortcode(Shortcode):
     #: ``javascript:`` out of every deployment rather than out of the careful ones.
     url_policy: ClassVar[UrlPolicy] = LINK_URL_POLICY
 
-    def render(self, attrs: ShortcodeAttrs, content: str) -> str:
+    def render(self, attrs: ShortcodeAttrs, content: Content) -> str:
         """Render an anchor tag, refusing a URL the policy does not permit.
 
         A link with no destination is not a link, and its text is usually written to be

@@ -3,7 +3,7 @@
 from markupsafe import escape
 
 from platzky.shortcodes import IntRange, ShortcodeAttr, ShortcodeAttrs
-from platzky.shortcodes.shortcode import Shortcode
+from platzky.shortcodes.shortcode import Content, Shortcode
 from platzky.shortcodes.urls import IMAGE_URL_POLICY
 
 FIGURE_CSS_CLASS = "platzky-figure"
@@ -39,7 +39,7 @@ class FigureShortcode(Shortcode):
         "so keep frames similar in size to avoid empty space around the smaller ones."
     )
 
-    def render(self, attrs: ShortcodeAttrs, content: str) -> str:
+    def render(self, attrs: ShortcodeAttrs, content: Content) -> str:
         """Wrap an image and its caption in a figure the stylesheet lays out.
 
         The caption gets a box of its own so a stylesheet can place it beside the picture as

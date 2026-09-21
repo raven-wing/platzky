@@ -1,6 +1,6 @@
 """Built-in html shortcode."""
 
-from platzky.shortcodes.shortcode import Shortcode, ShortcodeAttrs
+from platzky.shortcodes.shortcode import Content, Shortcode, ShortcodeAttrs
 
 
 class HtmlShortcode(Shortcode):
@@ -32,7 +32,7 @@ class HtmlShortcode(Shortcode):
         "the rest of the post."
     )
 
-    def render(self, attrs: ShortcodeAttrs, content: str) -> str:  # noqa: ARG002
+    def render(self, attrs: ShortcodeAttrs, content: Content) -> str:  # noqa: ARG002
         """Return the body unchanged.
 
         Args:

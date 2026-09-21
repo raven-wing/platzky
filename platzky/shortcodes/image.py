@@ -3,7 +3,7 @@
 from markupsafe import escape
 
 from platzky.shortcodes import IntRange, ShortcodeAttr, ShortcodeAttrs
-from platzky.shortcodes.shortcode import Shortcode
+from platzky.shortcodes.shortcode import Content, Shortcode
 from platzky.shortcodes.urls import IMAGE_URL_POLICY
 
 
@@ -26,7 +26,7 @@ class ImageShortcode(Shortcode):
     def render(
         self,
         attrs: ShortcodeAttrs,
-        content: str,  # noqa: ARG002
+        content: Content,  # noqa: ARG002
     ) -> str:
         """Render an img tag, refusing a source the policy does not permit.
 
