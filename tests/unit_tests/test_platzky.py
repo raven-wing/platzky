@@ -215,7 +215,9 @@ class TestPlatzky:
 
 class TestDebugLogging:
     @pytest.fixture(autouse=True)
-    def platzky_logger(self) -> Iterator[logging.Logger]:
+    def platzky_logger(self, monkeypatch: pytest.MonkeyPatch) -> Iterator[logging.Logger]:
+        # Creating an app with DEBUG: true exports FLASK_DEBUG; monkeypatch restores it.
+        monkeypatch.delenv("FLASK_DEBUG", raising=False)
         platzky_logger = logging.getLogger("platzky")
         level, handlers = platzky_logger.level, platzky_logger.handlers[:]
         yield platzky_logger
