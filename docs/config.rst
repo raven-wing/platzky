@@ -64,13 +64,10 @@ for more information.
 :Type: ``bool``
 :Default: ``False``
 
-Enable debug mode. When enabled, the server will reload on code changes and provide
-detailed error pages. The ``platzky`` logger is also set to ``DEBUG``; if the application has
-not configured any logging handler, Platzky adds one that writes to stderr.
-
-When the app is started with ``flask run``, Flask's CLI sets debug mode, the reloader and the
-debugger from ``--debug`` or ``FLASK_DEBUG`` instead, overriding this setting. Pass ``--debug``
-as well to get Flask's debug mode there; ``DEBUG`` still controls Platzky's debug logging.
+Enable debug mode. This turns on Flask's debug mode and sets ``FLASK_DEBUG=1`` in the process
+environment, so ``flask run`` and ``app.run()`` reload on code changes and show detailed error
+pages without ``--debug``. The ``platzky`` logger is also set to ``DEBUG``; if the application
+has not configured any logging handler, Platzky adds one that writes to stderr.
 
 .. warning::
     Never enable debug mode in production as it can expose sensitive information.

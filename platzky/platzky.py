@@ -1,6 +1,7 @@
 """Application factory — assembles config, database, engine, plugins, and blueprints."""
 
 import logging
+import os
 import typing as t
 import urllib.parse
 from collections.abc import Awaitable, Iterable, Mapping, Sequence
@@ -407,10 +408,10 @@ def create_app_from_config(
 ) -> Engine:
     """Create a fully configured Platzky application from a Config object.
 
-    Enables platzky debug logging (when DEBUG is set in the config), initializes the database,
-    creates the engine, sets up telemetry (if enabled),
-    registers blueprints (admin, blog, SEO), and configures minification and CSRF
-    protection.
+    When DEBUG is set in the config, enables platzky debug logging and sets FLASK_DEBUG=1 in
+    the environment. Then initializes the database, creates the engine, sets up telemetry
+    (if enabled), registers blueprints (admin, blog, SEO), and configures minification and
+    CSRF protection.
 
     Args:
         config: Application configuration object
@@ -433,6 +434,9 @@ def create_app_from_config(
     """
     if config.debug:
         _enable_debug_logging()
+        # `flask run` sets debug mode, the reloader and the debugger from FLASK_DEBUG after
+        # this factory returns, overriding the DEBUG copied into app.config.
+        os.environ["FLASK_DEBUG"] = "1"
 
     db = get_db(config.db)
     engine = create_engine(

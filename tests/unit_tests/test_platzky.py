@@ -1,4 +1,5 @@
 import logging
+import os
 import re
 from collections.abc import Callable, Iterator
 from unittest.mock import MagicMock, patch
@@ -238,6 +239,20 @@ class TestDebugLogging:
         self._create_app(debug=True)
 
         assert platzky_logger.level == logging.DEBUG
+
+    def test_exports_flask_debug(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.setenv("FLASK_DEBUG", "0")
+
+        self._create_app(debug=True)
+
+        assert os.environ["FLASK_DEBUG"] == "1"
+
+    def test_leaves_flask_debug_without_debug(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.setenv("FLASK_DEBUG", "0")
+
+        self._create_app(debug=False)
+
+        assert os.environ["FLASK_DEBUG"] == "0"
 
     def test_ignores_flask_debug_env(
         self, monkeypatch: pytest.MonkeyPatch, platzky_logger: logging.Logger
