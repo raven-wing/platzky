@@ -8,6 +8,7 @@ from click.testing import CliRunner, Result
 
 from platzky.cli import cli
 from platzky.config import Config
+from platzky.feature_flags import BUILTIN_FLAGS, FakeLogin
 from platzky.platzky import create_app
 
 
@@ -74,6 +75,32 @@ class TestCreate:
             {"name": "Blog", "url": "/blog/"},
             {"name": "About", "url": "/blog/page/about"},
         ]
+
+    def test_lists_every_built_in_feature_flag_commented_out(self, tmp_path: Path):
+        self._create(tmp_path)
+
+        config_text = (tmp_path / "config.yml").read_text()
+
+        assert "#FEATURE_FLAGS:" in config_text
+        for flag in BUILTIN_FLAGS:
+            assert f"#  {flag.alias}: {str(flag.default).lower()}" in config_text
+        assert yaml.safe_load(config_text).get("FEATURE_FLAGS") is None
+
+    def test_commented_flags_work_once_uncommented(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        self._create(tmp_path)
+        config_file = tmp_path / "config.yml"
+        config_file.write_text(
+            config_file.read_text()
+            .replace("#FEATURE_FLAGS:", "FEATURE_FLAGS:")
+            .replace("#  FAKE_LOGIN: false", "  FAKE_LOGIN: true")
+        )
+        monkeypatch.chdir(tmp_path)
+
+        config = Config.parse_yaml("config.yml")
+
+        assert config.feature_flags[FakeLogin.alias] is True
 
     def test_sample_content_is_named_after_the_application(self, tmp_path: Path):
         self._create(tmp_path, name="Bakery")

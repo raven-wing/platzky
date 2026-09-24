@@ -13,3 +13,7 @@ LANGUAGES:
 DB:
   TYPE: json_file
   PATH: "$data_filename"
+
+# Every built-in feature flag, set to its default. Uncomment the ones you want to change.
+#FEATURE_FLAGS:
+$feature_flags

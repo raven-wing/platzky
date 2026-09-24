@@ -1,6 +1,7 @@
 """Command line interface for running a Platzky application."""
 
 import json
+import textwrap
 from datetime import date
 from importlib.resources import files
 from pathlib import Path
@@ -9,6 +10,7 @@ from string import Template
 
 import click
 
+from platzky.feature_flags import BUILTIN_FLAGS
 from platzky.platzky import create_app
 
 _CONFIG_FILENAME = "config.yml"
@@ -19,11 +21,31 @@ _CONFIG_TEMPLATE = "config.template.yml"
 _DATA_TEMPLATE = "data.template.json"
 
 
-def _render_scaffold(filename: str, **values: str) -> str:
+def _commented_feature_flags() -> str:
+    """Return every built-in feature flag as commented-out YAML set to its default.
+
+    Returns:
+        Commented ``ALIAS: default`` lines, each preceded by the flag's first sentence
+    """
+    lines: list[str] = []
+    for flag in sorted(BUILTIN_FLAGS, key=lambda f: f.alias):
+        summary = flag.description.split(". ")[0].rstrip(".")
+        if flag.production_warning:
+            summary = f"{summary}. Never enable in production"
+        lines.extend(
+            textwrap.wrap(summary, width=96, initial_indent="#  # ", subsequent_indent="#  # ")
+        )
+        lines.append(f"#  {flag.alias}: {str(flag.default).lower()}")
+    return "\n".join(lines)
+
+
+def _render_scaffold(filename: str, raw: dict[str, str] | None = None, **values: str) -> str:
     """Fill in the placeholders of a scaffold file shipped with the package.
 
     Args:
         filename: Name of the file in the scaffold directory
+        raw: Replacements inserted as they are, for markers standing for whole YAML blocks
+            rather than for a single value
         values: Replacements for the file's ``$placeholder`` markers; each one is escaped so
             that it stays a single valid string in both YAML and JSON
 
@@ -33,7 +55,7 @@ def _render_scaffold(filename: str, **values: str) -> str:
     scaffold_file = files("platzky").joinpath(_SCAFFOLD_DIR).joinpath(filename)
     template = Template(scaffold_file.read_text(encoding="utf-8"))
     escaped = {key: json.dumps(value)[1:-1] for key, value in values.items()}
-    return template.substitute(escaped)
+    return template.substitute({**escaped, **(raw or {})})
 
 
 @click.group()
@@ -86,6 +108,7 @@ def create(name: str, directory: Path) -> None:
     config_file.write_text(
         _render_scaffold(
             _CONFIG_TEMPLATE,
+            raw={"feature_flags": _commented_feature_flags()},
             app_name=name,
             secret_key=token_hex(32),
             data_filename=_DATA_FILENAME,
