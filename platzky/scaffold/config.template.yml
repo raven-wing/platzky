@@ -1,4 +1,4 @@
-APP_NAME: "$app_name"
+APP_NAME: "My Platzky App"
 SECRET_KEY: "$secret_key"
 
 # Set to true once the site is served from a www domain.

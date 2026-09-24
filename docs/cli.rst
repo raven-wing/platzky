@@ -14,19 +14,19 @@ Create a new application: a configuration file and a JSON database with sample c
 
 .. code-block:: bash
 
-    $ platzky create --name "My Site"
-    $ platzky create --name "My Site" --path sites/my-site
+    $ platzky create
+    $ platzky create --path sites/my-site
 
 **Options:**
 
-* ``--name``: application name, written to ``APP_NAME`` and used in the sample content
-  (required)
 * ``--path``: directory the files are created in, created if missing (default: ``.``)
 
 It writes two files and refuses to overwrite either if it already exists:
 
-* ``config.yml`` — the application name, a freshly generated ``SECRET_KEY``, English as the
-  only language, ``USE_WWW: false`` and the ``json_file`` backend pointing at ``data.json``
+* ``config.yml`` — a placeholder ``APP_NAME`` to replace with your own, a freshly generated
+  ``SECRET_KEY``, English as the only language, ``USE_WWW: false``, the ``json_file`` backend
+  pointing at ``data.json``, and every built-in feature flag listed commented out at its
+  default
 * ``data.json`` — one sample post, an About page and a menu linking to both, so the site
   serves pages straight away
 

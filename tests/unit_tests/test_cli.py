@@ -57,15 +57,15 @@ def test_run_debug_follows_config_not_environment(monkeypatch: pytest.MonkeyPatc
 
 class TestCreate:
     @staticmethod
-    def _create(directory: Path, name: str = "My Site") -> Result:
-        return CliRunner().invoke(cli, ["create", "--name", name, "--path", str(directory)])
+    def _create(directory: Path) -> Result:
+        return CliRunner().invoke(cli, ["create", "--path", str(directory)])
 
     def test_writes_config_and_database(self, tmp_path: Path):
         result = self._create(tmp_path)
 
         assert result.exit_code == 0
         config = yaml.safe_load((tmp_path / "config.yml").read_text())
-        assert config["APP_NAME"] == "My Site"
+        assert config["APP_NAME"] == "My Platzky App"
         assert config["DB"] == {"TYPE": "json_file", "PATH": "data.json"}
         assert config["USE_WWW"] is False
         content = json.loads((tmp_path / "data.json").read_text())["site_content"]
@@ -102,14 +102,6 @@ class TestCreate:
 
         assert config.feature_flags[FakeLogin.alias] is True
 
-    def test_sample_content_is_named_after_the_application(self, tmp_path: Path):
-        self._create(tmp_path, name="Bakery")
-
-        content = json.loads((tmp_path / "data.json").read_text())["site_content"]
-
-        assert content["app_description"]["en"] == "Bakery — a site built with Platzky"
-        assert content["posts"][0]["author"] == "Bakery"
-
     def test_created_site_serves_its_sample_content(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ):
@@ -134,7 +126,7 @@ class TestCreate:
 
         config = Config.parse_yaml(str(tmp_path / "config.yml"))
 
-        assert config.app_name == "My Site"
+        assert config.app_name == "My Platzky App"
 
     def test_secret_key_differs_between_applications(self, tmp_path: Path):
         self._create(tmp_path / "first")
@@ -146,23 +138,13 @@ class TestCreate:
         }
         assert len(keys) == 2
 
-    def test_escapes_awkward_application_names(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ):
-        self._create(tmp_path, name='Bob\'s "Bakery": best in town')
-        monkeypatch.chdir(tmp_path)
-
-        config = Config.parse_yaml("config.yml")
-
-        assert config.app_name == 'Bob\'s "Bakery": best in town'
-        content = json.loads((tmp_path / "data.json").read_text())["site_content"]
-        assert content["posts"][0]["author"] == 'Bob\'s "Bakery": best in town'
-
     def test_refuses_to_overwrite(self, tmp_path: Path):
         self._create(tmp_path)
+        config_file = tmp_path / "config.yml"
+        config_file.write_text(config_file.read_text().replace("My Platzky App", "Edited By Hand"))
 
-        result = self._create(tmp_path, name="Other")
+        result = self._create(tmp_path)
 
         assert result.exit_code != 0
         assert "Refusing to overwrite" in result.output
-        assert "My Site" in (tmp_path / "config.yml").read_text()
+        assert "Edited By Hand" in config_file.read_text()

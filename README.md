@@ -8,7 +8,7 @@ Platzky is engine which aims to provide simple and easy way to create and run we
 # How to use?
 
 1. Install platzky with your favorite dependency management tool (`pip install platzky` or `poetry add platzky`).
-2. Create an application with `platzky create --name "My App"` (it comes with sample content), or copy `config-template.yml` to your project directory and fill it with your data.
+2. Create an application with `platzky create` (it comes with sample content), or copy `config-template.yml` to your project directory and fill it with your data.
 3. Run `platzky run --config config.yml`
 
 ## Example

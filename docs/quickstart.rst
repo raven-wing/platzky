@@ -16,12 +16,12 @@ A Minimal Application
 
 .. code-block:: bash
 
-    $ platzky create --name "My Platzky App"
+    $ platzky create
 
 This writes ``config.yml`` and ``data.json`` into the current directory; use ``--path`` to
 create them elsewhere. The site starts with one sample post and an About page, so it works
-straight away. Edit ``config.yml`` to add languages or switch the database backend, and
-``data.json`` to replace the sample content with your own.
+straight away. Set ``APP_NAME`` in ``config.yml`` to your own name, add languages or switch
+the database backend there, and replace the sample content in ``data.json`` with your own.
 
 3. Run the application:
 

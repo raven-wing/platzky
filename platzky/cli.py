@@ -1,6 +1,5 @@
 """Command line interface for running a Platzky application."""
 
-import json
 from datetime import date
 from importlib.resources import files
 from pathlib import Path
@@ -24,16 +23,13 @@ def _render_scaffold(filename: str, **values: str) -> str:
 
     Args:
         filename: Name of the file in the scaffold directory
-        values: Replacements for the file's ``$placeholder`` markers; each one is escaped so
-            that it stays a single valid string in both YAML and JSON
+        values: Replacements for the file's ``$placeholder`` markers
 
     Returns:
         Contents of the file with every placeholder replaced
     """
     scaffold_file = files("platzky").joinpath(_SCAFFOLD_DIR).joinpath(filename)
-    template = Template(scaffold_file.read_text(encoding="utf-8"))
-    escaped = {key: json.dumps(value)[1:-1] for key, value in values.items()}
-    return template.substitute(escaped)
+    return Template(scaffold_file.read_text(encoding="utf-8")).substitute(values)
 
 
 @click.group()
@@ -61,7 +57,6 @@ def run(config_path: str, host: str, port: int) -> None:
 
 
 @cli.command()
-@click.option("--name", required=True, help="Application name written to the config file.")
 @click.option(
     "--path",
     "directory",
@@ -70,11 +65,10 @@ def run(config_path: str, host: str, port: int) -> None:
     type=click.Path(file_okay=False, path_type=Path),
     help="Directory the files are created in.",
 )
-def create(name: str, directory: Path) -> None:
+def create(directory: Path) -> None:
     """Create a new Platzky application: a config file and a JSON database with sample content.
 
     Args:
-        name: Application name written to the config file
         directory: Directory the config and database files are created in
     """
     directory.mkdir(parents=True, exist_ok=True)
@@ -86,14 +80,11 @@ def create(name: str, directory: Path) -> None:
     config_file.write_text(
         _render_scaffold(
             _CONFIG_TEMPLATE,
-            app_name=name,
             secret_key=token_hex(32),
             data_filename=_DATA_FILENAME,
         )
     )
-    data_file.write_text(
-        _render_scaffold(_DATA_TEMPLATE, app_name=name, today=date.today().isoformat())
-    )
+    data_file.write_text(_render_scaffold(_DATA_TEMPLATE, today=date.today().isoformat()))
     click.echo(f"Created {config_file} and {data_file}")
     click.echo(f"Run it with: platzky run --config {config_file}")
     click.echo("It starts with one sample post and an About page; edit them in the database file.")

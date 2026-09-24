@@ -7,7 +7,7 @@
       {
         "title": "Hello, Platzky",
         "slug": "hello-platzky",
-        "author": "$app_name",
+        "author": "My Platzky App",
         "language": "en",
         "date": "$today",
         "excerpt": "The first post of your new site.",
@@ -20,7 +20,7 @@
       {
         "title": "About",
         "slug": "about",
-        "author": "$app_name",
+        "author": "My Platzky App",
         "language": "en",
         "excerpt": "About this app.",
         "contentInMarkdown": "# About\n\nTell your readers about your app.\n"
