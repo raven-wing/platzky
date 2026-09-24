@@ -34,8 +34,8 @@ the application was created in.
 
 4. Open http://127.0.0.1:5000 in your browser.
 
-See :doc:`cli` for the remaining options, for enabling debug mode, and for running the
-application with Flask's own CLI or a WSGI server instead.
+See :doc:`cli` for the remaining options, for enabling debug mode, and for serving the
+application in production.
 
 Configuration
 -------------

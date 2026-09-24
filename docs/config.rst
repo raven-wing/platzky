@@ -21,7 +21,7 @@ You can start with the provided template:
 
     $ cp config-template.yml config.yml
     $ # Edit config.yml with your settings
-    $ flask --app "platzky.platzky:create_app(config_path='config.yml')" run
+    $ platzky run --config config.yml
 
 Configuration Reference
 -----------------------
@@ -67,9 +67,6 @@ for more information.
 Enable debug mode. Started with ``platzky run``, the server then reloads on code changes and
 shows detailed error pages. The ``platzky`` logger is also set to ``DEBUG``; if the application
 has not configured any logging handler, Platzky adds one that writes to stderr.
-
-With ``flask run``, Flask's CLI takes debug mode from ``--debug`` or ``FLASK_DEBUG`` instead,
-so pass ``--debug`` there as well. ``DEBUG`` still controls Platzky's debug logging.
 
 .. warning::
     Never enable debug mode in production as it can expose sensitive information.
@@ -456,7 +453,7 @@ you can:
 
 .. code-block:: bash
 
-    $ flask --app "platzky.platzky:create_app(config_path='config-prod.yml')" run
+    $ platzky run --config config-prod.yml
 
 **Use environment variables in your config:**
 

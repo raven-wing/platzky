@@ -50,23 +50,20 @@ Run the development server.
 * ``--port``: port to bind to (default: ``5000``)
 
 ``DEBUG: true`` in the configuration file enables the reloader and the interactive debugger.
-Unlike ``flask run``, the configuration file decides this; the ``FLASK_DEBUG`` environment
-variable is ignored.
+The configuration file is the only switch for this.
 
 .. warning::
     This is Flask's development server. For production, serve the application with a WSGI
     server such as gunicorn.
 
-Running Without the CLI
------------------------
+Running in Production
+---------------------
 
-A Platzky application is an ordinary Flask application, so it can also be started with
-Flask's own CLI or a WSGI server:
+A Platzky application is an ordinary WSGI application, so serve it with a production server:
 
 .. code-block:: bash
 
-    $ flask --app "platzky.platzky:create_app(config_path='config.yml')" run --debug
     $ gunicorn "platzky.platzky:create_app(config_path='config.yml')"
 
-With ``flask run``, debug mode comes from ``--debug`` or ``FLASK_DEBUG`` rather than from
-``DEBUG`` in the configuration file.
+Keep ``DEBUG: false`` there; a production server provides neither the reloader nor the
+interactive debugger, and debug mode would expose internals.
