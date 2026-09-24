@@ -33,9 +33,23 @@ A Minimal Application
 
 .. code-block:: bash
 
-    $ flask --app "platzky.platzky:create_app(config_path='config.yml')" run
+    $ platzky run --config config.yml
 
 4. Open http://127.0.0.1:5000 in your browser.
+
+Use ``--host`` and ``--port`` to bind elsewhere, and set ``DEBUG: true`` in the configuration
+file to get the reloader and the interactive debugger while developing.
+
+The application is an ordinary Flask app, so it can also be started with Flask's own CLI or
+served by a WSGI server such as gunicorn:
+
+.. code-block:: bash
+
+    $ flask --app "platzky.platzky:create_app(config_path='config.yml')" run --debug
+    $ gunicorn "platzky.platzky:create_app(config_path='config.yml')"
+
+With ``flask run``, debug mode comes from ``--debug`` or ``FLASK_DEBUG``, not from ``DEBUG``
+in the configuration file.
 
 Configuration
 -------------
