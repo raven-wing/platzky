@@ -111,6 +111,9 @@ Store data in a local JSON file:
       TYPE: json_file
       PATH: data.json
 
+A relative ``PATH`` is resolved against the working directory the application is started
+from. See :doc:`database` for details.
+
 **Google Cloud Storage Database**
 
 Store data in Google Cloud Storage as a JSON file:

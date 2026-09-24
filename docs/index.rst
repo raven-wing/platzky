@@ -22,6 +22,7 @@ started with Platzky and building applications.
 
    installation
    quickstart
+   cli
    config
    database
    telemetry
