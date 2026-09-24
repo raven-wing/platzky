@@ -12,28 +12,25 @@ A Minimal Application
 
     $ pip install platzky
 
-2. Create a configuration file ``config.yml``:
+2. Create an application:
 
-.. code-block:: yaml
+.. code-block:: bash
 
-    APP_NAME: My Platzky App
-    SECRET_KEY: change-this-to-something-secret
+    $ platzky create --name "My Platzky App"
 
-    DB:
-      TYPE: json_file
-      PATH: data.json
-
-    LANGUAGES:
-      en:
-        name: English
-        flag: uk
-        country: GB
+This writes ``config.yml`` and ``data.json`` into the current directory; use ``--path`` to
+create them elsewhere. The site starts with one sample post and an About page, so it works
+straight away. Edit ``config.yml`` to add languages or switch the database backend, and
+``data.json`` to replace the sample content with your own.
 
 3. Run the application:
 
 .. code-block:: bash
 
     $ platzky run --config config.yml
+
+The database path in the generated config is relative, so run the command from the directory
+the application was created in.
 
 4. Open http://127.0.0.1:5000 in your browser.
 
