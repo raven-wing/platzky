@@ -1,7 +1,7 @@
 {
   "site_content": {
     "app_description": {
-      "en": "$app_name — a site built with Platzky"
+      "en": "A site built with Platzky"
     },
     "posts": [
       {
@@ -22,8 +22,8 @@
         "slug": "about",
         "author": "$app_name",
         "language": "en",
-        "excerpt": "About $app_name.",
-        "contentInMarkdown": "# About\n\nTell your readers about $app_name.\n"
+        "excerpt": "About this app.",
+        "contentInMarkdown": "# About\n\nTell your readers about your app.\n"
       }
     ],
     "menu_items": {

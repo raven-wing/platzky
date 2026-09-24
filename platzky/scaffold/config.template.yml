@@ -14,10 +14,10 @@ DB:
   TYPE: json_file
   PATH: "$data_filename"
 
-# Every built-in feature flag, shown with its default. Uncomment the ones you want to change.
+# Uncomment feature flags if you want to change.
 #FEATURE_FLAGS:
 #  # Enable fake login for development. Never enable in production.
 #  FAKE_LOGIN: false
-#  # Remove HTML tags written in content, keeping the text they wrapped. Shortcodes still
-#  # render, and an [html] block keeps the HTML written inside it.
+
+#  # Remove HTML tags written in content only [html] renders html then
 #  STRIP_CONTENT_HTML: false
