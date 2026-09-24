@@ -119,6 +119,18 @@ class TestCreate:
         }
         assert len(keys) == 2
 
+    def test_escapes_awkward_application_names(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        self._create(tmp_path, name='Bob\'s "Bakery": best in town')
+        monkeypatch.chdir(tmp_path)
+
+        config = Config.parse_yaml("config.yml")
+
+        assert config.app_name == 'Bob\'s "Bakery": best in town'
+        content = json.loads((tmp_path / "data.json").read_text())["site_content"]
+        assert content["posts"][0]["author"] == 'Bob\'s "Bakery": best in town'
+
     def test_refuses_to_overwrite(self, tmp_path: Path):
         self._create(tmp_path)
 

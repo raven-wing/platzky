@@ -2,9 +2,10 @@
 
 import json
 from datetime import date
+from importlib.resources import files
 from pathlib import Path
 from secrets import token_hex
-from typing import Any
+from string import Template
 
 import click
 
@@ -12,76 +13,27 @@ from platzky.platzky import create_app
 
 _CONFIG_FILENAME = "config.yml"
 _DATA_FILENAME = "data.json"
-
-_CONFIG_TEMPLATE = """\
-APP_NAME: {name}
-SECRET_KEY: {secret_key}
-
-# Set to true once the site is served from a www domain.
-USE_WWW: false
-
-LANGUAGES:
-  en:
-    name: English
-    flag: uk
-    country: GB
-
-DB:
-  TYPE: json_file
-  PATH: {data_filename}
-"""
-
-_WELCOME_POST_SLUG = "hello-platzky"
-_WELCOME_MARKDOWN = """\
-Welcome to your new Platzky site.
-
-Edit `data.json` to change this post, add your own, or remove it entirely.
-"""
+_SCAFFOLD_DIR = "scaffold"
+# Named .template so the repository's ignore rules for config.yml/data.json do not apply.
+_CONFIG_TEMPLATE = "config.template.yml"
+_DATA_TEMPLATE = "data.template.json"
 
 
-def _sample_site_content(name: str) -> dict[str, Any]:
-    """Return the site content a freshly created application starts with.
+def _render_scaffold(filename: str, **values: str) -> str:
+    """Fill in the placeholders of a scaffold file shipped with the package.
 
     Args:
-        name: Application name, used in the site description and the sample page
+        filename: Name of the file in the scaffold directory
+        values: Replacements for the file's ``$placeholder`` markers; each one is escaped so
+            that it stays a single valid string in both YAML and JSON
 
     Returns:
-        Site content with one post, one page and a menu linking to both
+        Contents of the file with every placeholder replaced
     """
-    return {
-        "site_content": {
-            "app_description": {"en": f"{name} — a site built with Platzky"},
-            "posts": [
-                {
-                    "title": "Hello, Platzky",
-                    "slug": _WELCOME_POST_SLUG,
-                    "author": name,
-                    "language": "en",
-                    "date": date.today().isoformat(),
-                    "excerpt": "The first post of your new site.",
-                    "contentInMarkdown": _WELCOME_MARKDOWN,
-                    "tags": [],
-                    "comments": [],
-                }
-            ],
-            "pages": [
-                {
-                    "title": "About",
-                    "slug": "about",
-                    "author": name,
-                    "language": "en",
-                    "excerpt": f"About {name}.",
-                    "contentInMarkdown": f"# About\n\nTell your readers about {name}.\n",
-                }
-            ],
-            "menu_items": {
-                "en": [
-                    {"name": "Blog", "url": "/blog/"},
-                    {"name": "About", "url": "/blog/page/about"},
-                ]
-            },
-        }
-    }
+    scaffold_file = files("platzky").joinpath(_SCAFFOLD_DIR).joinpath(filename)
+    template = Template(scaffold_file.read_text(encoding="utf-8"))
+    escaped = {key: json.dumps(value)[1:-1] for key, value in values.items()}
+    return template.substitute(escaped)
 
 
 @click.group()
@@ -132,10 +84,15 @@ def create(name: str, directory: Path) -> None:
         raise click.ClickException(f"Refusing to overwrite: {', '.join(existing)}")
 
     config_file.write_text(
-        _CONFIG_TEMPLATE.format(name=name, secret_key=token_hex(32), data_filename=_DATA_FILENAME)
+        _render_scaffold(
+            _CONFIG_TEMPLATE,
+            app_name=name,
+            secret_key=token_hex(32),
+            data_filename=_DATA_FILENAME,
+        )
     )
     data_file.write_text(
-        json.dumps(_sample_site_content(name), indent=2, ensure_ascii=False) + "\n"
+        _render_scaffold(_DATA_TEMPLATE, app_name=name, today=date.today().isoformat())
     )
     click.echo(f"Created {config_file} and {data_file}")
     click.echo(f"Run it with: platzky run --config {config_file}")

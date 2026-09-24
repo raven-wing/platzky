@@ -1,0 +1,15 @@
+APP_NAME: "$app_name"
+SECRET_KEY: "$secret_key"
+
+# Set to true once the site is served from a www domain.
+USE_WWW: false
+
+LANGUAGES:
+  en:
+    name: English
+    flag: uk
+    country: GB
+
+DB:
+  TYPE: json_file
+  PATH: "$data_filename"
