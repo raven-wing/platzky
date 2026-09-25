@@ -1,6 +1,5 @@
 """Command line interface for running a Platzky application."""
 
-from datetime import date
 from importlib.resources import files
 from pathlib import Path
 from secrets import token_hex
@@ -80,20 +79,15 @@ def init(directory: Path) -> None:
     if existing:
         raise click.ClickException(f"Refusing to overwrite: {', '.join(existing)}")
 
-    # Created owner-only before anything is written: the config holds the generated SECRET_KEY,
-    # and a cookie signed with it passes as any logged-in user.
+    # Created owner-only (0600) before anything is written, so the generated SECRET_KEY is never
+    # briefly world-readable. The key signs session cookies: whoever reads it can forge a login,
+    # and on a shared host every other local user could read a file left at the default mode.
     config_file.touch(mode=_CONFIG_FILE_MODE)
     config_file.write_text(
-        _render_scaffold(
-            _CONFIG_TEMPLATE,
-            secret_key=token_hex(32),
-            data_filename=_TARGET_DATA_FILENAME,
-        ),
+        _render_scaffold(_CONFIG_TEMPLATE, secret_key=token_hex(32)),
         encoding="utf-8",
     )
-    data_file.write_text(
-        _render_scaffold(_DATA_TEMPLATE, today=date.today().isoformat()), encoding="utf-8"
-    )
+    data_file.write_text(_render_scaffold(_DATA_TEMPLATE), encoding="utf-8")
     click.echo(f"Created {config_file} and {data_file}")
     click.echo(f"Run it with: {_run_command(directory)}")
     click.echo("It starts with one sample post and an About page; edit them in the database file.")

@@ -455,15 +455,8 @@ you can:
 
 .. code-block:: bash
 
-    $ platzky run --config config-prod.yml
-
-**Use environment variables in your config:**
-
-.. code-block:: yaml
-
-    SECRET_KEY: ${SECRET_KEY}
-    DB:
-      CONNECTION_STRING: ${DATABASE_URL}
+    $ platzky run --config config-dev.yml
+    $ gunicorn "platzky.platzky:create_app(config_path='config-prod.yml')"
 
 **Load config from environment-specific paths:**
 

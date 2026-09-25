@@ -9,7 +9,6 @@
         "slug": "hello-platzky",
         "author": "My Platzky App",
         "language": "en",
-        "date": "$today",
         "excerpt": "The first post of your new site.",
         "contentInMarkdown": "Welcome to your new Platzky site.\n\nEdit `data.json` to change this post, add your own, or remove it entirely.\n",
         "tags": [],

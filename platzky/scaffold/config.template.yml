@@ -1,4 +1,8 @@
 APP_NAME: "My Platzky App"
+
+# Signs session cookies: anyone who knows it can forge a login, so keep it secret and out of
+# version control. This file is created readable only by you for that reason. Each site needs
+# its own; generate a new one with: python -c "import secrets; print(secrets.token_hex(32))"
 SECRET_KEY: "$secret_key"
 
 # Set to true once the site is served from a www domain.
@@ -15,7 +19,7 @@ LANGUAGES:
 
 DB:
   TYPE: json_file
-  PATH: "$data_filename"
+  PATH: "data.json"
 
 # Uncomment feature flags if you want to change.
 #FEATURE_FLAGS:
