@@ -66,12 +66,10 @@ for more information.
 
 How much detail the application writes to its logs, from ``DEBUG`` (everything) through
 ``INFO``, ``WARNING`` and ``ERROR`` to ``CRITICAL`` (only the worst). Each level includes the
-ones after it, so the default ``INFO`` still shows every warning and error. Write it in upper
-case.
+ones after it, so the default ``INFO`` still shows every warning and error.
 
 Use ``DEBUG`` when tracking a problem down: it reports what the site is doing step by step,
-including the libraries it uses, which is a lot of output. It is safe to turn on in
-production — it only changes what gets logged, nothing about how the site behaves.
+including the libraries it uses, which is a lot of output.
 
 .. code-block:: yaml
 
