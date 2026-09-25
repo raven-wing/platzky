@@ -123,7 +123,7 @@ class TestPlatzky:
                 result = create_app("test_config.yml")
 
                 mock_parse_yaml.assert_called_once_with("test_config.yml")
-                mock_create_app_from_config.assert_called_once_with(mock_config)
+                mock_create_app_from_config.assert_called_once_with(mock_config, development=False)
                 assert result == mock_engine
 
     def test_fake_login_routes(self, mock_db: MagicMock):
@@ -137,13 +137,12 @@ class TestPlatzky:
                 "SECRET_KEY": "secret",
                 "SEO_PREFIX": "/seo",
                 "TESTING": True,
-                "DEBUG": True,
                 "DB": {"TYPE": "json", "DATA": {}},
                 "FEATURE_FLAGS": {"FAKE_LOGIN": True},
             }
             config = Config.model_validate(config_raw)
 
-            app = create_app_from_config(config)
+            app = create_app_from_config(config, development=True)
             app.secret_key = "test_secret_key"  # NOSONAR - hardcoded secret acceptable in tests
             client = app.test_client()
 
@@ -191,8 +190,8 @@ class TestPlatzky:
                 assert sess["user"]["username"] == "user"
                 assert sess["user"]["role"] == "nonadmin"
 
-    def test_fake_login_is_blocked_on_nondev_env(self, monkeypatch: pytest.MonkeyPatch):
-        """Test that fake login is blocked on non-development environments."""
+    def test_fake_login_is_blocked_outside_development(self):
+        """Test that fake login is blocked unless the app runs in development mode."""
         config_raw = {
             "USE_WWW": False,
             "APP_NAME": "testing App Name",
@@ -202,8 +201,6 @@ class TestPlatzky:
             "FEATURE_FLAGS": {"FAKE_LOGIN": True},
         }
 
-        monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
-        monkeypatch.delenv("FLASK_DEBUG", raising=False)
         config = Config.model_validate(config_raw)
 
         with pytest.raises(
@@ -223,31 +220,30 @@ class TestLogging:
         platzky_logger.handlers = handlers
 
     @staticmethod
-    def _create_app(debug: bool = False, log_level: str | None = None) -> None:
+    def _create_app(development: bool = False, log_level: str | None = None) -> None:
         raw_config = {
             "APP_NAME": "testing App Name",
             "SECRET_KEY": "secret",
-            "DEBUG": debug,
             "DB": {"TYPE": "json", "DATA": {}},
         }
         if log_level is not None:
             raw_config["LOG_LEVEL"] = log_level
         config = Config.model_validate(raw_config)
         with patch("platzky.platzky.get_db", return_value=MagicMock()):
-            create_app_from_config(config)
+            create_app_from_config(config, development=development)
 
-    def test_enables_debug_level(self, platzky_logger: logging.Logger):
-        self._create_app(debug=True)
+    def test_development_enables_debug_level(self, platzky_logger: logging.Logger):
+        self._create_app(development=True)
 
         assert platzky_logger.level == logging.DEBUG
 
-    def test_log_level_applies_without_debug_mode(self, platzky_logger: logging.Logger):
-        self._create_app(debug=False, log_level="INFO")
+    def test_log_level_applies_outside_development(self, platzky_logger: logging.Logger):
+        self._create_app(log_level="INFO")
 
         assert platzky_logger.level == logging.INFO
 
-    def test_log_level_wins_over_debug_mode(self, platzky_logger: logging.Logger):
-        self._create_app(debug=True, log_level="WARNING")
+    def test_log_level_wins_over_development(self, platzky_logger: logging.Logger):
+        self._create_app(development=True, log_level="WARNING")
 
         assert platzky_logger.level == logging.WARNING
 
@@ -267,7 +263,7 @@ class TestLogging:
         monkeypatch.setenv("FLASK_DEBUG", "1")
         level_before = platzky_logger.level
 
-        self._create_app(debug=False)
+        self._create_app()
 
         assert platzky_logger.level == level_before
 
@@ -277,8 +273,8 @@ class TestLogging:
         monkeypatch.setattr(logging.getLogger(), "handlers", [])
         platzky_logger.handlers = []
 
-        self._create_app(debug=True)
-        self._create_app(debug=True)
+        self._create_app(development=True)
+        self._create_app(development=True)
 
         assert len(platzky_logger.handlers) == 1
 
@@ -288,6 +284,6 @@ class TestLogging:
         monkeypatch.setattr(logging.getLogger(), "handlers", [logging.NullHandler()])
         platzky_logger.handlers = []
 
-        self._create_app(debug=True)
+        self._create_app(development=True)
 
         assert platzky_logger.handlers == []

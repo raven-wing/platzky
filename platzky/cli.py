@@ -10,9 +10,10 @@ import click
 
 from platzky.platzky import create_app
 
-_CONFIG_FILENAME = "config.yml"
-_DATA_FILENAME = "data.json"
+_TARGET_CONFIG_FILENAME = "config.yml"
+_TARGET_DATA_FILENAME = "data.json"
 _SCAFFOLD_DIR = "scaffold"
+_CONFIG_FILE_MODE = 0o600
 # Named .template so the repository's ignore rules for config.yml/data.json do not apply.
 _CONFIG_TEMPLATE = "config.template.yml"
 _DATA_TEMPLATE = "data.template.json"
@@ -42,13 +43,24 @@ def cli() -> None:
 @click.option("--host", default="127.0.0.1", show_default=True, help="Interface to bind to.")
 @click.option("--port", default=5000, show_default=True, type=int, help="Port to bind to.")
 def run(config_path: str, host: str, port: int) -> None:
-    """Run the development server.
-
-    DEBUG in the configuration file enables the reloader and the interactive debugger.
-    """
-    app = create_app(config_path)
+    """Run the development server, with the reloader, the debugger and fake login available."""
+    app = create_app(config_path, development=True)
     # Explicit debug wins over FLASK_DEBUG, which Flask.run would otherwise let override it.
-    app.run(host=host, port=port, debug=app.debug)
+    app.run(host=host, port=port, debug=True)
+
+
+def _run_command(directory: Path) -> str:
+    """Return the command that starts the site created in the given directory.
+
+    Args:
+        directory: Directory holding the config and database files
+
+    Returns:
+        A ``platzky run`` command, prefixed with ``cd`` when the files are elsewhere, since
+        the database path in the config is relative to the working directory
+    """
+    run = f"platzky run --config {_TARGET_CONFIG_FILENAME}"
+    return run if directory == Path(".") else f"cd {directory} && {run}"
 
 
 @cli.command()
@@ -63,19 +75,25 @@ def run(config_path: str, host: str, port: int) -> None:
 def init(directory: Path) -> None:
     """Write a config file and a JSON database with sample content, ready to run."""
     directory.mkdir(parents=True, exist_ok=True)
-    config_file, data_file = directory / _CONFIG_FILENAME, directory / _DATA_FILENAME
+    config_file, data_file = directory / _TARGET_CONFIG_FILENAME, directory / _TARGET_DATA_FILENAME
     existing = [str(f) for f in (config_file, data_file) if f.exists()]
     if existing:
         raise click.ClickException(f"Refusing to overwrite: {', '.join(existing)}")
 
+    # Created owner-only before anything is written: the config holds the generated SECRET_KEY,
+    # and a cookie signed with it passes as any logged-in user.
+    config_file.touch(mode=_CONFIG_FILE_MODE)
     config_file.write_text(
         _render_scaffold(
             _CONFIG_TEMPLATE,
             secret_key=token_hex(32),
-            data_filename=_DATA_FILENAME,
-        )
+            data_filename=_TARGET_DATA_FILENAME,
+        ),
+        encoding="utf-8",
     )
-    data_file.write_text(_render_scaffold(_DATA_TEMPLATE, today=date.today().isoformat()))
+    data_file.write_text(
+        _render_scaffold(_DATA_TEMPLATE, today=date.today().isoformat()), encoding="utf-8"
+    )
     click.echo(f"Created {config_file} and {data_file}")
-    click.echo(f"Run it with: platzky run --config {config_file}")
+    click.echo(f"Run it with: {_run_command(directory)}")
     click.echo("It starts with one sample post and an About page; edit them in the database file.")

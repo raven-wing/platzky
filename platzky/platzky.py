@@ -408,11 +408,12 @@ def create_app_from_config(
     extra_plugin_bases: Sequence[type[PluginBase]] = (),
     extra_plugins_entrypoints: Sequence[str] = (),
     extra_content_types: Sequence[ContentType] = (),
+    development: bool = False,
 ) -> Engine:
     """Create a fully configured Platzky application from a Config object.
 
-    Applies LOG_LEVEL to platzky's logger (DEBUG mode implying ``DEBUG``), initializes the
-    database, creates the engine, sets up telemetry (if enabled), registers blueprints
+    Applies LOG_LEVEL to platzky's logger (development mode implying ``DEBUG``), initializes
+    the database, creates the engine, sets up telemetry (if enabled), registers blueprints
     (admin, blog, SEO), and configures minification and CSRF protection.
 
     Args:
@@ -426,6 +427,9 @@ def create_app_from_config(
             so its plugins can opt in to them through ``accepted_content_types``.
             The application's own contribution; a plugin declares any type it introduces
             through ``PluginBase.provides_content_types``.
+        development: Whether this is a development machine, which ``platzky run`` sets and a
+            production server leaves false. Enables Flask's debug mode and the shortcuts
+            that are unsafe in production, such as fake login.
 
     Returns:
         Fully configured Engine instance ready to serve requests
@@ -434,8 +438,8 @@ def create_app_from_config(
         ImportError: If telemetry is enabled but OpenTelemetry packages are not installed
         ValueError: If telemetry configuration is invalid
     """
-    # DEBUG mode implies debug logs; LOG_LEVEL sets them without Flask's debug mode.
-    log_level = config.log_level or ("DEBUG" if config.debug else None)
+    # Development implies debug logs; LOG_LEVEL sets them anywhere else, production included.
+    log_level = config.log_level or ("DEBUG" if development else None)
     if log_level:
         _set_log_level(log_level)
 
@@ -443,6 +447,8 @@ def create_app_from_config(
     engine = create_engine(
         config, db, extra_plugin_bases, extra_plugins_entrypoints, extra_content_types
     )
+    # Set here rather than read from FLASK_DEBUG, so how the app was started decides.
+    engine.debug = development
 
     # Setup telemetry (optional feature)
     if config.telemetry.enabled:
@@ -482,10 +488,10 @@ def create_app_from_config(
         engine.jinja_env.add_extension(_ext)
 
     if engine.is_enabled(FakeLogin):
-        if not (config.testing and config.debug):
+        if not development:
             raise RuntimeError(
                 "SECURITY ERROR: Cannot register FakeLoginPlugin in production. "
-                "Set TESTING: true and DEBUG: true in your config."
+                "Fake login is only available in development, i.e. under `platzky run`."
             )
         from platzky.debug.fake_login import FakeLoginPlugin
 
@@ -519,7 +525,7 @@ def create_app_from_config(
     return engine
 
 
-def create_app(config_path: str) -> Engine:
+def create_app(config_path: str, development: bool = False) -> Engine:
     """Create a Platzky application from a YAML configuration file.
 
     Convenience function that loads configuration from a YAML file and
@@ -527,6 +533,7 @@ def create_app(config_path: str) -> Engine:
 
     Args:
         config_path: Path to the YAML configuration file
+        development: Whether this is a development machine; ``platzky run`` sets it
 
     Returns:
         Fully configured Engine instance ready to serve requests
@@ -537,4 +544,4 @@ def create_app(config_path: str) -> Engine:
         ValidationError: If the configuration doesn't match the expected schema
     """
     config = Config.parse_yaml(config_path)
-    return create_app_from_config(config)
+    return create_app_from_config(config, development=development)

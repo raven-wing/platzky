@@ -165,8 +165,7 @@ class Config(BaseModel):
         blog_prefix: URL prefix for blog routes
         languages: Supported languages configuration
         translation_directories: Additional translation directories
-        debug: Enable debug mode
-        log_level: Level of platzky's own logs; DEBUG mode implies ``DEBUG``
+        log_level: Level of platzky's own logs; development mode implies ``DEBUG``
         testing: Enable testing mode
         feature_flags: Feature flag configuration
         telemetry: OpenTelemetry configuration
@@ -186,7 +185,6 @@ class Config(BaseModel):
         default_factory=list,
         alias="TRANSLATION_DIRECTORIES",
     )
-    debug: bool = Field(default=False, alias="DEBUG")
     log_level: t.Optional[str] = Field(default=None, alias="LOG_LEVEL")
     testing: bool = Field(default=False, alias="TESTING")
     feature_flags: FeatureFlagSet = Field(

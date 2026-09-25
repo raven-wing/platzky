@@ -33,8 +33,10 @@ Run the development server:
 
     $ platzky run --config config.yml
 
-``DEBUG: true`` in the configuration file enables the reloader and the interactive debugger.
-The configuration file is the only switch for this.
+This is development mode: the server reloads on code changes, shows the interactive debugger
+on errors, logs at ``DEBUG``, and allows shortcuts that are unsafe in production, such as the
+``FAKE_LOGIN`` feature flag. There is no setting for it — running this command *is* the
+switch, and an application served by a production server is never in development mode.
 
 .. warning::
     This is Flask's development server. For production, serve the application with a WSGI
@@ -49,5 +51,5 @@ A Platzky application is an ordinary WSGI application, so serve it with a produc
 
     $ gunicorn "platzky.platzky:create_app(config_path='config.yml')"
 
-Keep ``DEBUG: false`` there; a production server provides neither the reloader nor the
-interactive debugger, and debug mode would expose internals.
+Started this way the application is not in development mode: no reloader, no interactive
+debugger, and ``FAKE_LOGIN`` is refused. Set ``LOG_LEVEL`` if you need verbose logs there.

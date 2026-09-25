@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -21,8 +22,8 @@ def test_run_starts_server_on_given_address():
         )
 
     assert result.exit_code == 0
-    create.assert_called_once_with("config.yml")
-    app.run.assert_called_once_with(host="0.0.0.0", port=8080, debug=app.debug)
+    create.assert_called_once_with("config.yml", development=True)
+    app.run.assert_called_once_with(host="0.0.0.0", port=8080, debug=True)
 
 
 def test_run_defaults_to_localhost():
@@ -32,7 +33,7 @@ def test_run_defaults_to_localhost():
         result = CliRunner().invoke(cli, ["run", "--config", "config.yml"])
 
     assert result.exit_code == 0
-    app.run.assert_called_once_with(host="127.0.0.1", port=5000, debug=app.debug)
+    app.run.assert_called_once_with(host="127.0.0.1", port=5000, debug=True)
 
 
 def test_run_requires_config():
@@ -42,17 +43,16 @@ def test_run_requires_config():
     assert "--config" in result.output
 
 
-@pytest.mark.parametrize("debug", [True, False], ids=["debug_on", "debug_off"])
-def test_run_debug_follows_config_not_environment(monkeypatch: pytest.MonkeyPatch, debug: bool):
-    monkeypatch.setenv("FLASK_DEBUG", "0" if debug else "1")
+def test_run_is_development_regardless_of_environment(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("FLASK_DEBUG", "0")
     app = MagicMock()
-    app.debug = debug
 
-    with patch("platzky.cli.create_app", return_value=app):
+    with patch("platzky.cli.create_app", return_value=app) as create:
         result = CliRunner().invoke(cli, ["run", "--config", "config.yml"])
 
     assert result.exit_code == 0
-    assert app.run.call_args.kwargs["debug"] is debug
+    create.assert_called_once_with("config.yml", development=True)
+    assert app.run.call_args.kwargs["debug"] is True
 
 
 class TestInit:
@@ -119,7 +119,34 @@ class TestInit:
     def test_tells_how_to_run_the_application(self, tmp_path: Path):
         result = self._init(tmp_path)
 
-        assert f"platzky run --config {tmp_path / 'config.yml'}" in result.output
+        # The database path in the config is relative, so the command has to change directory.
+        assert f"cd {tmp_path} && platzky run --config config.yml" in result.output
+
+    def test_run_instruction_omits_cd_in_current_directory(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        monkeypatch.chdir(tmp_path)
+
+        result = CliRunner().invoke(cli, ["init"])
+
+        assert "Run it with: platzky run --config config.yml" in result.output
+
+    def test_printed_command_actually_starts_the_site(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        self._init(tmp_path)
+        monkeypatch.chdir(tmp_path)
+
+        app = create_app("config.yml")
+
+        assert app.test_client().get("/blog/").status_code == 200
+
+    @pytest.mark.skipif(os.name == "nt", reason="POSIX file modes")
+    def test_config_is_readable_only_by_its_owner(self, tmp_path: Path):
+        self._init(tmp_path)
+
+        # It holds the generated SECRET_KEY, which signs session cookies.
+        assert (tmp_path / "config.yml").stat().st_mode & 0o777 == 0o600
 
     def test_created_config_is_valid(self, tmp_path: Path):
         self._init(tmp_path)

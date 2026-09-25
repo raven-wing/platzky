@@ -58,23 +58,6 @@ Flask's secret key used for session signing and CSRF protection.
 See the `Flask documentation on SECRET_KEY <https://flask.palletsprojects.com/en/stable/config/#SECRET_KEY>`_
 for more information.
 
-``DEBUG``
-^^^^^^^^^
-
-:Type: ``bool``
-:Default: ``False``
-
-Enable debug mode. Started with ``platzky run``, the server then reloads on code changes and
-shows detailed error pages. It also implies ``LOG_LEVEL: DEBUG``.
-
-.. warning::
-    Never enable debug mode in production as it can expose sensitive information. To get
-    debug logs in production, set ``LOG_LEVEL`` instead.
-
-.. code-block:: yaml
-
-    DEBUG: true
-
 ``LOG_LEVEL``
 ^^^^^^^^^^^^^
 
@@ -87,7 +70,8 @@ How verbose Platzky's own logs are: ``DEBUG``, ``INFO``, ``WARNING``, ``ERROR`` 
 has not configured any logging handler, Platzky adds one that writes to stderr; otherwise
 the records go to the application's own handlers, in its format.
 
-Unlike ``DEBUG``, this is safe in production — it changes logging only.
+It changes logging only, so it is safe in production. Development mode, which ``platzky run``
+turns on, implies ``DEBUG`` unless this is set.
 
 .. code-block:: yaml
 
