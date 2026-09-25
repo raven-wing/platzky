@@ -119,17 +119,8 @@ class TestInit:
     def test_tells_how_to_run_the_application(self, tmp_path: Path):
         result = self._init(tmp_path)
 
-        # The database path in the config is relative, so the command has to change directory.
-        assert f"cd {tmp_path} && platzky run --config config.yml" in result.output
-
-    def test_run_instruction_omits_cd_in_current_directory(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ):
-        monkeypatch.chdir(tmp_path)
-
-        result = CliRunner().invoke(cli, ["init"])
-
-        assert "Run it with: platzky run --config config.yml" in result.output
+        # The database path in the config is relative, so the directory matters.
+        assert f"Run it from {tmp_path.resolve()}: platzky run --config config.yml" in result.output
 
     def test_printed_command_actually_starts_the_site(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

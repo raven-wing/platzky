@@ -47,20 +47,6 @@ def run(config_path: str, host: str, port: int) -> None:
     app.run(host=host, port=port, debug=True)
 
 
-def _run_command(directory: Path) -> str:
-    """Return the command that starts the site created in the given directory.
-
-    Args:
-        directory: Directory holding the config and database files
-
-    Returns:
-        A ``platzky run`` command, prefixed with ``cd`` when the files are elsewhere, since
-        the database path in the config is relative to the working directory
-    """
-    run = f"platzky run --config {_TARGET_CONFIG_FILENAME}"
-    return run if directory == Path(".") else f"cd {directory} && {run}"
-
-
 @cli.command()
 @click.option(
     "--path",
@@ -88,5 +74,6 @@ def init(directory: Path) -> None:
     )
     data_file.write_text(_render_scaffold(_DATA_TEMPLATE), encoding="utf-8")
     click.echo(f"Created {config_file} and {data_file}")
-    click.echo(f"Run it with: {_run_command(directory)}")
+    # From that directory, because the database path in the config is relative to it.
+    click.echo(f"Run it from {directory.resolve()}: platzky run --config {_TARGET_CONFIG_FILENAME}")
     click.echo("It starts with one sample post and an About page; edit them in the database file.")
