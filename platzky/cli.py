@@ -45,11 +45,6 @@ def run(config_path: str, host: str, port: int) -> None:
     """Run the development server.
 
     DEBUG in the configuration file enables the reloader and the interactive debugger.
-
-    Args:
-        config_path: Path to the YAML configuration file
-        host: Interface the server binds to
-        port: Port the server binds to
     """
     app = create_app(config_path)
     # Explicit debug wins over FLASK_DEBUG, which Flask.run would otherwise let override it.
@@ -66,11 +61,7 @@ def run(config_path: str, host: str, port: int) -> None:
     help="Directory the files are created in.",
 )
 def create(directory: Path) -> None:
-    """Create a new Platzky application: a config file and a JSON database with sample content.
-
-    Args:
-        directory: Directory the config and database files are created in
-    """
+    """Create a new Platzky application: a config file and a JSON database with sample content."""
     directory.mkdir(parents=True, exist_ok=True)
     config_file, data_file = directory / _CONFIG_FILENAME, directory / _DATA_FILENAME
     existing = [str(f) for f in (config_file, data_file) if f.exists()]
