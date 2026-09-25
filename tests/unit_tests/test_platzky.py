@@ -258,15 +258,12 @@ class TestLogging:
 
         assert logging.getLogger("some_other_library").getEffectiveLevel() == logging.DEBUG
 
-    @pytest.mark.parametrize("level", ["debug", "Debug"], ids=["lower", "mixed"])
-    def test_log_level_is_case_insensitive(self, root_logger: logging.Logger, level: str):
-        self._create_app(log_level=level)
-
-        assert root_logger.level == logging.DEBUG
-
-    def test_invalid_log_level_is_rejected(self):
+    @pytest.mark.parametrize(
+        "level", ["VERBOSE", "debug", "Debug"], ids=["unknown", "lower", "mixed"]
+    )
+    def test_invalid_log_level_is_rejected(self, level: str):
         with pytest.raises(ValidationError, match="Invalid LOG_LEVEL"):
-            self._create_app(log_level="VERBOSE")
+            self._create_app(log_level=level)
 
     def test_adds_one_handler_when_none_configured(self, root_logger: logging.Logger):
         root_logger.handlers = []

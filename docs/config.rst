@@ -65,7 +65,7 @@ for more information.
 :Default: ``INFO`` (``DEBUG`` in development)
 
 How verbose the application's logs are: ``DEBUG``, ``INFO``, ``WARNING``, ``ERROR`` or
-``CRITICAL`` (case-insensitive). It sets the level of the root logger, so it covers Platzky,
+``CRITICAL``, spelled in upper case. It sets the level of the root logger, so it covers Platzky,
 the application built on it and the libraries they use. When nothing has configured a logging
 handler, Platzky adds one that writes to stderr; when the application has its own, the records
 go there in its format.

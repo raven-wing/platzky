@@ -201,19 +201,19 @@ class Config(BaseModel):
     @field_validator("log_level")
     @classmethod
     def validate_log_level(cls, level: t.Optional[str]) -> t.Optional[str]:
-        """Reject a log level the logging module does not know.
+        """Reject anything but an upper-case level name the logging module knows.
 
         Args:
-            level: Level name such as DEBUG or INFO, in any case, or None
+            level: Level name such as DEBUG or INFO, or None
 
         Returns:
-            The level name in upper case, or None when unset
+            The level name unchanged, or None when unset
         """
-        if level is not None and level.upper() not in _LOG_LEVEL_NAMES:
+        if level is not None and level not in _LOG_LEVEL_NAMES:
             raise ValueError(
                 f"Invalid LOG_LEVEL: '{level}'. Must be one of: {', '.join(_LOG_LEVEL_NAMES)}"
             )
-        return level if level is None else level.upper()
+        return level
 
     @field_validator("blog_prefix")
     @classmethod
