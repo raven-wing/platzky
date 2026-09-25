@@ -4,6 +4,9 @@ SECRET_KEY: "$secret_key"
 # Set to true once the site is served from a www domain.
 USE_WWW: false
 
+# How verbose platzky's own logs are: DEBUG, INFO, WARNING, ERROR or CRITICAL.
+#LOG_LEVEL: DEBUG
+
 LANGUAGES:
   en:
     name: English

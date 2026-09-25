@@ -4,6 +4,7 @@ from collections.abc import Callable, Iterator
 from unittest.mock import MagicMock, patch
 
 import pytest
+from pydantic import ValidationError
 
 from platzky import create_app_from_config
 from platzky.config import Config, LanguageConfig
@@ -212,7 +213,7 @@ class TestPlatzky:
             create_app_from_config(config)
 
 
-class TestDebugLogging:
+class TestLogging:
     @pytest.fixture(autouse=True)
     def platzky_logger(self) -> Iterator[logging.Logger]:
         platzky_logger = logging.getLogger("platzky")
@@ -222,15 +223,16 @@ class TestDebugLogging:
         platzky_logger.handlers = handlers
 
     @staticmethod
-    def _create_app(debug: bool) -> None:
-        config = Config.model_validate(
-            {
-                "APP_NAME": "testing App Name",
-                "SECRET_KEY": "secret",
-                "DEBUG": debug,
-                "DB": {"TYPE": "json", "DATA": {}},
-            }
-        )
+    def _create_app(debug: bool = False, log_level: str | None = None) -> None:
+        raw_config = {
+            "APP_NAME": "testing App Name",
+            "SECRET_KEY": "secret",
+            "DEBUG": debug,
+            "DB": {"TYPE": "json", "DATA": {}},
+        }
+        if log_level is not None:
+            raw_config["LOG_LEVEL"] = log_level
+        config = Config.model_validate(raw_config)
         with patch("platzky.platzky.get_db", return_value=MagicMock()):
             create_app_from_config(config)
 
@@ -238,6 +240,26 @@ class TestDebugLogging:
         self._create_app(debug=True)
 
         assert platzky_logger.level == logging.DEBUG
+
+    def test_log_level_applies_without_debug_mode(self, platzky_logger: logging.Logger):
+        self._create_app(debug=False, log_level="INFO")
+
+        assert platzky_logger.level == logging.INFO
+
+    def test_log_level_wins_over_debug_mode(self, platzky_logger: logging.Logger):
+        self._create_app(debug=True, log_level="WARNING")
+
+        assert platzky_logger.level == logging.WARNING
+
+    @pytest.mark.parametrize("level", ["debug", "Debug"], ids=["lower", "mixed"])
+    def test_log_level_is_case_insensitive(self, platzky_logger: logging.Logger, level: str):
+        self._create_app(log_level=level)
+
+        assert platzky_logger.level == logging.DEBUG
+
+    def test_invalid_log_level_is_rejected(self):
+        with pytest.raises(ValidationError, match="Invalid LOG_LEVEL"):
+            self._create_app(log_level="VERBOSE")
 
     def test_ignores_flask_debug_env(
         self, monkeypatch: pytest.MonkeyPatch, platzky_logger: logging.Logger

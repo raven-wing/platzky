@@ -65,15 +65,36 @@ for more information.
 :Default: ``False``
 
 Enable debug mode. Started with ``platzky run``, the server then reloads on code changes and
-shows detailed error pages. The ``platzky`` logger is also set to ``DEBUG``; if the application
-has not configured any logging handler, Platzky adds one that writes to stderr.
+shows detailed error pages. It also implies ``LOG_LEVEL: DEBUG``.
 
 .. warning::
-    Never enable debug mode in production as it can expose sensitive information.
+    Never enable debug mode in production as it can expose sensitive information. To get
+    debug logs in production, set ``LOG_LEVEL`` instead.
 
 .. code-block:: yaml
 
     DEBUG: true
+
+``LOG_LEVEL``
+^^^^^^^^^^^^^
+
+:Type: ``str``
+:Default: unset
+
+How verbose Platzky's own logs are: ``DEBUG``, ``INFO``, ``WARNING``, ``ERROR`` or
+``CRITICAL`` (case-insensitive). It sets the level of the ``platzky`` logger, which every
+``platzky.*`` module logs through, and leaves other libraries alone. When the application
+has not configured any logging handler, Platzky adds one that writes to stderr; otherwise
+the records go to the application's own handlers, in its format.
+
+Unlike ``DEBUG``, this is safe in production — it changes logging only.
+
+.. code-block:: yaml
+
+    LOG_LEVEL: DEBUG
+
+When unset, Platzky configures nothing: records of ``WARNING`` and above still reach the
+application's logging setup, or Python's default stderr fallback.
 
 ``TESTING``
 ^^^^^^^^^^^

@@ -38,6 +38,8 @@ class LanguageConfig(BaseModel):
 Languages = dict[str, LanguageConfig]
 LanguagesMapping = t.Mapping[str, t.Mapping[str, str]]
 
+_LOG_LEVEL_NAMES = ("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG")
+
 
 def languages_dict(languages: Languages) -> LanguagesMapping:
     """Convert Languages configuration to a mapping dictionary.
@@ -164,6 +166,7 @@ class Config(BaseModel):
         languages: Supported languages configuration
         translation_directories: Additional translation directories
         debug: Enable debug mode
+        log_level: Level of platzky's own logs; DEBUG mode implies ``DEBUG``
         testing: Enable testing mode
         feature_flags: Feature flag configuration
         telemetry: OpenTelemetry configuration
@@ -184,6 +187,7 @@ class Config(BaseModel):
         alias="TRANSLATION_DIRECTORIES",
     )
     debug: bool = Field(default=False, alias="DEBUG")
+    log_level: t.Optional[str] = Field(default=None, alias="LOG_LEVEL")
     testing: bool = Field(default=False, alias="TESTING")
     feature_flags: FeatureFlagSet = Field(
         default_factory=lambda: FeatureFlagSet({}),
@@ -195,6 +199,23 @@ class Config(BaseModel):
         default_factory=list,
         alias="SITEMAP_EXCLUDED_PREFIXES",
     )
+
+    @field_validator("log_level")
+    @classmethod
+    def validate_log_level(cls, level: t.Optional[str]) -> t.Optional[str]:
+        """Reject a log level the logging module does not know.
+
+        Args:
+            level: Level name such as DEBUG or INFO, in any case, or None
+
+        Returns:
+            The level name in upper case, or None when unset
+        """
+        if level is not None and level.upper() not in _LOG_LEVEL_NAMES:
+            raise ValueError(
+                f"Invalid LOG_LEVEL: '{level}'. Must be one of: {', '.join(_LOG_LEVEL_NAMES)}"
+            )
+        return level if level is None else level.upper()
 
     @field_validator("blog_prefix")
     @classmethod

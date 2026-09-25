@@ -37,7 +37,7 @@ from platzky.www_handler import redirect_nonwww_to_www, redirect_www_to_nonwww
 
 logger = logging.getLogger(__name__)
 
-_DEBUG_LOG_FORMAT = "%(name)s - %(levelname)s - %(message)s"
+_LOG_FORMAT = "%(name)s - %(levelname)s - %(message)s"
 
 _MISSING_OTEL_MSG = (
     "OpenTelemetry is not installed. Install with: "
@@ -389,14 +389,18 @@ def create_engine(
     return plugify(app)
 
 
-def _enable_debug_logging() -> None:
-    """Emit platzky DEBUG records, adding a stderr handler unless one is already configured."""
-    platzky_logger = logging.getLogger("platzky")
-    platzky_logger.setLevel(logging.DEBUG)
-    if not platzky_logger.hasHandlers():
+def _set_log_level(level: str) -> None:
+    """Emit platzky records at the given level, adding a stderr handler unless one exists.
+
+    Args:
+        level: Level name for the ``platzky`` logger, such as DEBUG or INFO
+    """
+    package_logger = logging.getLogger("platzky")
+    package_logger.setLevel(level)
+    if not package_logger.hasHandlers():
         handler = logging.StreamHandler()
-        handler.setFormatter(logging.Formatter(_DEBUG_LOG_FORMAT))
-        platzky_logger.addHandler(handler)
+        handler.setFormatter(logging.Formatter(_LOG_FORMAT))
+        package_logger.addHandler(handler)
 
 
 def create_app_from_config(
@@ -407,9 +411,9 @@ def create_app_from_config(
 ) -> Engine:
     """Create a fully configured Platzky application from a Config object.
 
-    Enables platzky debug logging (when DEBUG is set in the config), initializes the database,
-    creates the engine, sets up telemetry (if enabled), registers blueprints (admin, blog, SEO),
-    and configures minification and CSRF protection.
+    Applies LOG_LEVEL to platzky's logger (DEBUG mode implying ``DEBUG``), initializes the
+    database, creates the engine, sets up telemetry (if enabled), registers blueprints
+    (admin, blog, SEO), and configures minification and CSRF protection.
 
     Args:
         config: Application configuration object
@@ -430,8 +434,10 @@ def create_app_from_config(
         ImportError: If telemetry is enabled but OpenTelemetry packages are not installed
         ValueError: If telemetry configuration is invalid
     """
-    if config.debug:
-        _enable_debug_logging()
+    # DEBUG mode implies debug logs; LOG_LEVEL sets them without Flask's debug mode.
+    log_level = config.log_level or ("DEBUG" if config.debug else None)
+    if log_level:
+        _set_log_level(log_level)
 
     db = get_db(config.db)
     engine = create_engine(
