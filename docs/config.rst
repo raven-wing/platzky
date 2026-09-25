@@ -15,11 +15,11 @@ Configuration is loaded when creating the application:
 
     app = create_app(config_path='config.yml')
 
-You can start with the provided template:
+``platzky create`` writes a starting ``config.yml`` for you:
 
 .. code-block:: bash
 
-    $ cp config-template.yml config.yml
+    $ platzky create
     $ # Edit config.yml with your settings
     $ platzky run --config config.yml
 

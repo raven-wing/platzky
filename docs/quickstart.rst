@@ -40,16 +40,9 @@ application in production.
 Configuration
 -------------
 
-Platzky uses a YAML configuration file. ``platzky create`` writes a minimal one; the
-``config-template.yml`` shipped with the source shows every option with comments, including
-the other database backends:
-
-.. code-block:: bash
-
-    $ cp config-template.yml config.yml
-    $ # Edit config.yml with your settings
-
-See :doc:`config` for detailed configuration options.
+Platzky uses a YAML configuration file. ``platzky create`` writes a minimal one, holding the
+settings a new site needs; :doc:`config` documents every option, and :doc:`database` the other
+database backends.
 
 What to Do Next
 ---------------
