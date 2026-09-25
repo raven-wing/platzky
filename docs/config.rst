@@ -64,22 +64,20 @@ for more information.
 :Type: ``str``
 :Default: ``INFO`` (``DEBUG`` in development)
 
-How verbose the application's logs are: ``DEBUG``, ``INFO``, ``WARNING``, ``ERROR`` or
-``CRITICAL``, spelled in upper case. It sets the level of the root logger, so it covers Platzky,
-the application built on it and the libraries they use. When nothing has configured a logging
-handler, Platzky adds one that writes to stderr; when the application has its own, the records
-go there in its format.
+How much detail the application writes to its logs, from ``DEBUG`` (everything) through
+``INFO``, ``WARNING`` and ``ERROR`` to ``CRITICAL`` (only the worst). Each level includes the
+ones after it, so the default ``INFO`` still shows every warning and error. Write it in upper
+case.
 
-It changes logging only, so it is safe in production — this is how to get debug logs from a
-deployment without turning on anything else. Development mode, which ``platzky run`` turns on,
-implies ``DEBUG`` unless this is set.
+Use ``DEBUG`` when tracking a problem down: it reports what the site is doing step by step,
+including the libraries it uses, which is a lot of output. It is safe to turn on in
+production — it only changes what gets logged, nothing about how the site behaves.
 
 .. code-block:: yaml
 
     LOG_LEVEL: DEBUG
 
-At ``DEBUG`` this includes third-party libraries such as the database driver and HTTP client,
-which is verbose; ``INFO`` is usually enough to follow what the application is doing.
+The development server (``platzky run``) uses ``DEBUG`` unless this setting says otherwise.
 
 ``TESTING``
 ^^^^^^^^^^^
