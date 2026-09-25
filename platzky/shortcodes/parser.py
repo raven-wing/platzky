@@ -123,7 +123,7 @@ def _render_element(
         # Markup truthfully: the content was either vouched for by its caller or escaped at
         # the boundary, and anything added since came from a permitted plugin. The type is
         # what tells a shortcode author not to escape it again.
-        return shortcode.render(attrs, Content(content, elements))
+        return shortcode.render(attrs, Content(content, elements=elements))
     except ElementRefused as refusal:
         # One element, not the page: an author's typo costs its own tag. Logged because an
         # author cannot see an absence, and named by tag so they can find which one.

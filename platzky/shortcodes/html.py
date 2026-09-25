@@ -32,7 +32,11 @@ class HtmlShortcode(Shortcode):
         "the rest of the post."
     )
 
-    def render(self, attrs: ShortcodeAttrs, content: Content) -> str:  # noqa: ARG002
+    def render(
+        self,
+        attrs: ShortcodeAttrs,  # noqa: ARG002
+        content: Content,
+    ) -> str:
         """Return the body unchanged.
 
         Args:

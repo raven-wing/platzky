@@ -200,19 +200,37 @@ class Content(Markup):
     new instance with none.
     """
 
-    elements: tuple[Markup, ...]
+    #: A default as well as a declaration, so the attribute is there whatever route an
+    #: instance came by — ``Markup`` builds one straight from ``str`` in places.
+    elements: tuple[Markup, ...] = ()
 
-    def __new__(cls, base: object = "", elements: Sequence[Markup] = ()) -> Self:
+    # ``elements`` is keyword-only because the positional slots are ``Markup``'s own:
+    # taking the second would make Content(b"...", "utf-8") skip the decoding and count
+    # the encoding's letters as children.
+    def __new__(
+        cls,
+        base: object = "",
+        encoding: str | None = None,
+        errors: str = "strict",
+        *,
+        elements: Sequence[Markup] = (),
+    ) -> Self:
         """Wrap already-rendered markup.
 
         Args:
             base: The markup, trusted as-is.
+            encoding: Passed to ``Markup``, which decodes a bytes ``base`` with it.
+            errors: Passed to ``Markup``, which handles a decoding error by it.
             elements: One entry per rendered element child, in document order.
 
         Returns:
             The content.
         """
-        content = super().__new__(cls, base)
+        content = (
+            super().__new__(cls, base)
+            if encoding is None
+            else super().__new__(cls, base, encoding, errors)
+        )
         content.elements = tuple(elements)
         return content
 
