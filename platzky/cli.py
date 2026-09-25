@@ -13,7 +13,6 @@ _TARGET_CONFIG_FILENAME = "config.yml"
 _TARGET_DATA_FILENAME = "data.json"
 _SCAFFOLD_DIR = "scaffold"
 _CONFIG_FILE_MODE = 0o600
-# Named .template so the repository's ignore rules for config.yml/data.json do not apply.
 _CONFIG_TEMPLATE = "config.template.yml"
 _DATA_TEMPLATE = "data.template.json"
 

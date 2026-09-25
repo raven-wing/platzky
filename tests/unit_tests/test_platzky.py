@@ -262,7 +262,7 @@ class TestLogging:
         "level", ["VERBOSE", "debug", "Debug"], ids=["unknown", "lower", "mixed"]
     )
     def test_invalid_log_level_is_rejected(self, level: str):
-        with pytest.raises(ValidationError, match="Invalid LOG_LEVEL"):
+        with pytest.raises(ValidationError, match="LOG_LEVEL"):
             self._create_app(log_level=level)
 
     def test_adds_one_handler_when_none_configured(self, root_logger: logging.Logger):

@@ -38,7 +38,7 @@ class LanguageConfig(BaseModel):
 Languages = dict[str, LanguageConfig]
 LanguagesMapping = t.Mapping[str, t.Mapping[str, str]]
 
-_LOG_LEVEL_NAMES = ("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG")
+LogLevel = t.Literal["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]
 
 
 def languages_dict(languages: Languages) -> LanguagesMapping:
@@ -185,7 +185,7 @@ class Config(BaseModel):
         default_factory=list,
         alias="TRANSLATION_DIRECTORIES",
     )
-    log_level: t.Optional[str] = Field(default=None, alias="LOG_LEVEL")
+    log_level: t.Optional[LogLevel] = Field(default=None, alias="LOG_LEVEL")
     testing: bool = Field(default=False, alias="TESTING")
     feature_flags: FeatureFlagSet = Field(
         default_factory=lambda: FeatureFlagSet({}),
@@ -197,23 +197,6 @@ class Config(BaseModel):
         default_factory=list,
         alias="SITEMAP_EXCLUDED_PREFIXES",
     )
-
-    @field_validator("log_level")
-    @classmethod
-    def validate_log_level(cls, level: t.Optional[str]) -> t.Optional[str]:
-        """Reject anything but an upper-case level name the logging module knows.
-
-        Args:
-            level: Level name such as DEBUG or INFO, or None
-
-        Returns:
-            The level name unchanged, or None when unset
-        """
-        if level is not None and level not in _LOG_LEVEL_NAMES:
-            raise ValueError(
-                f"Invalid LOG_LEVEL: '{level}'. Must be one of: {', '.join(_LOG_LEVEL_NAMES)}"
-            )
-        return level
 
     @field_validator("blog_prefix")
     @classmethod
