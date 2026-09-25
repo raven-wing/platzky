@@ -165,7 +165,7 @@ class Config(BaseModel):
         blog_prefix: URL prefix for blog routes
         languages: Supported languages configuration
         translation_directories: Additional translation directories
-        log_level: Level of platzky's own logs; development mode implies ``DEBUG``
+        log_level: Level of the application's logs; defaults to INFO, development to DEBUG
         testing: Enable testing mode
         feature_flags: Feature flag configuration
         telemetry: OpenTelemetry configuration

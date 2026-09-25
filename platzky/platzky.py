@@ -38,6 +38,7 @@ from platzky.www_handler import redirect_nonwww_to_www, redirect_www_to_nonwww
 logger = logging.getLogger(__name__)
 
 _LOG_FORMAT = "%(name)s - %(levelname)s - %(message)s"
+_DEFAULT_LOG_LEVEL = "INFO"
 
 _MISSING_OTEL_MSG = (
     "OpenTelemetry is not installed. Install with: "
@@ -389,18 +390,18 @@ def create_engine(
     return plugify(app)
 
 
-def _set_log_level(level: str) -> None:
-    """Emit platzky records at the given level, adding a stderr handler unless one exists.
+def _configure_logging(level: str) -> None:
+    """Log the whole application at the given level, adding a stderr handler unless one exists.
 
     Args:
-        level: Level name for the ``platzky`` logger, such as DEBUG or INFO
+        level: Level name for the root logger, such as DEBUG or INFO
     """
-    package_logger = logging.getLogger("platzky")
-    package_logger.setLevel(level)
-    if not package_logger.hasHandlers():
+    root_logger = logging.getLogger()
+    root_logger.setLevel(level)
+    if not root_logger.handlers:
         handler = logging.StreamHandler()
         handler.setFormatter(logging.Formatter(_LOG_FORMAT))
-        package_logger.addHandler(handler)
+        root_logger.addHandler(handler)
 
 
 def create_app_from_config(
@@ -412,7 +413,7 @@ def create_app_from_config(
 ) -> Engine:
     """Create a fully configured Platzky application from a Config object.
 
-    Applies LOG_LEVEL to platzky's logger (development mode implying ``DEBUG``), initializes
+    Applies LOG_LEVEL to the root logger (INFO by default, DEBUG in development), initializes
     the database, creates the engine, sets up telemetry (if enabled), registers blueprints
     (admin, blog, SEO), and configures minification and CSRF protection.
 
@@ -438,10 +439,8 @@ def create_app_from_config(
         ImportError: If telemetry is enabled but OpenTelemetry packages are not installed
         ValueError: If telemetry configuration is invalid
     """
-    # Development implies debug logs; LOG_LEVEL sets them anywhere else, production included.
-    log_level = config.log_level or ("DEBUG" if development else None)
-    if log_level:
-        _set_log_level(log_level)
+    # LOG_LEVEL is the application's own setting, so it covers every logger, not just platzky's.
+    _configure_logging(config.log_level or ("DEBUG" if development else _DEFAULT_LOG_LEVEL))
 
     db = get_db(config.db)
     engine = create_engine(

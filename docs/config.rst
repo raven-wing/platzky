@@ -62,23 +62,24 @@ for more information.
 ^^^^^^^^^^^^^
 
 :Type: ``str``
-:Default: unset
+:Default: ``INFO`` (``DEBUG`` in development)
 
-How verbose Platzky's own logs are: ``DEBUG``, ``INFO``, ``WARNING``, ``ERROR`` or
-``CRITICAL`` (case-insensitive). It sets the level of the ``platzky`` logger, which every
-``platzky.*`` module logs through, and leaves other libraries alone. When the application
-has not configured any logging handler, Platzky adds one that writes to stderr; otherwise
-the records go to the application's own handlers, in its format.
+How verbose the application's logs are: ``DEBUG``, ``INFO``, ``WARNING``, ``ERROR`` or
+``CRITICAL`` (case-insensitive). It sets the level of the root logger, so it covers Platzky,
+the application built on it and the libraries they use. When nothing has configured a logging
+handler, Platzky adds one that writes to stderr; when the application has its own, the records
+go there in its format.
 
-It changes logging only, so it is safe in production. Development mode, which ``platzky run``
-turns on, implies ``DEBUG`` unless this is set.
+It changes logging only, so it is safe in production — this is how to get debug logs from a
+deployment without turning on anything else. Development mode, which ``platzky run`` turns on,
+implies ``DEBUG`` unless this is set.
 
 .. code-block:: yaml
 
     LOG_LEVEL: DEBUG
 
-When unset, Platzky configures nothing: records of ``WARNING`` and above still reach the
-application's logging setup, or Python's default stderr fallback.
+At ``DEBUG`` this includes third-party libraries such as the database driver and HTTP client,
+which is verbose; ``INFO`` is usually enough to follow what the application is doing.
 
 ``TESTING``
 ^^^^^^^^^^^

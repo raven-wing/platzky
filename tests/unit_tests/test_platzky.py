@@ -212,12 +212,13 @@ class TestPlatzky:
 
 class TestLogging:
     @pytest.fixture(autouse=True)
-    def platzky_logger(self) -> Iterator[logging.Logger]:
-        platzky_logger = logging.getLogger("platzky")
-        level, handlers = platzky_logger.level, platzky_logger.handlers[:]
-        yield platzky_logger
-        platzky_logger.setLevel(level)
-        platzky_logger.handlers = handlers
+    def root_logger(self) -> Iterator[logging.Logger]:
+        """Restore the root logger, which creating an application configures."""
+        root_logger = logging.getLogger()
+        level, handlers = root_logger.level, root_logger.handlers[:]
+        yield root_logger
+        root_logger.setLevel(level)
+        root_logger.handlers = handlers
 
     @staticmethod
     def _create_app(development: bool = False, log_level: str | None = None) -> None:
@@ -232,58 +233,53 @@ class TestLogging:
         with patch("platzky.platzky.get_db", return_value=MagicMock()):
             create_app_from_config(config, development=development)
 
-    def test_development_enables_debug_level(self, platzky_logger: logging.Logger):
+    def test_defaults_to_info(self, root_logger: logging.Logger):
+        self._create_app()
+
+        assert root_logger.level == logging.INFO
+
+    def test_development_enables_debug_level(self, root_logger: logging.Logger):
         self._create_app(development=True)
 
-        assert platzky_logger.level == logging.DEBUG
+        assert root_logger.level == logging.DEBUG
 
-    def test_log_level_applies_outside_development(self, platzky_logger: logging.Logger):
-        self._create_app(log_level="INFO")
+    def test_log_level_applies_outside_development(self, root_logger: logging.Logger):
+        self._create_app(log_level="WARNING")
 
-        assert platzky_logger.level == logging.INFO
+        assert root_logger.level == logging.WARNING
 
-    def test_log_level_wins_over_development(self, platzky_logger: logging.Logger):
+    def test_log_level_wins_over_development(self, root_logger: logging.Logger):
         self._create_app(development=True, log_level="WARNING")
 
-        assert platzky_logger.level == logging.WARNING
+        assert root_logger.level == logging.WARNING
+
+    def test_log_level_covers_other_libraries(self):
+        self._create_app(log_level="DEBUG")
+
+        assert logging.getLogger("some_other_library").getEffectiveLevel() == logging.DEBUG
 
     @pytest.mark.parametrize("level", ["debug", "Debug"], ids=["lower", "mixed"])
-    def test_log_level_is_case_insensitive(self, platzky_logger: logging.Logger, level: str):
+    def test_log_level_is_case_insensitive(self, root_logger: logging.Logger, level: str):
         self._create_app(log_level=level)
 
-        assert platzky_logger.level == logging.DEBUG
+        assert root_logger.level == logging.DEBUG
 
     def test_invalid_log_level_is_rejected(self):
         with pytest.raises(ValidationError, match="Invalid LOG_LEVEL"):
             self._create_app(log_level="VERBOSE")
 
-    def test_ignores_flask_debug_env(
-        self, monkeypatch: pytest.MonkeyPatch, platzky_logger: logging.Logger
-    ):
-        monkeypatch.setenv("FLASK_DEBUG", "1")
-        level_before = platzky_logger.level
+    def test_adds_one_handler_when_none_configured(self, root_logger: logging.Logger):
+        root_logger.handlers = []
+
+        self._create_app()
+        self._create_app()
+
+        assert len(root_logger.handlers) == 1
+
+    def test_keeps_application_handlers(self, root_logger: logging.Logger):
+        app_handler = logging.NullHandler()
+        root_logger.handlers = [app_handler]
 
         self._create_app()
 
-        assert platzky_logger.level == level_before
-
-    def test_adds_one_handler_when_none_configured(
-        self, monkeypatch: pytest.MonkeyPatch, platzky_logger: logging.Logger
-    ):
-        monkeypatch.setattr(logging.getLogger(), "handlers", [])
-        platzky_logger.handlers = []
-
-        self._create_app(development=True)
-        self._create_app(development=True)
-
-        assert len(platzky_logger.handlers) == 1
-
-    def test_keeps_application_handlers(
-        self, monkeypatch: pytest.MonkeyPatch, platzky_logger: logging.Logger
-    ):
-        monkeypatch.setattr(logging.getLogger(), "handlers", [logging.NullHandler()])
-        platzky_logger.handlers = []
-
-        self._create_app(development=True)
-
-        assert platzky_logger.handlers == []
+        assert root_logger.handlers == [app_handler]
