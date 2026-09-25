@@ -85,29 +85,30 @@ def served_languages(config: "Config", host: str) -> dict[str, str]:
     return {config.default_language: "", **{lang: f"/{lang}" for lang in config.path_languages}}
 
 
-def language_home_url(config: "Config", lang: str, scheme: str, host: str) -> str:
-    """Return the absolute URL of a language's home page, valid from any host.
+def language_url(config: "Config", lang: str, scheme: str, host: str, path: str = "/") -> str:
+    """Return the absolute URL of a page in a language, valid from any host.
 
     Args:
         config: Application configuration.
         lang: Language code to link to.
         scheme: URL scheme of the current request.
         host: Host of the current request.
+        path: Path of the page without any language prefix; the home page by default.
 
     Returns:
-        The root of the language's own domain for a domain language. For the default and path
-        languages, ``/`` or ``/<code>/`` on the current host, or on the default language's
-        domain when the current host belongs to another language.
+        ``path`` on the language's own domain for a domain language. For the default and path
+        languages, ``path`` or ``/<code>path`` on the current host, or on the default
+        language's domain when the current host belongs to another language.
     """
     languages = config.languages
     language = languages.get(lang)
     if language and language.domain and lang != config.default_language:
-        return f"{scheme}://{_apply_www(language.domain, config.use_www)}/"
+        return f"{scheme}://{_apply_www(language.domain, config.use_www)}{path}"
     default = languages.get(config.default_language)
     if default and default.domain and dedicated_language(config, host):
         host = _apply_www(default.domain, config.use_www)
     prefix = "" if lang == config.default_language else f"/{lang}"
-    return f"{scheme}://{host}{prefix}/"
+    return f"{scheme}://{host}{prefix}{path}"
 
 
 def _apply_www(domain: str, use_www: bool) -> str:

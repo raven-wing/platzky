@@ -26,7 +26,7 @@ from platzky.db.db import DB
 from platzky.db.db_loader import get_db
 from platzky.engine import Engine
 from platzky.feature_flags import FakeLogin
-from platzky.language_routing import LANG_CODE_ARG, language_home_url, served_languages
+from platzky.language_routing import LANG_CODE_ARG, language_url, served_languages
 from platzky.login import login
 from platzky.plugin.content_transformer import ContentTransformerPluginBase
 from platzky.plugin.login import LoginPluginBase
@@ -38,6 +38,9 @@ from platzky.shortcodes.builtins import get_builtin_shortcodes
 from platzky.www_handler import redirect_nonwww_to_www, redirect_www_to_nonwww
 
 logger = logging.getLogger(__name__)
+
+_LOG_FORMAT = "%(name)s - %(levelname)s - %(message)s"
+_DEFAULT_LOG_LEVEL = "INFO"
 
 _MISSING_OTEL_MSG = (
     "OpenTelemetry is not installed. Install with: "
@@ -163,7 +166,7 @@ def _change_language_response(config: Config, lang: str) -> Response:
     """
     if lang not in config.languages:
         return make_response(render_template(_NOT_FOUND_TEMPLATE, title="404"), 404)
-    return redirect(language_home_url(config, lang, request.scheme, request.host), code=302)
+    return redirect(language_url(config, lang, request.scheme, request.host), code=302)
 
 
 def _home_page_response(app: Engine, config: Config) -> ResponseReturnValue:
@@ -286,9 +289,8 @@ def create_engine(
             "current_lang_country": country,
             "current_language": locale,
             "default_language": config.default_language,
-            "language_home_url": partial(
-                language_home_url, config, scheme=request.scheme, host=request.host
-            ),
+            "language_url": partial(language_url, config, scheme=request.scheme, host=request.host),
+            "language_alternates": app.language_urls(),
             "url_link": _url_encode,
             "menu_items": app.db.get_menu_items_in_lang(locale),
             "logo_url": app.db.get_logo_url(),
@@ -345,17 +347,32 @@ def create_engine(
     return plugify(app)
 
 
+def _configure_logging(level: str) -> None:
+    """Log the whole application at the given level, adding a stderr handler unless one exists.
+
+    Args:
+        level: Level name for the root logger, such as DEBUG or INFO
+    """
+    root_logger = logging.getLogger()
+    root_logger.setLevel(level)
+    if not root_logger.handlers:
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter(_LOG_FORMAT))
+        root_logger.addHandler(handler)
+
+
 def create_app_from_config(
     config: Config,
     extra_plugin_bases: Sequence[type[PluginBase]] = (),
     extra_plugins_entrypoints: Sequence[str] = (),
     extra_content_types: Sequence[ContentType] = (),
+    development: bool = False,
 ) -> Engine:
     """Create a fully configured Platzky application from a Config object.
 
-    Initializes the database, creates the engine, sets up telemetry (if enabled),
-    registers blueprints (admin, blog, SEO), and configures minification and CSRF
-    protection.
+    Applies LOG_LEVEL to the root logger (INFO by default, DEBUG in development), initializes
+    the database, creates the engine, sets up telemetry (if enabled), registers blueprints
+    (admin, blog, SEO), and configures minification and CSRF protection.
 
     Args:
         config: Application configuration object
@@ -368,6 +385,9 @@ def create_app_from_config(
             so its plugins can opt in to them through ``accepted_content_types``.
             The application's own contribution; a plugin declares any type it introduces
             through ``PluginBase.provides_content_types``.
+        development: Whether this is a development machine, which ``platzky run`` sets and a
+            production server leaves false. Enables Flask's debug mode and the shortcuts
+            that are unsafe in production, such as fake login.
 
     Returns:
         Fully configured Engine instance ready to serve requests
@@ -376,10 +396,15 @@ def create_app_from_config(
         ImportError: If telemetry is enabled but OpenTelemetry packages are not installed
         ValueError: If telemetry configuration is invalid
     """
+    # LOG_LEVEL is the application's own setting, so it covers every logger, not just platzky's.
+    _configure_logging(config.log_level or ("DEBUG" if development else _DEFAULT_LOG_LEVEL))
+
     db = get_db(config.db)
     engine = create_engine(
         config, db, extra_plugin_bases, extra_plugins_entrypoints, extra_content_types
     )
+    # Set here rather than read from FLASK_DEBUG, so how the app was started decides.
+    engine.debug = development
 
     # Setup telemetry (optional feature)
     if config.telemetry.enabled:
@@ -419,10 +444,10 @@ def create_app_from_config(
         engine.jinja_env.add_extension(_ext)
 
     if engine.is_enabled(FakeLogin):
-        if not (config.testing and config.debug):
+        if not development:
             raise RuntimeError(
                 "SECURITY ERROR: Cannot register FakeLoginPlugin in production. "
-                "Set TESTING: true and DEBUG: true in your config."
+                "Fake login is only available in development, i.e. under `platzky run`."
             )
         from platzky.debug.fake_login import FakeLoginPlugin
 
@@ -459,7 +484,7 @@ def create_app_from_config(
     return engine
 
 
-def create_app(config_path: str) -> Engine:
+def create_app(config_path: str, development: bool = False) -> Engine:
     """Create a Platzky application from a YAML configuration file.
 
     Convenience function that loads configuration from a YAML file and
@@ -467,6 +492,7 @@ def create_app(config_path: str) -> Engine:
 
     Args:
         config_path: Path to the YAML configuration file
+        development: Whether this is a development machine; ``platzky run`` sets it
 
     Returns:
         Fully configured Engine instance ready to serve requests
@@ -477,4 +503,4 @@ def create_app(config_path: str) -> Engine:
         ValidationError: If the configuration doesn't match the expected schema
     """
     config = Config.parse_yaml(config_path)
-    return create_app_from_config(config)
+    return create_app_from_config(config, development=development)

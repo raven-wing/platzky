@@ -1,8 +1,10 @@
+import logging
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from unittest.mock import MagicMock, patch
 
 import pytest
+from pydantic import ValidationError
 
 from platzky import create_app_from_config
 from platzky.config import Config
@@ -117,7 +119,7 @@ class TestPlatzky:
                 result = create_app("test_config.yml")
 
                 mock_parse_yaml.assert_called_once_with("test_config.yml")
-                mock_create_app_from_config.assert_called_once_with(mock_config)
+                mock_create_app_from_config.assert_called_once_with(mock_config, development=False)
                 assert result == mock_engine
 
     def test_fake_login_routes(self, mock_db: MagicMock):
@@ -131,13 +133,12 @@ class TestPlatzky:
                 "SECRET_KEY": "secret",
                 "SEO_PREFIX": "/seo",
                 "TESTING": True,
-                "DEBUG": True,
                 "DB": {"TYPE": "json", "DATA": {}},
                 "FEATURE_FLAGS": {"FAKE_LOGIN": True},
             }
             config = Config.model_validate(config_raw)
 
-            app = create_app_from_config(config)
+            app = create_app_from_config(config, development=True)
             app.secret_key = "test_secret_key"  # NOSONAR - hardcoded secret acceptable in tests
             client = app.test_client()
 
@@ -185,8 +186,8 @@ class TestPlatzky:
                 assert sess["user"]["username"] == "user"
                 assert sess["user"]["role"] == "nonadmin"
 
-    def test_fake_login_is_blocked_on_nondev_env(self, monkeypatch: pytest.MonkeyPatch):
-        """Test that fake login is blocked on non-development environments."""
+    def test_fake_login_is_blocked_outside_development(self):
+        """Test that fake login is blocked unless the app runs in development mode."""
         config_raw = {
             "USE_WWW": False,
             "APP_NAME": "testing App Name",
@@ -196,8 +197,6 @@ class TestPlatzky:
             "FEATURE_FLAGS": {"FAKE_LOGIN": True},
         }
 
-        monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
-        monkeypatch.delenv("FLASK_DEBUG", raising=False)
         config = Config.model_validate(config_raw)
 
         with pytest.raises(
@@ -205,3 +204,75 @@ class TestPlatzky:
             match="Cannot register FakeLoginPlugin in production",
         ):
             create_app_from_config(config)
+
+
+class TestLogging:
+    @pytest.fixture(autouse=True)
+    def root_logger(self) -> Iterator[logging.Logger]:
+        """Restore the root logger, which creating an application configures."""
+        root_logger = logging.getLogger()
+        level, handlers = root_logger.level, root_logger.handlers[:]
+        yield root_logger
+        root_logger.setLevel(level)
+        root_logger.handlers = handlers
+
+    @staticmethod
+    def _create_app(development: bool = False, log_level: str | None = None) -> None:
+        raw_config = {
+            "APP_NAME": "testing App Name",
+            "SECRET_KEY": "secret",
+            "DB": {"TYPE": "json", "DATA": {}},
+        }
+        if log_level is not None:
+            raw_config["LOG_LEVEL"] = log_level
+        config = Config.model_validate(raw_config)
+        with patch("platzky.platzky.get_db", return_value=MagicMock()):
+            create_app_from_config(config, development=development)
+
+    def test_defaults_to_info(self, root_logger: logging.Logger):
+        self._create_app()
+
+        assert root_logger.level == logging.INFO
+
+    def test_development_enables_debug_level(self, root_logger: logging.Logger):
+        self._create_app(development=True)
+
+        assert root_logger.level == logging.DEBUG
+
+    def test_log_level_applies_outside_development(self, root_logger: logging.Logger):
+        self._create_app(log_level="WARNING")
+
+        assert root_logger.level == logging.WARNING
+
+    def test_log_level_wins_over_development(self, root_logger: logging.Logger):
+        self._create_app(development=True, log_level="WARNING")
+
+        assert root_logger.level == logging.WARNING
+
+    def test_log_level_covers_other_libraries(self):
+        self._create_app(log_level="DEBUG")
+
+        assert logging.getLogger("some_other_library").getEffectiveLevel() == logging.DEBUG
+
+    @pytest.mark.parametrize(
+        "level", ["VERBOSE", "debug", "Debug"], ids=["unknown", "lower", "mixed"]
+    )
+    def test_invalid_log_level_is_rejected(self, level: str):
+        with pytest.raises(ValidationError, match="LOG_LEVEL"):
+            self._create_app(log_level=level)
+
+    def test_adds_one_handler_when_none_configured(self, root_logger: logging.Logger):
+        root_logger.handlers = []
+
+        self._create_app()
+        self._create_app()
+
+        assert len(root_logger.handlers) == 1
+
+    def test_keeps_application_handlers(self, root_logger: logging.Logger):
+        app_handler = logging.NullHandler()
+        root_logger.handlers = [app_handler]
+
+        self._create_app()
+
+        assert root_logger.handlers == [app_handler]

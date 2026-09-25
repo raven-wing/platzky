@@ -36,7 +36,9 @@ A simple file-based backend that stores data in a JSON file on the local filesys
 **Options:**
 
 * ``TYPE``: Must be ``json_file``
-* ``PATH``: Path to the JSON file (relative or absolute)
+* ``PATH``: Path to the JSON file. A relative path is resolved against the working directory
+  the application is started from, not against the configuration file, so either start the
+  application from the directory holding the data file or give an absolute path.
 
 **Advantages:**
 

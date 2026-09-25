@@ -69,7 +69,10 @@ class FeatureFlag:
 FakeLogin = FeatureFlag(
     alias="FAKE_LOGIN",
     default=False,
-    description="Enable fake login for development. WARNING: Never enable in production.",
+    description=(
+        "Enable fake login for development. Only takes effect under `platzky run`; anywhere "
+        "else the application refuses to start with it on. WARNING: Never enable in production."
+    ),
     production_warning=True,
 )
 

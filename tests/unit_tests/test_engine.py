@@ -282,7 +282,7 @@ def test_that_404_page_title_includes_app_name(test_app: Engine):
     ("tag", "subtag", "value"), [("link", "hreflang", "en"), ("html", "lang", "en-GB")]
 )
 def test_that_tag_has_proper_value(test_app: Engine, tag: str, subtag: str, value: str):
-    response = test_app.test_client().get("/")
+    response = test_app.test_client().get("/blog/")
     soup = BeautifulSoup(response.data, "html.parser")
     assert getattr(soup, tag) is not None
     assert getattr(soup, tag).get(subtag) == value
@@ -621,7 +621,6 @@ def test_is_enabled_with_flag_on():
         "SECRET_KEY": "secret",  # NOSONAR - hardcoded secret acceptable in tests
         "BLOG_PREFIX": "/blog",
         "TESTING": True,
-        "DEBUG": True,
         "FEATURE_FLAGS": {"FAKE_LOGIN": True},
         "DB": {
             "TYPE": "json",
@@ -633,7 +632,7 @@ def test_is_enabled_with_flag_on():
         },
     }
     config = Config.model_validate(config_data)
-    app = create_app_from_config(config)
+    app = create_app_from_config(config, development=True)
 
     assert app.is_enabled(FakeLogin) is True
 
@@ -775,23 +774,32 @@ def test_path_languages_are_served_on_the_main_host_only(host: str, status: int)
     assert response.status_code == status
 
 
-@pytest.mark.parametrize("host", ["example.com", "example.de"])
-def test_hreflang_links_point_at_each_language_home(host: str):
+@pytest.mark.parametrize(
+    ("host", "path"),
+    [("example.com", "/blog/"), ("example.com", "/pl/blog/"), ("example.de", "/blog/")],
+)
+def test_hreflang_links_point_at_the_same_page_in_each_language(host: str, path: str):
     app = _build_three_language_test_app()
-    response = app.test_client().get("/blog/page/about", headers={"Host": host})
+    response = app.test_client().get(path, headers={"Host": host})
     assert _hreflang_urls(response) == {
-        "en": "http://example.com/",
-        "pl": "http://example.com/pl/",
-        "de": "http://example.de/",
-        "x-default": "http://example.com/",
+        "en": "http://example.com/blog/",
+        "pl": "http://example.com/pl/blog/",
+        "de": "http://example.de/blog/",
+        "x-default": "http://example.com/blog/",
     }
+
+
+def test_content_pages_have_no_hreflang_links():
+    app = _build_three_language_test_app()
+    response = app.test_client().get("/blog/page/about", headers={"Host": "example.com"})
+    assert _hreflang_urls(response) == {}
 
 
 def test_www_host_resolves_to_its_language():
     app = _build_three_language_test_app(use_www=True)
-    response = app.test_client().get("/blog/page/about", headers={"Host": "www.example.de"})
+    response = app.test_client().get("/blog/", headers={"Host": "www.example.de"})
     assert _language_indicator(response) == "de"
-    assert _hreflang_urls(response)["pl"] == "http://www.example.com/pl/"
+    assert _hreflang_urls(response)["pl"] == "http://www.example.com/pl/blog/"
 
 
 @pytest.mark.parametrize(("host", "lists_pl"), [("example.com", True), ("example.de", False)])

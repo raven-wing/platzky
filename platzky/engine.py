@@ -32,7 +32,12 @@ from platzky.config import Config
 from platzky.content_types import BUILTIN_CONTENT_TYPES, ContentType
 from platzky.db.db import DB
 from platzky.feature_flags import FeatureFlag, StripContentHtml
-from platzky.language_routing import LANG_CODE_ARG, dedicated_language, resolve_locale
+from platzky.language_routing import (
+    LANG_CODE_ARG,
+    dedicated_language,
+    language_url,
+    resolve_locale,
+)
 from platzky.models import CmsModule
 from platzky.notification_topics import NotificationTopic
 from platzky.plugin import PLUGIN_BASES
@@ -397,20 +402,44 @@ class Engine(Flask):
             name: An endpoint name, or a blueprint name to localize all of its endpoints.
         """
         codes = self._platzky_config.path_languages
-        if not codes:
-            return
         converter = "any(" + ", ".join(f"'{code}'" for code in codes) + ")"
         for rule in list(self.url_map.iter_rules()):
             if rule.endpoint != name and not rule.endpoint.startswith(f"{name}."):
                 continue
             if LANG_CODE_ARG in rule.arguments:
                 continue
-            self.add_url_rule(
-                f"/<{converter}:{LANG_CODE_ARG}>{rule.rule}",
-                provide_automatic_options=getattr(rule, "provide_automatic_options", None),
-                **rule.get_empty_kwargs(),
-            )
             self._localized_endpoints.add(rule.endpoint)
+            if codes:
+                self.add_url_rule(
+                    f"/<{converter}:{LANG_CODE_ARG}>{rule.rule}",
+                    provide_automatic_options=getattr(rule, "provide_automatic_options", None),
+                    **rule.get_empty_kwargs(),
+                )
+
+    def language_urls(self) -> dict[str, str]:
+        """Return the absolute URL of the current page in each configured language.
+
+        Only localized routes without view arguments, such as the home page or the blog index,
+        serve the same page in every language; content pages (posts, pages, tags) differ per
+        language, so they have no equivalents.
+
+        Returns:
+            Language codes mapped to URLs, or an empty dict when the page has no equivalents.
+        """
+        config = self._platzky_config
+        translated = request.endpoint in self._localized_endpoints and not request.view_args
+        languages = config.languages if translated else {}
+        path = self._path_without_language()
+        return {
+            lang: language_url(config, lang, request.scheme, request.host, path)
+            for lang in languages
+        }
+
+    def _path_without_language(self) -> str:
+        """Return the request path without the prefix of a path language."""
+        locale = self.get_locale()
+        in_path_language = locale in self._platzky_config.path_languages
+        return request.path.removeprefix(f"/{locale}") if in_path_language else request.path
 
     def _register_language_url_processors(self) -> None:
         """Strip the language prefix from matched URLs and add it back when building them."""

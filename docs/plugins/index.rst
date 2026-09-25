@@ -84,6 +84,26 @@ plugin registers its own routes and needs the Engine from inside a view function
         current_engine().notify("Webhook received", topic="general")
         return "", 204
 
+.. _plugin-localized-routes:
+
+Serving Routes in Every Language
+--------------------------------
+
+A language without its own ``domain`` is served under its code (``/pl/…``), but only on
+routes that ask for it. The built-in homepage and blog routes do. Routes that a plugin
+contributes do not until whoever registers their blueprint, usually the application
+embedding platzky, calls :meth:`~platzky.engine.Engine.localize_routes` after registering it:
+
+.. code-block:: python
+
+    app = create_app_from_config(config)
+    app.register_blueprint(shop_blueprint)
+    app.localize_routes(shop_blueprint.name)
+
+Each route is then also served as ``/<code>/…``. While a request is in a path language,
+``url_for`` builds these endpoints with its prefix and ``get_locale()`` returns it. Routes
+without view arguments also get ``hreflang`` links to their version in every language.
+
 Packaging a Plugin
 ------------------
 

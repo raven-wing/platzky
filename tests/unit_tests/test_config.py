@@ -7,6 +7,8 @@ from platzky.config import Config, languages_dict
 from platzky.feature_flags import FakeLogin, FeatureFlag
 from platzky.feature_flags_wrapper import FeatureFlagSet
 
+_SCAFFOLD_CONFIG_FILE = "platzky/scaffold/config.template.yml"
+
 
 class TestFeatureFlag:
     """Tests for FeatureFlag construction and validation."""
@@ -83,7 +85,7 @@ class TestConfigWithFeatureFlags:
 
     def test_default_feature_flags(self) -> None:
         """Test that feature_flags defaults to a FeatureFlagSet instance."""
-        config = Config.parse_yaml("config-template.yml")
+        config = Config.parse_yaml(_SCAFFOLD_CONFIG_FILE)
         assert isinstance(config.feature_flags, FeatureFlagSet)
         assert FakeLogin not in config.feature_flags
 
@@ -171,9 +173,13 @@ def _config_data(**overrides: object) -> dict[str, object]:
 class TestLanguages:
     """Tests for DEFAULT_LANGUAGE and the URL each language is served at."""
 
-    def test_default_language_is_required_with_several_languages(self) -> None:
-        with pytest.raises(ValidationError, match="DEFAULT_LANGUAGE is required"):
-            Config.model_validate(_config_data(LANGUAGES={"en": _EN, "pl": _PL}))
+    def test_default_language_is_en_with_several_languages(self) -> None:
+        config = Config.model_validate(_config_data(LANGUAGES={"pl": _PL, "en": _EN}))
+        assert config.default_language == "en"
+
+    def test_default_language_must_be_set_when_en_is_not_among_several(self) -> None:
+        with pytest.raises(ValidationError, match="not one of the configured LANGUAGES"):
+            Config.model_validate(_config_data(LANGUAGES={"pl": _PL, "de": _DE}))
 
     def test_default_language_is_implied_with_one_language(self) -> None:
         config = Config.model_validate(_config_data(LANGUAGES={"pl": _PL}))
@@ -294,16 +300,12 @@ class TestFeatureFlagSet:
 
 
 def test_parse_template_config() -> None:
-    """Test that the template config can be parsed."""
-    config = Config.parse_yaml("config-template.yml")
+    """Test that the template `platzky init` writes can be parsed."""
+    config = Config.parse_yaml(_SCAFFOLD_CONFIG_FILE)
     langs_dict = languages_dict(config.languages)
 
     # languages_dict excludes None values
-    wanted_dict = {
-        "en": {"flag": "uk", "name": "English", "country": "GB"},
-        "pl": {"flag": "pl", "name": "polski", "country": "PL"},
-    }
-    assert langs_dict == wanted_dict
+    assert langs_dict == {"en": {"flag": "uk", "name": "English", "country": "GB"}}
 
 
 def test_parse_non_existing_config_file() -> None:

@@ -41,6 +41,7 @@ Languages = dict[str, LanguageConfig]
 LanguagesMapping = t.Mapping[str, t.Mapping[str, str]]
 
 _PATH_SEGMENT = re.compile(r"[A-Za-z0-9_-]+")
+LogLevel = t.Literal["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]
 
 
 def languages_dict(languages: Languages) -> LanguagesMapping:
@@ -168,7 +169,7 @@ class Config(BaseModel):
         languages: Supported languages configuration
         default_language: Language served at the root of the main host
         translation_directories: Additional translation directories
-        debug: Enable debug mode
+        log_level: Level of the application's logs; defaults to INFO, development to DEBUG
         testing: Enable testing mode
         feature_flags: Feature flag configuration
         telemetry: OpenTelemetry configuration
@@ -189,7 +190,7 @@ class Config(BaseModel):
         default_factory=list,
         alias="TRANSLATION_DIRECTORIES",
     )
-    debug: bool = Field(default=False, alias="DEBUG")
+    log_level: t.Optional[LogLevel] = Field(default=None, alias="LOG_LEVEL")
     testing: bool = Field(default=False, alias="TESTING")
     feature_flags: FeatureFlagSet = Field(
         default_factory=lambda: FeatureFlagSet({}),
@@ -220,20 +221,12 @@ class Config(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def fill_default_language(cls, data: object) -> object:
-        """Imply DEFAULT_LANGUAGE when at most one language is configured.
-
-        Raises:
-            ValueError: If several languages are configured without DEFAULT_LANGUAGE.
-        """
+        """Imply DEFAULT_LANGUAGE: the only configured language, otherwise ``en``."""
         if not isinstance(data, dict) or data.get("DEFAULT_LANGUAGE"):
             return data
         languages = data.get("LANGUAGES") or {}
-        if len(languages) > 1:
-            raise ValueError(
-                "DEFAULT_LANGUAGE is required when more than one language is configured; "
-                f"set it to one of: {', '.join(languages)}"
-            )
-        return {**data, "DEFAULT_LANGUAGE": next(iter(languages), "en")}
+        implied = next(iter(languages)) if len(languages) == 1 else "en"
+        return {**data, "DEFAULT_LANGUAGE": implied}
 
     @model_validator(mode="after")
     def validate_language_urls(self) -> "Config":

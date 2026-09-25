@@ -15,13 +15,13 @@ Configuration is loaded when creating the application:
 
     app = create_app(config_path='config.yml')
 
-You can start with the provided template:
+``platzky init`` writes a starting ``config.yml`` for you:
 
 .. code-block:: bash
 
-    $ cp config-template.yml config.yml
+    $ platzky init
     $ # Edit config.yml with your settings
-    $ flask --app "platzky.platzky:create_app(config_path='config.yml')" run
+    $ platzky run --config config.yml
 
 Configuration Reference
 -----------------------
@@ -58,21 +58,24 @@ Flask's secret key used for session signing and CSRF protection.
 See the `Flask documentation on SECRET_KEY <https://flask.palletsprojects.com/en/stable/config/#SECRET_KEY>`_
 for more information.
 
-``DEBUG``
-^^^^^^^^^
+``LOG_LEVEL``
+^^^^^^^^^^^^^
 
-:Type: ``bool``
-:Default: ``False``
+:Type: ``str``
+:Default: ``INFO`` (``DEBUG`` in development)
 
-Enable debug mode. When enabled, the server will reload on code changes and provide
-detailed error pages.
+How much detail the application writes to its logs, from ``DEBUG`` (everything) through
+``INFO``, ``WARNING`` and ``ERROR`` to ``CRITICAL`` (only the worst). Each level includes the
+ones after it, so the default ``INFO`` still shows every warning and error.
 
-.. warning::
-    Never enable debug mode in production as it can expose sensitive information.
+Use ``DEBUG`` when tracking a problem down: it reports what the site is doing step by step,
+including the libraries it uses, which is a lot of output.
 
 .. code-block:: yaml
 
-    DEBUG: true
+    LOG_LEVEL: DEBUG
+
+The development server (``platzky run``) uses ``DEBUG`` unless this setting says otherwise.
 
 ``TESTING``
 ^^^^^^^^^^^
@@ -107,6 +110,9 @@ Store data in a local JSON file:
       TYPE: json_file
       PATH: data.json
 
+A relative ``PATH`` is resolved against the working directory the application is started
+from. See :doc:`database` for details.
+
 **Google Cloud Storage Database**
 
 Store data in Google Cloud Storage as a JSON file:
@@ -138,10 +144,10 @@ Localization Settings
 ^^^^^^^^^^^^^^^^^^^^
 
 :Type: ``str``
-:Default: the only configured language, or ``"en"`` when none are configured
+:Default: the only configured language, otherwise ``"en"``
 
-Language served at the root of the site. Required when more than one language is
-configured, and must be one of the ``LANGUAGES`` keys.
+Language served at the root of the site. It must be one of the ``LANGUAGES`` keys, so set
+it when several languages are configured and none of them is ``en``.
 
 .. code-block:: yaml
 
@@ -187,8 +193,8 @@ address that search engines can index:
 * ``DEFAULT_LANGUAGE`` is served at the root of the site (``example.com/``).
 * A language with a ``domain`` is served at the root of that domain (``example.de/``).
 * Any other language is served under its code (``example.com/pl/``). This covers the
-  homepage and the blog; an application can serve its own blueprint the same way with
-  ``engine.localize_routes("<blueprint name>")``.
+  homepage and the blog; an application or plugin can serve its own blueprint the same way
+  with ``engine.localize_routes("<blueprint name>")`` (see :ref:`plugin-localized-routes`).
 
 Domains must be unique, and once any other language has a ``domain`` the default language
 needs one too, so pages on the other domains can link back to it. Matching ignores case, a
@@ -196,8 +202,10 @@ trailing dot, and a leading ``www.``. A ``domain`` without a port matches any po
 a port (e.g. ``domain: example.de:5000``) to match only that port, as in local or staging
 setups.
 
-The language switcher and the ``hreflang`` tags link to each language's home page, and
-``/lang/<code>`` redirects there.
+The language switcher links to each language's home page, and ``/lang/<code>`` redirects
+there. Pages that exist in every language (the homepage, the blog index and other localized
+routes without arguments) list each language's version in ``hreflang`` tags. Posts, pages and
+tags differ per language, so they carry none.
 
 ``TRANSLATION_DIRECTORIES``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -476,15 +484,8 @@ you can:
 
 .. code-block:: bash
 
-    $ flask --app "platzky.platzky:create_app(config_path='config-prod.yml')" run
-
-**Use environment variables in your config:**
-
-.. code-block:: yaml
-
-    SECRET_KEY: ${SECRET_KEY}
-    DB:
-      CONNECTION_STRING: ${DATABASE_URL}
+    $ platzky run --config config-dev.yml
+    $ gunicorn "platzky.platzky:create_app(config_path='config-prod.yml')"
 
 **Load config from environment-specific paths:**
 

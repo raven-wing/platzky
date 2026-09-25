@@ -12,46 +12,42 @@ A Minimal Application
 
     $ pip install platzky
 
-2. Create a configuration file ``config.yml``:
+2. Set up your site files:
 
-.. code-block:: yaml
+.. code-block:: bash
 
-    APP_NAME: My Platzky App
-    SECRET_KEY: change-this-to-something-secret
+    $ platzky init
 
-    DB:
-      TYPE: json_file
-      PATH: data.json
-
-    LANGUAGES:
-      en:
-        name: English
-        flag: uk
-        country: GB
+This writes ``config.yml`` and ``data.json`` into the current directory; use ``--path`` to
+create them elsewhere. The site starts with one sample post and an About page, so it works
+straight away. Set ``APP_NAME`` in ``config.yml`` to your own name, add languages or switch
+the database backend there, and replace the sample content in ``data.json`` with your own.
 
 3. Run the application:
 
 .. code-block:: bash
 
-    $ flask --app "platzky.platzky:create_app(config_path='config.yml')" run
+    $ platzky run --config config.yml
+
+The database path in the generated config is relative, so run the command from the directory
+the application was created in.
 
 4. Open http://127.0.0.1:5000 in your browser.
+
+See :doc:`cli` for the remaining options, for enabling debug mode, and for serving the
+application in production.
 
 Configuration
 -------------
 
-Platzky uses a YAML configuration file. Start with the provided template:
-
-.. code-block:: bash
-
-    $ cp config-template.yml config.yml
-    $ # Edit config.yml with your settings
-
-See :doc:`config` for detailed configuration options.
+Platzky uses a YAML configuration file. ``platzky init`` writes a minimal one, holding the
+settings a new site needs; :doc:`config` documents every option, and :doc:`database` the other
+database backends.
 
 What to Do Next
 ---------------
 
 * Read about :doc:`config` to understand all available options
 * Learn about different :doc:`database` backends
+* See the :doc:`cli` reference for the ``platzky`` command
 * Check the :doc:`api` reference for detailed information
