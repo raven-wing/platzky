@@ -606,7 +606,6 @@ def test_is_enabled_with_flag_on():
         "SECRET_KEY": "secret",  # NOSONAR - hardcoded secret acceptable in tests
         "BLOG_PREFIX": "/blog",
         "TESTING": True,
-        "DEBUG": True,
         "FEATURE_FLAGS": {"FAKE_LOGIN": True},
         "DB": {
             "TYPE": "json",
@@ -618,6 +617,6 @@ def test_is_enabled_with_flag_on():
         },
     }
     config = Config.model_validate(config_data)
-    app = create_app_from_config(config)
+    app = create_app_from_config(config, development=True)
 
     assert app.is_enabled(FakeLogin) is True
