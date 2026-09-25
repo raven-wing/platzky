@@ -1,0 +1,41 @@
+{
+  "site_content": {
+    "app_description": {
+      "en": "A site built with Platzky"
+    },
+    "posts": [
+      {
+        "title": "Hello, Platzky",
+        "slug": "hello-platzky",
+        "author": "My Platzky App",
+        "language": "en",
+        "excerpt": "The first post of your new site.",
+        "contentInMarkdown": "Welcome to your new Platzky site.\n\nEdit `data.json` to change this post, add your own, or remove it entirely.\n",
+        "tags": [],
+        "comments": []
+      }
+    ],
+    "pages": [
+      {
+        "title": "About",
+        "slug": "about",
+        "author": "My Platzky App",
+        "language": "en",
+        "excerpt": "About this app.",
+        "contentInMarkdown": "# About\n\nTell your readers about your app.\n"
+      }
+    ],
+    "menu_items": {
+      "en": [
+        {
+          "name": "Blog",
+          "url": "/blog/"
+        },
+        {
+          "name": "About",
+          "url": "/blog/page/about"
+        }
+      ]
+    }
+  }
+}

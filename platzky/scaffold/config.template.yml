@@ -1,0 +1,30 @@
+APP_NAME: "My Platzky App"
+
+# Signs session cookies: anyone who knows it can forge a login, so keep it secret and out of
+# version control. This file is created readable only by you for that reason. Each site needs
+# its own; generate a new one with: python -c "import secrets; print(secrets.token_hex(32))"
+SECRET_KEY: "$secret_key"
+
+# Set to true once the site is served from a www domain.
+USE_WWW: false
+
+# How much detail goes into the logs: DEBUG, INFO, WARNING, ERROR or CRITICAL.
+#LOG_LEVEL: INFO
+
+LANGUAGES:
+  en:
+    name: English
+    flag: uk
+    country: GB
+
+DB:
+  TYPE: json_file
+  PATH: "data.json"
+
+# Uncomment feature flags if you want to change.
+#FEATURE_FLAGS:
+#  # Enable fake login for development. Never enable in production.
+#  FAKE_LOGIN: false
+
+#  # Remove HTML tags written in content only [html] renders html then
+#  STRIP_CONTENT_HTML: false

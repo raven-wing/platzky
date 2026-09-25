@@ -15,13 +15,13 @@ Configuration is loaded when creating the application:
 
     app = create_app(config_path='config.yml')
 
-You can start with the provided template:
+``platzky init`` writes a starting ``config.yml`` for you:
 
 .. code-block:: bash
 
-    $ cp config-template.yml config.yml
+    $ platzky init
     $ # Edit config.yml with your settings
-    $ flask --app "platzky.platzky:create_app(config_path='config.yml')" run
+    $ platzky run --config config.yml
 
 Configuration Reference
 -----------------------
@@ -58,21 +58,24 @@ Flask's secret key used for session signing and CSRF protection.
 See the `Flask documentation on SECRET_KEY <https://flask.palletsprojects.com/en/stable/config/#SECRET_KEY>`_
 for more information.
 
-``DEBUG``
-^^^^^^^^^
+``LOG_LEVEL``
+^^^^^^^^^^^^^
 
-:Type: ``bool``
-:Default: ``False``
+:Type: ``str``
+:Default: ``INFO`` (``DEBUG`` in development)
 
-Enable debug mode. When enabled, the server will reload on code changes and provide
-detailed error pages.
+How much detail the application writes to its logs, from ``DEBUG`` (everything) through
+``INFO``, ``WARNING`` and ``ERROR`` to ``CRITICAL`` (only the worst). Each level includes the
+ones after it, so the default ``INFO`` still shows every warning and error.
 
-.. warning::
-    Never enable debug mode in production as it can expose sensitive information.
+Use ``DEBUG`` when tracking a problem down: it reports what the site is doing step by step,
+including the libraries it uses, which is a lot of output.
 
 .. code-block:: yaml
 
-    DEBUG: true
+    LOG_LEVEL: DEBUG
+
+The development server (``platzky run``) uses ``DEBUG`` unless this setting says otherwise.
 
 ``TESTING``
 ^^^^^^^^^^^
@@ -106,6 +109,9 @@ Store data in a local JSON file:
     DB:
       TYPE: json_file
       PATH: data.json
+
+A relative ``PATH`` is resolved against the working directory the application is started
+from. See :doc:`database` for details.
 
 **Google Cloud Storage Database**
 
@@ -449,15 +455,8 @@ you can:
 
 .. code-block:: bash
 
-    $ flask --app "platzky.platzky:create_app(config_path='config-prod.yml')" run
-
-**Use environment variables in your config:**
-
-.. code-block:: yaml
-
-    SECRET_KEY: ${SECRET_KEY}
-    DB:
-      CONNECTION_STRING: ${DATABASE_URL}
+    $ platzky run --config config-dev.yml
+    $ gunicorn "platzky.platzky:create_app(config_path='config-prod.yml')"
 
 **Load config from environment-specific paths:**
 

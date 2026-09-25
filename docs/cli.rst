@@ -1,0 +1,55 @@
+Command Line Interface
+======================
+
+Installing Platzky provides the ``platzky`` command. Run ``platzky --help``, or
+``platzky <command> --help``, for the options of each command.
+
+``platzky init``
+----------------
+
+Set up a new site in the current directory, or in ``--path``:
+
+.. code-block:: bash
+
+    $ platzky init
+
+It writes two files and refuses to overwrite either if it already exists:
+
+* ``config.yml`` — a placeholder ``APP_NAME`` to replace with your own, a freshly generated
+  ``SECRET_KEY``, English as the only language, the ``json_file`` backend pointing at
+  ``data.json``, and every built-in feature flag listed commented out at its default
+* ``data.json`` — one sample post, an About page and a menu linking to both, so the site
+  serves pages straight away
+
+Edit both to make the site your own: see :doc:`config` for the configuration options and
+:doc:`database` for the content structure.
+
+``platzky run``
+---------------
+
+Run the development server:
+
+.. code-block:: bash
+
+    $ platzky run --config config.yml
+
+This is development mode: the server reloads on code changes, shows the interactive debugger
+on errors, logs at ``DEBUG``, and allows shortcuts that are unsafe in production, such as the
+``FAKE_LOGIN`` feature flag. There is no setting for it — running this command *is* the
+switch, and an application served by a production server is never in development mode.
+
+.. warning::
+    This is Flask's development server. For production, serve the application with a WSGI
+    server such as gunicorn.
+
+Running in Production
+---------------------
+
+A Platzky application is an ordinary WSGI application, so serve it with a production server:
+
+.. code-block:: bash
+
+    $ gunicorn "platzky.platzky:create_app(config_path='config.yml')"
+
+Started this way the application is not in development mode: no reloader, no interactive
+debugger, and ``FAKE_LOGIN`` is refused. Set ``LOG_LEVEL`` if you need verbose logs there.

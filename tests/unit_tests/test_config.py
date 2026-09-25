@@ -7,6 +7,8 @@ from platzky.config import Config, languages_dict
 from platzky.feature_flags import FakeLogin, FeatureFlag
 from platzky.feature_flags_wrapper import FeatureFlagSet
 
+_SCAFFOLD_CONFIG_FILE = "platzky/scaffold/config.template.yml"
+
 
 class TestFeatureFlag:
     """Tests for FeatureFlag construction and validation."""
@@ -83,7 +85,7 @@ class TestConfigWithFeatureFlags:
 
     def test_default_feature_flags(self) -> None:
         """Test that feature_flags defaults to a FeatureFlagSet instance."""
-        config = Config.parse_yaml("config-template.yml")
+        config = Config.parse_yaml(_SCAFFOLD_CONFIG_FILE)
         assert isinstance(config.feature_flags, FeatureFlagSet)
         assert FakeLogin not in config.feature_flags
 
@@ -219,16 +221,12 @@ class TestFeatureFlagSet:
 
 
 def test_parse_template_config() -> None:
-    """Test that the template config can be parsed."""
-    config = Config.parse_yaml("config-template.yml")
+    """Test that the template `platzky init` writes can be parsed."""
+    config = Config.parse_yaml(_SCAFFOLD_CONFIG_FILE)
     langs_dict = languages_dict(config.languages)
 
     # languages_dict excludes None values
-    wanted_dict = {
-        "en": {"flag": "uk", "name": "English", "country": "GB"},
-        "pl": {"flag": "pl", "name": "polski", "country": "PL"},
-    }
-    assert langs_dict == wanted_dict
+    assert langs_dict == {"en": {"flag": "uk", "name": "English", "country": "GB"}}
 
 
 def test_parse_non_existing_config_file() -> None:
