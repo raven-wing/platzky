@@ -60,8 +60,8 @@ def run(config_path: str, host: str, port: int) -> None:
     type=click.Path(file_okay=False, path_type=Path),
     help="Directory the files are created in.",
 )
-def create(directory: Path) -> None:
-    """Create a new Platzky application: a config file and a JSON database with sample content."""
+def init(directory: Path) -> None:
+    """Write a config file and a JSON database with sample content, ready to run."""
     directory.mkdir(parents=True, exist_ok=True)
     config_file, data_file = directory / _CONFIG_FILENAME, directory / _DATA_FILENAME
     existing = [str(f) for f in (config_file, data_file) if f.exists()]

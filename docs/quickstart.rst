@@ -12,11 +12,11 @@ A Minimal Application
 
     $ pip install platzky
 
-2. Create an application:
+2. Set up your site files:
 
 .. code-block:: bash
 
-    $ platzky create
+    $ platzky init
 
 This writes ``config.yml`` and ``data.json`` into the current directory; use ``--path`` to
 create them elsewhere. The site starts with one sample post and an About page, so it works
@@ -40,7 +40,7 @@ application in production.
 Configuration
 -------------
 
-Platzky uses a YAML configuration file. ``platzky create`` writes a minimal one, holding the
+Platzky uses a YAML configuration file. ``platzky init`` writes a minimal one, holding the
 settings a new site needs; :doc:`config` documents every option, and :doc:`database` the other
 database backends.
 

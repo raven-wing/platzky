@@ -55,13 +55,13 @@ def test_run_debug_follows_config_not_environment(monkeypatch: pytest.MonkeyPatc
     assert app.run.call_args.kwargs["debug"] is debug
 
 
-class TestCreate:
+class TestInit:
     @staticmethod
-    def _create(directory: Path) -> Result:
-        return CliRunner().invoke(cli, ["create", "--path", str(directory)])
+    def _init(directory: Path) -> Result:
+        return CliRunner().invoke(cli, ["init", "--path", str(directory)])
 
     def test_writes_config_and_database(self, tmp_path: Path):
-        result = self._create(tmp_path)
+        result = self._init(tmp_path)
 
         assert result.exit_code == 0
         config = yaml.safe_load((tmp_path / "config.yml").read_text())
@@ -77,7 +77,7 @@ class TestCreate:
         ]
 
     def test_lists_every_built_in_feature_flag_commented_out(self, tmp_path: Path):
-        self._create(tmp_path)
+        self._init(tmp_path)
 
         config_text = (tmp_path / "config.yml").read_text()
 
@@ -89,7 +89,7 @@ class TestCreate:
     def test_commented_flags_work_once_uncommented(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ):
-        self._create(tmp_path)
+        self._init(tmp_path)
         config_file = tmp_path / "config.yml"
         config_file.write_text(
             config_file.read_text()
@@ -105,7 +105,7 @@ class TestCreate:
     def test_created_site_serves_its_sample_content(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ):
-        self._create(tmp_path)
+        self._init(tmp_path)
         # DB PATH is relative, so the application runs from the directory it was created in.
         monkeypatch.chdir(tmp_path)
 
@@ -117,20 +117,20 @@ class TestCreate:
         assert client.get("/blog/page/about").status_code == 200
 
     def test_tells_how_to_run_the_application(self, tmp_path: Path):
-        result = self._create(tmp_path)
+        result = self._init(tmp_path)
 
         assert f"platzky run --config {tmp_path / 'config.yml'}" in result.output
 
     def test_created_config_is_valid(self, tmp_path: Path):
-        self._create(tmp_path)
+        self._init(tmp_path)
 
         config = Config.parse_yaml(str(tmp_path / "config.yml"))
 
         assert config.app_name == "My Platzky App"
 
     def test_secret_key_differs_between_applications(self, tmp_path: Path):
-        self._create(tmp_path / "first")
-        self._create(tmp_path / "second")
+        self._init(tmp_path / "first")
+        self._init(tmp_path / "second")
 
         keys = {
             yaml.safe_load((tmp_path / name / "config.yml").read_text())["SECRET_KEY"]
@@ -139,11 +139,11 @@ class TestCreate:
         assert len(keys) == 2
 
     def test_refuses_to_overwrite(self, tmp_path: Path):
-        self._create(tmp_path)
+        self._init(tmp_path)
         config_file = tmp_path / "config.yml"
         config_file.write_text(config_file.read_text().replace("My Platzky App", "Edited By Hand"))
 
-        result = self._create(tmp_path)
+        result = self._init(tmp_path)
 
         assert result.exit_code != 0
         assert "Refusing to overwrite" in result.output

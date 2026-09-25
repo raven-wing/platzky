@@ -221,7 +221,7 @@ class TestFeatureFlagSet:
 
 
 def test_parse_template_config() -> None:
-    """Test that the template `platzky create` writes can be parsed."""
+    """Test that the template `platzky init` writes can be parsed."""
     config = Config.parse_yaml(_SCAFFOLD_CONFIG_FILE)
     langs_dict = languages_dict(config.languages)
 

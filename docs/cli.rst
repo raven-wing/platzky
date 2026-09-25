@@ -4,14 +4,14 @@ Command Line Interface
 Installing Platzky provides the ``platzky`` command. Run ``platzky --help``, or
 ``platzky <command> --help``, for the options of each command.
 
-``platzky create``
-------------------
+``platzky init``
+----------------
 
-Create a new application in the current directory, or in ``--path``:
+Set up a new site in the current directory, or in ``--path``:
 
 .. code-block:: bash
 
-    $ platzky create
+    $ platzky init
 
 It writes two files and refuses to overwrite either if it already exists:
 
