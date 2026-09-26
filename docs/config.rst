@@ -207,6 +207,11 @@ there. Pages that exist in every language (the homepage, the blog index and othe
 routes without arguments) list each language's version in ``hreflang`` tags. Posts, pages and
 tags differ per language, so they carry none.
 
+Visitors are never redirected by their browser's language. Instead, a visitor whose browser
+prefers another configured language sees a popup, written in that language, linking to its
+version of the page. Closing it keeps it hidden on that domain; to hide it everywhere, style
+``.language-suggestion`` with ``display: none``.
+
 ``TRANSLATION_DIRECTORIES``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

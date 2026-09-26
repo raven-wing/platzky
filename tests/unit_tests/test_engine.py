@@ -795,6 +795,63 @@ def test_content_pages_have_no_hreflang_links():
     assert _hreflang_urls(response) == {}
 
 
+def _language_suggestion_urls(response: TestResponse) -> dict[str, str]:
+    soup = BeautifulSoup(response.data, "html.parser")
+    urls: dict[str, str] = {}
+    for popup in soup.select(".language-suggestion"):
+        link = popup.find("a")
+        assert isinstance(link, Tag)
+        urls[str(popup.get("lang"))] = str(link.get("href"))
+    return urls
+
+
+def test_single_language_site_suggests_no_language():
+    app = _build_home_page_test_app(
+        {"pages": _ABOUT_PAGES},
+        languages={"en": _BILINGUAL_LANGUAGES["en"]},
+        default_language="en",
+    )
+    response = app.test_client().get("/blog/page/about")
+    assert _language_suggestion_urls(response) == {}
+
+
+@pytest.mark.parametrize(
+    ("host", "path", "expected"),
+    [
+        (
+            "example.com",
+            "/blog/",
+            {"pl": "http://example.com/pl/blog/", "de": "http://example.de/blog/"},
+        ),
+        (
+            "example.de",
+            "/blog/",
+            {"en": "http://example.com/blog/", "pl": "http://example.com/pl/blog/"},
+        ),
+        (
+            "example.com",
+            "/pl/blog/",
+            {"en": "http://example.com/blog/", "de": "http://example.de/blog/"},
+        ),
+    ],
+)
+def test_language_suggestion_offers_the_same_page_in_other_languages(
+    host: str, path: str, expected: dict[str, str]
+):
+    app = _build_three_language_test_app()
+    response = app.test_client().get(path, headers={"Host": host})
+    assert _language_suggestion_urls(response) == expected
+
+
+def test_language_suggestion_offers_home_pages_for_content_pages():
+    app = _build_three_language_test_app()
+    response = app.test_client().get("/blog/page/about", headers={"Host": "example.com"})
+    assert _language_suggestion_urls(response) == {
+        "pl": "http://example.com/pl/",
+        "de": "http://example.de/",
+    }
+
+
 def test_www_host_resolves_to_its_language():
     app = _build_three_language_test_app(use_www=True)
     response = app.test_client().get("/blog/", headers={"Host": "www.example.de"})

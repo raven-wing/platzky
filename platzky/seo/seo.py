@@ -33,6 +33,45 @@ def _is_public_route(rule: Rule, extra_excluded_prefixes: tuple[str, ...] = ()) 
     return not any(path.startswith(p) for p in INTERNAL_PATH_PREFIXES + extra_excluded_prefixes)
 
 
+def _route_paths(rule: Rule, prefixes: t.Mapping[str, str]) -> list[str]:
+    """Return the paths a public route is served at in the languages of the current host.
+
+    Args:
+        rule: A public route
+        prefixes: Languages served on the current host mapped to their URL prefix
+
+    Returns:
+        The route's path, or one path per prefixed language for a localized route
+    """
+    values: list[dict[str, t.Any]] = [
+        {LANG_CODE_ARG: lang} for lang, prefix in prefixes.items() if prefix
+    ]
+    localized = LANG_CODE_ARG in rule.arguments
+    return [url_for(rule.endpoint, **v) for v in values] if localized else [str(rule)]
+
+
+def _blog_entries(host_base: str, lang: str, db: DB, blog_prefix: str) -> list[dict[str, str]]:
+    """Generate sitemap entries for all blog posts.
+
+    Args:
+        host_base: Base URL including any language prefix (e.g. 'https://example.com/uk')
+        lang: Language code for posts to include
+        db: Database instance for accessing blog posts
+        blog_prefix: URL prefix for blog routes
+
+    Returns:
+        List of dictionaries with sitemap URL entries (loc, lastmod)
+    """
+    dynamic_urls = []
+    # TODO: Add get_list_of_posts for faster getting just list of it
+    for post in db.get_all_posts(lang):
+        url: dict[str, str] = {"loc": f"{host_base}{blog_prefix}/{post.slug}"}
+        if post.date is not None:
+            url["lastmod"] = post.date.date().isoformat()
+        dynamic_urls.append(url)
+    return dynamic_urls
+
+
 def create_seo_blueprint(
     db: DB,
     config: dict[str, t.Any],
@@ -68,30 +107,6 @@ def create_seo_blueprint(
         response.headers["Content-Type"] = "text/plain"
         return response
 
-    def get_blog_entries(
-        host_base: str, lang: str, db: DB, blog_prefix: str
-    ) -> list[dict[str, str]]:
-        """Generate sitemap entries for all blog posts.
-
-        Args:
-            host_base: Base URL including any language prefix (e.g. 'https://example.com/uk')
-            lang: Language code for posts to include
-            db: Database instance for accessing blog posts
-            blog_prefix: URL prefix for blog routes
-
-        Returns:
-            List of dictionaries with sitemap URL entries (loc, lastmod)
-        """
-        dynamic_urls = []
-        # TODO: Add get_list_of_posts for faster getting just list of it
-        for post in db.get_all_posts(lang):
-            slug = post.slug
-            url: dict[str, str] = {"loc": f"{host_base}{blog_prefix}/{slug}"}
-            if post.date is not None:
-                url["lastmod"] = post.date.date().isoformat()
-            dynamic_urls.append(url)
-        return dynamic_urls
-
     @seo.route("/sitemap.xml")  # TODO: Try to replace sitemap logic with flask-sitemap module
     def sitemap() -> Response:
         """Route to dynamically generate a sitemap of your website/application.
@@ -109,23 +124,17 @@ def create_seo_blueprint(
 
         extra_excluded = tuple(config.get("SITEMAP_EXCLUDED_PREFIXES") or [])
 
-        # Static routes with static content
-        static_urls: list[dict[str, str]] = []
-        for rule in current_app.url_map.iter_rules():
-            if not _is_public_route(rule, extra_excluded):
-                continue
-            if LANG_CODE_ARG not in rule.arguments:
-                static_urls.append({"loc": f"{host_base}{rule!s}"})
-                continue
-            for lang, prefix in prefixes.items():
-                if prefix:
-                    values: dict[str, t.Any] = {LANG_CODE_ARG: lang}
-                    static_urls.append({"loc": f"{host_base}{url_for(rule.endpoint, **values)}"})
+        static_urls = [
+            {"loc": f"{host_base}{path}"}
+            for rule in current_app.url_map.iter_rules()
+            if _is_public_route(rule, extra_excluded)
+            for path in _route_paths(rule, prefixes)
+        ]
 
         dynamic_urls = [
             entry
             for lang, prefix in prefixes.items()
-            for entry in get_blog_entries(host_base + prefix, lang, db, config["BLOG_PREFIX"])
+            for entry in _blog_entries(host_base + prefix, lang, db, config["BLOG_PREFIX"])
         ]
 
         statics = list({v["loc"]: v for v in static_urls}.values())
