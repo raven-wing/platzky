@@ -8,44 +8,48 @@ under ``/<code>/`` on the main host.
 import typing as t
 
 if t.TYPE_CHECKING:
-    from platzky.config import Config, LanguageConfig
+    from platzky.config import Config
 
 LANG_CODE_ARG = "lang_code"
 RESERVED_PATH_SEGMENTS = frozenset({"lang", "static", "admin", "login", "health", "api"})
 
 
-def normalize_domain(domain: str) -> str:
-    """Return a domain or host lowercased, without a trailing dot or a leading ``www.``."""
-    return domain.rstrip(".").lower().removeprefix("www.")
+def language_for_host(config: "Config", host: str) -> str:
+    """Return the language whose ``domain`` matches ``host``, or the default language.
 
-
-def language_for_host(languages: t.Mapping[str, "LanguageConfig"], host: str) -> str | None:
-    """Return the language whose ``domain`` matches ``host``.
-
-    A domain with an explicit port must match the host's port exactly; a domain without one
-    matches regardless of port (e.g. behind a proxy that forwards on a non-standard port).
+    A domain matches only the host exactly as written, ``www.`` included. A domain with an
+    explicit port must match the host's port exactly; a domain without one matches regardless
+    of port (e.g. behind a proxy that forwards on a non-standard port). An exact match wins
+    over a domain without a port, whatever their order.
 
     Args:
-        languages: Configured languages keyed by code.
+        config: Application configuration.
         host: Request host, optionally with a port.
 
     Returns:
-        The matching language code, or None if no language claims ``host``.
+        The code of the language whose domain is ``host``; the default language when no
+        language claims it.
     """
-    host_with_port = normalize_domain(host)
-    host_without_port = normalize_domain(host.split(":", 1)[0])
-    for code, language in languages.items():
-        if language.domain is None:
-            continue
-        domain = normalize_domain(language.domain)
-        if domain == (host_with_port if ":" in domain else host_without_port):
-            return code
-    return None
+    host_without_port = host.split(":", 1)[0]
+    domains = {
+        code: language.domain
+        for code, language in config.languages.items()
+        if language.domain is not None
+    }
+    exact = next((code for code, domain in domains.items() if domain == host), None)
+    return exact or next(
+        (
+            code
+            for code, domain in domains.items()
+            if ":" not in domain and domain == host_without_port
+        ),
+        config.default_language,
+    )
 
 
 def dedicated_language(config: "Config", host: str) -> str | None:
     """Return the non-default language whose own domain is ``host``, if any."""
-    code = language_for_host(config.languages, host)
+    code = language_for_host(config, host)
     return code if code != config.default_language else None
 
 
@@ -103,15 +107,9 @@ def language_url(config: "Config", lang: str, scheme: str, host: str, path: str 
     languages = config.languages
     language = languages.get(lang)
     if language and language.domain and lang != config.default_language:
-        return f"{scheme}://{_apply_www(language.domain, config.use_www)}{path}"
+        return f"{scheme}://{language.domain}{path}"
     default = languages.get(config.default_language)
     if default and default.domain and dedicated_language(config, host):
-        host = _apply_www(default.domain, config.use_www)
+        host = default.domain
     prefix = "" if lang == config.default_language else f"/{lang}"
     return f"{scheme}://{host}{prefix}{path}"
-
-
-def _apply_www(domain: str, use_www: bool) -> str:
-    """Return ``domain`` in the form the ``USE_WWW`` redirect would send visitors to."""
-    bare = normalize_domain(domain)
-    return f"www.{bare}" if use_www else bare

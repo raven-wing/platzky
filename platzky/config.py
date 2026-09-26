@@ -15,7 +15,7 @@ from platzky.attachment.constants import BLOCKED_EXTENSIONS, DEFAULT_MAX_ATTACHM
 from platzky.db.db import DBConfig
 from platzky.db.db_loader import get_db_module
 from platzky.feature_flags_wrapper import FeatureFlagSet
-from platzky.language_routing import RESERVED_PATH_SEGMENTS, normalize_domain
+from platzky.language_routing import RESERVED_PATH_SEGMENTS
 from platzky.telemetry import TelemetryConfig
 
 
@@ -246,13 +246,13 @@ class Config(BaseModel):
             )
         domain_owners: dict[str, str] = {}
         for code, language in self.languages.items():
-            if language.domain is None:
+            domain = language.domain
+            if domain is None:
                 continue
-            domain = normalize_domain(language.domain)
             if domain in domain_owners:
                 raise ValueError(
                     f"Languages {domain_owners[domain]!r} and {code!r} share the domain "
-                    f"{language.domain!r}; each language needs its own URL."
+                    f"{domain!r}; each language needs its own URL."
                 )
             domain_owners[domain] = code
         if domain_owners and self.languages[self.default_language].domain is None:

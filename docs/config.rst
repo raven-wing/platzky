@@ -197,8 +197,9 @@ address that search engines can index:
   with ``engine.localize_routes("<blueprint name>")`` (see :ref:`plugin-localized-routes`).
 
 Domains must be unique, and once any other language has a ``domain`` the default language
-needs one too, so pages on the other domains can link back to it. Matching ignores case, a
-trailing dot, and a leading ``www.``. A ``domain`` without a port matches any port; include
+needs one too, so pages on the other domains can link back to it. Write each ``domain``
+exactly as the site is served: with ``USE_WWW`` on (the default) that is the ``www.`` form,
+e.g. ``domain: www.example.de``. A ``domain`` without a port matches any port; include
 a port (e.g. ``domain: example.de:5000``) to match only that port, as in local or staging
 setups.
 
@@ -468,12 +469,12 @@ Here's a complete configuration example for a production application:
         name: English
         flag: uk
         country: GB
-        domain: myblog.com
+        domain: www.myblog.com
       de:
         name: Deutsch
         flag: de
         country: DE
-        domain: myblog.de  # German is served at myblog.de
+        domain: www.myblog.de  # German is served at www.myblog.de
 
     # URLs
     USE_WWW: true

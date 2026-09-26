@@ -193,11 +193,8 @@ class TestLanguages:
         with pytest.raises(ValidationError, match="not one of the configured LANGUAGES"):
             Config.model_validate(data)
 
-    @pytest.mark.parametrize(
-        "other_domain", ["example.com", "EXAMPLE.com", "www.example.com", "example.com."]
-    )
-    def test_domains_must_be_unique(self, other_domain: str) -> None:
-        languages = {"en": {**_EN, "domain": "example.com"}, "pl": {**_PL, "domain": other_domain}}
+    def test_domains_must_be_unique(self) -> None:
+        languages = {"en": {**_EN, "domain": "example.com"}, "pl": {**_PL, "domain": "example.com"}}
         data = _config_data(DEFAULT_LANGUAGE="en", LANGUAGES=languages)
         with pytest.raises(ValidationError, match="share the domain"):
             Config.model_validate(data)

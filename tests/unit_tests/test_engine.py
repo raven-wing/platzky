@@ -404,6 +404,31 @@ def test_locale_does_not_match_domain_on_a_different_port():
     assert language_menu.get_text() == "en"
 
 
+@pytest.mark.parametrize("order", [("en", "pl"), ("pl", "en")])
+@pytest.mark.parametrize(
+    ("host", "expected"), [("example.com:5000", "pl"), ("example.com:8080", "en")]
+)
+def test_domain_with_the_request_port_wins_over_one_without_a_port(
+    order: tuple[str, str], host: str, expected: str
+):
+    languages = {
+        "en": {"name": "English", "flag": "gb", "country": "GB", "domain": "example.com"},
+        "pl": {"name": "polski", "flag": "pl", "country": "PL", "domain": "example.com:5000"},
+    }
+    config = Config.model_validate(
+        {
+            "APP_NAME": "testingApp",
+            "SECRET_KEY": "secret",  # NOSONAR - hardcoded secret acceptable in tests
+            "USE_WWW": False,
+            "DEFAULT_LANGUAGE": "en",
+            "LANGUAGES": {code: languages[code] for code in order},
+            "DB": {"TYPE": "json", "DATA": {"site_content": {}}},
+        }
+    )
+    response = create_app_from_config(config).test_client().get("/", headers={"Host": host})
+    assert _language_indicator(response) == expected
+
+
 def test_that_language_switch_has_proper_aria_label_text(test_app: Engine):
     response = test_app.test_client().get("/")
     soup = BeautifulSoup(response.data, "html.parser")
@@ -748,12 +773,12 @@ def test_path_language_feed_links_to_prefixed_posts():
     assert b"http://localhost/pl/blog/polski-wpis" in response.data
 
 
-def _build_three_language_test_app(use_www: bool = False) -> Engine:
+def _build_three_language_test_app() -> Engine:
     config = Config.model_validate(
         {
             "APP_NAME": "testingApp",
             "SECRET_KEY": "secret",  # NOSONAR - hardcoded secret acceptable in tests
-            "USE_WWW": use_www,
+            "USE_WWW": False,
             "BLOG_PREFIX": "/blog",
             "DEFAULT_LANGUAGE": "en",
             "LANGUAGES": {
@@ -852,9 +877,33 @@ def test_language_suggestion_offers_home_pages_for_content_pages():
     }
 
 
-def test_www_host_resolves_to_its_language():
-    app = _build_three_language_test_app(use_www=True)
-    response = app.test_client().get("/blog/", headers={"Host": "www.example.de"})
+def test_www_domains_serve_and_link_their_languages():
+    config = Config.model_validate(
+        {
+            "APP_NAME": "testingApp",
+            "SECRET_KEY": "secret",  # NOSONAR - hardcoded secret acceptable in tests
+            "USE_WWW": True,
+            "DEFAULT_LANGUAGE": "en",
+            "LANGUAGES": {
+                "en": {
+                    "name": "English",
+                    "flag": "gb",
+                    "country": "GB",
+                    "domain": "www.example.com",
+                },
+                "pl": {"name": "polski", "flag": "pl", "country": "PL"},
+                "de": {
+                    "name": "Deutsch",
+                    "flag": "de",
+                    "country": "DE",
+                    "domain": "www.example.de",
+                },
+            },
+            "DB": {"TYPE": "json", "DATA": {"site_content": {}}},
+        }
+    )
+    client = create_app_from_config(config).test_client()
+    response = client.get("/blog/", headers={"Host": "www.example.de"})
     assert _language_indicator(response) == "de"
     assert _hreflang_urls(response)["pl"] == "http://www.example.com/pl/blog/"
 
