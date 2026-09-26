@@ -314,11 +314,11 @@ def create_engine(
         """
         return _change_language_response(config, lang)
 
-    unprefixed = any_converter(config.site_languages.unprefixed_languages)
+    domainful = any_converter(config.site_languages.domainful_languages)
 
-    @app.route(f"/<{unprefixed}:lang>/", defaults={"path": ""}, methods=["GET"])
-    @app.route(f"/<{unprefixed}:lang>/<path:path>", methods=["GET"])
-    def unprefixed_language_prefix(lang: str, path: str) -> Response:
+    @app.route(f"/<{domainful}:lang>/", defaults={"path": ""}, methods=["GET"])
+    @app.route(f"/<{domainful}:lang>/<path:path>", methods=["GET"])
+    def domainful_language_prefix(lang: str, path: str) -> Response:
         """Redirect a URL prefixed with a language that is served without a prefix.
 
         Args:

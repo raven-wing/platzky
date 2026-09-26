@@ -63,10 +63,12 @@ class SiteLanguages:
         )
 
     @property
-    def unprefixed_languages(self) -> tuple[str, ...]:
+    def domainful_languages(self) -> tuple[str, ...]:
         """Codes of the languages served at the root of a host, never under ``/<lang_code>/``.
 
-        These are the default language and every language with its own domain.
+        These are every language with its own domain, and the default language, which owns
+        the main host even when no ``domain`` is configured for it. Together with
+        ``domainless_languages`` they cover every configured language.
         """
         return tuple(
             lang_code
