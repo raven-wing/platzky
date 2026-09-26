@@ -38,10 +38,10 @@ from platzky.feature_flags import FeatureFlag, StripContentHtml
 from platzky.language_routing import (
     LANG_CODE_ARG,
     any_converter,
-    dedicated_language,
     is_multilang,
     language_url,
     resolve_locale,
+    served_languages,
 )
 from platzky.models import CmsModule
 from platzky.notification_topics import NotificationTopic
@@ -463,19 +463,19 @@ class Engine(Flask):
         }
 
     def _path_without_language(self) -> str:
-        """Return the request path without the prefix of a domainless language."""
-        locale = self.get_locale()
-        in_domainless_language = locale in self._platzky_config.domainless_languages
-        return request.path.removeprefix(f"/{locale}") if in_domainless_language else request.path
+        """Return the request path without the prefix of its language, if it has one."""
+        prefixes = served_languages(self._platzky_config.site_languages, request.host)
+        return request.path.removeprefix(prefixes.get(self.get_locale(), ""))
 
     def _register_language_url_processors(self) -> None:
         """Strip the language prefix from matched URLs and add it back when building them."""
 
         @self.url_value_preprocessor
         def pop_lang_code(_endpoint: Optional[str], values: Optional[dict[str, Any]]) -> None:
-            """Drop the language from view arguments; off the main host, redirect to it."""
+            """Drop the language from view arguments; where it isn't served, redirect to it."""
             lang_code = values.pop(LANG_CODE_ARG, None) if values else None
-            if lang_code and dedicated_language(self._platzky_config.site_languages, request.host):
+            served = served_languages(self._platzky_config.site_languages, request.host)
+            if lang_code and lang_code not in served:
                 path = request.path.removeprefix(f"/{lang_code}")
                 abort(self.redirect_to_language(lang_code, path))
 

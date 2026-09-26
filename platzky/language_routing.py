@@ -83,40 +83,37 @@ def any_converter(lang_codes: t.Iterable[str]) -> str:
 
 
 def language_for_host(languages: SiteLanguages, host: str) -> str:
-    """Return the language whose ``domain`` matches ``host``, or the default language.
-
-    A domain matches only the host exactly as written, ``www.`` included. A domain with an
-    explicit port must match the host's port exactly; a domain without one matches regardless
-    of port (e.g. behind a proxy that forwards on a non-standard port). An exact match wins
-    over a domain without a port, whatever their order.
+    """Return the language whose ``domain`` is exactly ``host``, or the default language.
 
     Args:
         languages: The site's languages.
-        host: Request host, optionally with a port.
+        host: Request host, with its port if the request had one.
 
     Returns:
-        The code of the language whose domain is ``host``; the default language when no
-        language claims it.
+        The code of the language whose domain is ``host``, port included; the default language
+        when no language claims it.
     """
-    host_without_port = host.split(":", 1)[0]
-    domains = {
-        lang_code: domain for lang_code, domain in languages.domains.items() if domain is not None
-    }
-    exact = next((lang_code for lang_code, domain in domains.items() if domain == host), None)
-    return exact or next(
-        (
-            lang_code
-            for lang_code, domain in domains.items()
-            if ":" not in domain and domain == host_without_port
-        ),
+    return next(
+        (lang_code for lang_code, domain in languages.domains.items() if domain == host),
         languages.default,
     )
 
 
-def dedicated_language(languages: SiteLanguages, host: str) -> str | None:
-    """Return the non-default language whose own domain is ``host``, if any."""
-    lang_code = language_for_host(languages, host)
-    return lang_code if lang_code != languages.default else None
+def served_languages(languages: SiteLanguages, host: str) -> dict[str, str]:
+    """Map each language served on ``host`` to its URL prefix.
+
+    Args:
+        languages: The site's languages.
+        host: Request host.
+
+    Returns:
+        The host's language with an empty prefix; on the main host, also every domainless
+        language with ``"/<lang_code>"``.
+    """
+    host_language = language_for_host(languages, host)
+    on_main_host = host_language == languages.default
+    prefixed = {lang: f"/{lang}" for lang in languages.domainless_languages} if on_main_host else {}
+    return {host_language: "", **prefixed}
 
 
 def resolve_locale(languages: SiteLanguages, host: str, path: str) -> str:
@@ -128,31 +125,15 @@ def resolve_locale(languages: SiteLanguages, host: str, path: str) -> str:
         path: Request path.
 
     Returns:
-        The language whose own domain is ``host``; else the domainless language whose prefix
-        ``path`` starts with; else the default language.
+        The language served on ``host`` whose prefix ``path`` starts with; else the language
+        served at the host's root.
     """
-    if lang_code := dedicated_language(languages, host):
-        return lang_code
-    for lang in languages.domainless_languages:
-        if path == f"/{lang}" or path.startswith(f"/{lang}/"):
-            return lang
-    return languages.default
-
-
-def served_languages(languages: SiteLanguages, host: str) -> dict[str, str]:
-    """Map each language served on ``host`` to its URL prefix.
-
-    Args:
-        languages: The site's languages.
-        host: Request host.
-
-    Returns:
-        ``{lang_code: ""}`` on a language's own domain; otherwise the default language with an
-        empty prefix plus every domainless language with ``"/<code>"``.
-    """
-    if lang_code := dedicated_language(languages, host):
-        return {lang_code: ""}
-    return {languages.default: "", **{lang: f"/{lang}" for lang in languages.domainless_languages}}
+    prefixed = (
+        lang
+        for lang, prefix in served_languages(languages, host).items()
+        if prefix and (path == prefix or path.startswith(f"{prefix}/"))
+    )
+    return next(prefixed, language_for_host(languages, host))
 
 
 def language_url(
@@ -168,15 +149,15 @@ def language_url(
         path: Path of the page without any language prefix; the home page by default.
 
     Returns:
-        ``path`` on the language's own domain for a domain language. For the default and path
-        languages, ``path`` or ``/<code>path`` on the current host, or on the default
-        language's domain when the current host belongs to another language.
+        ``path`` on the language's own domain for a language with one. For the default and
+        domainless languages, ``path`` or ``/<lang_code>path`` on the main host: the current
+        host, or the default language's domain when the current host belongs to another
+        language.
     """
-    domain = languages.domains.get(lang)
-    if domain and lang != languages.default:
-        return f"{scheme}://{domain}{path}"
-    default_domain = languages.domains.get(languages.default)
-    if default_domain and dedicated_language(languages, host):
-        host = default_domain
+    own_domain = languages.domains.get(lang) if lang != languages.default else None
+    on_main_host = language_for_host(languages, host) == languages.default
+    main_host = host if on_main_host else languages.domains.get(languages.default) or host
     prefix = "" if lang == languages.default else f"/{lang}"
-    return f"{scheme}://{host}{prefix}{path}"
+    return (
+        f"{scheme}://{own_domain}{path}" if own_domain else f"{scheme}://{main_host}{prefix}{path}"
+    )

@@ -405,29 +405,10 @@ def test_locale_does_not_match_domain_on_a_different_port():
     assert language_menu.get_text() == "en"
 
 
-@pytest.mark.parametrize("order", [("en", "pl"), ("pl", "en")])
-@pytest.mark.parametrize(
-    ("host", "expected"), [("example.com:5000", "pl"), ("example.com:8080", "en")]
-)
-def test_domain_with_the_request_port_wins_over_one_without_a_port(
-    order: tuple[str, str], host: str, expected: str
-):
-    languages = {
-        "en": {"name": "English", "flag": "gb", "country": "GB", "domain": "example.com"},
-        "pl": {"name": "polski", "flag": "pl", "country": "PL", "domain": "example.com:5000"},
-    }
-    config = Config.model_validate(
-        {
-            "APP_NAME": "testingApp",
-            "SECRET_KEY": "secret",  # NOSONAR - hardcoded secret acceptable in tests
-            "USE_WWW": False,
-            "DEFAULT_LANGUAGE": "en",
-            "LANGUAGES": {lang_code: languages[lang_code] for lang_code in order},
-            "DB": {"TYPE": "json", "DATA": {"site_content": {}}},
-        }
-    )
-    response = create_app_from_config(config).test_client().get("/", headers={"Host": host})
-    assert _language_indicator(response) == expected
+def test_domain_without_a_port_does_not_match_a_host_with_one():
+    app = _build_three_language_test_app()
+    response = app.test_client().get("/blog/", headers={"Host": "example.de:5000"})
+    assert _language_indicator(response) == "en"
 
 
 def test_that_language_switch_has_proper_aria_label_text(test_app: Engine):
