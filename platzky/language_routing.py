@@ -76,6 +76,18 @@ class SiteLanguages:
             if lang_code not in self.domainless_languages
         )
 
+    def url_prefix(self, lang_code: str) -> str:
+        """Return the URL prefix of a language, the same on every host that serves it.
+
+        Args:
+            lang_code: A configured language code.
+
+        Returns:
+            ``"/<lang_code>"`` for a domainless language; ``""`` for any other, which is
+            served at the root of its host.
+        """
+        return f"/{lang_code}" if lang_code in self.domainless_languages else ""
+
 
 def any_converter(lang_codes: t.Iterable[str]) -> str:
     """Return a URL converter matching exactly the given codes, e.g. ``any('pl', 'uk')``."""
@@ -112,8 +124,8 @@ def served_languages(languages: SiteLanguages, host: str) -> dict[str, str]:
     """
     host_language = language_for_host(languages, host)
     on_main_host = host_language == languages.default
-    prefixed = {lang: f"/{lang}" for lang in languages.domainless_languages} if on_main_host else {}
-    return {host_language: "", **prefixed}
+    served = [host_language, *(languages.domainless_languages if on_main_host else ())]
+    return {lang: languages.url_prefix(lang) for lang in served}
 
 
 def resolve_locale(languages: SiteLanguages, host: str, path: str) -> str:
@@ -145,21 +157,19 @@ def language_url(
 
     Args:
         languages: The site's languages.
-        lang: Language code to link to.
+        lang: A configured language code to link to.
         scheme: URL scheme of the current request.
         host: Host of the current request.
         path: Path of the page without any language prefix; the home page by default.
 
     Returns:
-        ``path`` on the language's own domain for a language with one. For the default and
-        domainless languages, ``path`` or ``/<lang_code>path`` on the main host: the current
-        host, or the default language's domain when the current host belongs to another
-        language.
+        ``path`` under the language's prefix on the current host if it serves the language;
+        otherwise on the host that does: the language's own domain, or for a domainless
+        language the default language's domain.
     """
-    own_domain = languages.domains.get(lang) if lang != languages.default else None
-    on_main_host = language_for_host(languages, host) == languages.default
-    main_host = host if on_main_host else languages.domains.get(languages.default) or host
-    prefix = "" if lang == languages.default else f"/{lang}"
-    return (
-        f"{scheme}://{own_domain}{path}" if own_domain else f"{scheme}://{main_host}{prefix}{path}"
+    serving_host = (
+        host
+        if lang in served_languages(languages, host)
+        else languages.domains.get(lang) or languages.domains.get(languages.default) or host
     )
+    return f"{scheme}://{serving_host}{languages.url_prefix(lang)}{path}"
