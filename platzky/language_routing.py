@@ -17,9 +17,9 @@ View = t.TypeVar("View", bound=t.Callable[..., t.Any])
 
 
 def multilang(view: View) -> View:
-    """Serve a view in every language: also under ``/<code>/`` for each path language.
+    """Serve a view in every language: also under ``/<code>/`` for each domainless language.
 
-    Place it below the ``route`` decorator. While a request is in a path language, ``url_for``
+    Place it below the ``route`` decorator. While a request is in a domainless language, ``url_for``
     builds the view's URL under that language's prefix.
 
     Args:
@@ -50,13 +50,34 @@ class SiteLanguages:
     default: str
 
     @property
-    def path_languages(self) -> tuple[str, ...]:
-        """Codes of the non-default languages without a domain, served under ``/<code>/``."""
+    def domainless_languages(self) -> tuple[str, ...]:
+        """Codes of the languages without their own domain, served under ``/<lang_code>/``.
+
+        The default language is never one of them: it owns the root of the main host, even
+        when no ``domain`` is configured for it.
+        """
         return tuple(
             lang_code
             for lang_code, domain in self.domains.items()
             if domain is None and lang_code != self.default
         )
+
+    @property
+    def unprefixed_languages(self) -> tuple[str, ...]:
+        """Codes of the languages served at the root of a host, never under ``/<lang_code>/``.
+
+        These are the default language and every language with its own domain.
+        """
+        return tuple(
+            lang_code
+            for lang_code in dict.fromkeys([self.default, *self.domains])
+            if lang_code not in self.domainless_languages
+        )
+
+
+def any_converter(lang_codes: t.Iterable[str]) -> str:
+    """Return a URL converter matching exactly the given codes, e.g. ``any('pl', 'uk')``."""
+    return "any(" + ", ".join(f"'{lang_code}'" for lang_code in lang_codes) + ")"
 
 
 def language_for_host(languages: SiteLanguages, host: str) -> str:
@@ -105,12 +126,12 @@ def resolve_locale(languages: SiteLanguages, host: str, path: str) -> str:
         path: Request path.
 
     Returns:
-        The language whose own domain is ``host``; else the path language whose prefix
+        The language whose own domain is ``host``; else the domainless language whose prefix
         ``path`` starts with; else the default language.
     """
     if lang_code := dedicated_language(languages, host):
         return lang_code
-    for lang in languages.path_languages:
+    for lang in languages.domainless_languages:
         if path == f"/{lang}" or path.startswith(f"/{lang}/"):
             return lang
     return languages.default
@@ -125,11 +146,11 @@ def served_languages(languages: SiteLanguages, host: str) -> dict[str, str]:
 
     Returns:
         ``{lang_code: ""}`` on a language's own domain; otherwise the default language with an
-        empty prefix plus every path language with ``"/<code>"``.
+        empty prefix plus every domainless language with ``"/<code>"``.
     """
     if lang_code := dedicated_language(languages, host):
         return {lang_code: ""}
-    return {languages.default: "", **{lang: f"/{lang}" for lang in languages.path_languages}}
+    return {languages.default: "", **{lang: f"/{lang}" for lang in languages.domainless_languages}}
 
 
 def language_url(

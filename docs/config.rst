@@ -196,6 +196,10 @@ address that search engines can index:
   homepage and the blog; an application or plugin can serve its own views the same way by
   marking them with ``@multilang`` (see :ref:`plugin-localized-routes`).
 
+A language's code used as a prefix where that language isn't served permanently redirects to
+where it is: ``example.com/en/blog/`` to ``example.com/blog/``, ``example.com/de/blog/`` to
+``example.de/blog/``, and ``example.de/pl/blog/`` to ``example.com/pl/blog/``.
+
 Domains must be unique, and once any other language has a ``domain`` the default language
 needs one too, so pages on the other domains can link back to it. Write each ``domain``
 exactly as the site is served: with ``USE_WWW`` on (the default) that is the ``www.`` form,

@@ -107,7 +107,7 @@ that renders per language (it reads ``get_locale()``) below its ``route`` decora
     def webhook():
         ...
 
-The view is then also served as ``/<code>/…``. While a request is in a path language,
+The view is then also served as ``/<code>/…``. While a request is in a domainless language,
 ``url_for`` builds its URL with that prefix and ``get_locale()`` returns the language. Views
 without view arguments also get ``hreflang`` links to their version in every language.
 

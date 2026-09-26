@@ -234,7 +234,7 @@ def test_home_page_ignores_accept_language():
 
 
 @pytest.mark.parametrize("pl_home_path", ["/blog/page/o-nas", "/pl/blog/page/o-nas"])
-def test_home_page_resolves_path_language_home(pl_home_path: str):
+def test_home_page_resolves_domainless_language_home(pl_home_path: str):
     app = _build_bilingual_home_page_test_app(pl_home_path)
     response = app.test_client().get("/pl/")
     assert response.status_code == 200
@@ -684,7 +684,7 @@ def _link_hrefs(response: TestResponse) -> list[str]:
     return [str(a.get("href")) for a in soup.find_all("a")]
 
 
-def test_path_language_prefix_sets_the_locale(test_app: Engine):
+def test_domainless_language_prefix_sets_the_locale(test_app: Engine):
     response = test_app.test_client().get("/pl/blog/page/test")
     assert response.status_code == 200
     assert _language_indicator(response) == "pl"
@@ -700,9 +700,25 @@ def test_anonymous_page_view_sets_no_cookie(test_app: Engine):
     assert "Set-Cookie" not in response.headers
 
 
-@pytest.mark.parametrize("path", ["/en/", "/xx/", "/en/blog/page/test"])
-def test_only_path_languages_have_a_prefix(test_app: Engine, path: str):
+@pytest.mark.parametrize("path", ["/xx/", "/xx/blog/page/test"])
+def test_unknown_language_prefix_is_not_found(test_app: Engine, path: str):
     assert test_app.test_client().get(path).status_code == 404
+
+
+@pytest.mark.parametrize(
+    ("path", "location"),
+    [
+        ("/en/", "http://localhost/"),
+        ("/en/blog/page/test", "http://localhost/blog/page/test"),
+        ("/en/blog/?page=2", "http://localhost/blog/?page=2"),
+    ],
+)
+def test_default_language_prefix_redirects_to_the_unprefixed_page(
+    test_app: Engine, path: str, location: str
+):
+    response = test_app.test_client().get(path)
+    assert response.status_code == 301
+    assert response.location == location
 
 
 def _register_shop(app: Engine) -> None:
@@ -720,7 +736,7 @@ def _register_shop(app: Engine) -> None:
     app.register_blueprint(shop)
 
 
-def test_multilang_view_is_served_in_path_languages(test_app: Engine):
+def test_multilang_view_is_served_in_domainless_languages(test_app: Engine):
     _register_shop(test_app)
     client = test_app.test_client()
     assert client.get("/shop/").text == "en /shop/ /shop/webhook"
@@ -770,7 +786,7 @@ def _build_bilingual_blog_test_app() -> Engine:
     )
 
 
-def test_path_language_blog_lists_its_posts_under_its_prefix():
+def test_domainless_language_blog_lists_its_posts_under_its_prefix():
     response = _build_bilingual_blog_test_app().test_client().get("/pl/blog/")
     assert response.status_code == 200
     assert b"Polski wpis" in response.data
@@ -789,7 +805,7 @@ def test_default_language_blog_links_are_unprefixed():
     assert "/" in hrefs
 
 
-def test_path_language_post_submits_comments_under_its_prefix():
+def test_domainless_language_post_submits_comments_under_its_prefix():
     response = _build_bilingual_blog_test_app().test_client().get("/pl/blog/polski-wpis")
     assert response.status_code == 200
     form = BeautifulSoup(response.data, "html.parser").find("form")
@@ -797,7 +813,7 @@ def test_path_language_post_submits_comments_under_its_prefix():
     assert form.get("action") == "/pl/blog/polski-wpis"
 
 
-def test_path_language_feed_links_to_prefixed_posts():
+def test_domainless_language_feed_links_to_prefixed_posts():
     response = _build_bilingual_blog_test_app().test_client().get("/pl/blog/feed")
     assert response.status_code == 200
     assert b"http://localhost/pl/blog/polski-wpis" in response.data
@@ -822,11 +838,34 @@ def _build_three_language_test_app() -> Engine:
     return create_app_from_config(config)
 
 
-@pytest.mark.parametrize(("host", "status"), [("example.com", 200), ("example.de", 404)])
-def test_path_languages_are_served_on_the_main_host_only(host: str, status: int):
+def test_domainless_language_is_served_on_the_main_host():
     app = _build_three_language_test_app()
-    response = app.test_client().get("/pl/blog/page/about", headers={"Host": host})
-    assert response.status_code == status
+    response = app.test_client().get("/pl/blog/page/about", headers={"Host": "example.com"})
+    assert response.status_code == 200
+
+
+@pytest.mark.parametrize(
+    ("host", "path", "location"),
+    [
+        ("example.de", "/en/blog/", "http://example.com/blog/"),
+        ("example.com", "/de/blog/", "http://example.de/blog/"),
+        ("example.com", "/de/blog/?page=2", "http://example.de/blog/?page=2"),
+        ("example.de", "/pl/blog/page/about", "http://example.com/pl/blog/page/about"),
+    ],
+)
+def test_language_prefix_redirects_to_where_the_language_is_served(
+    host: str, path: str, location: str
+):
+    app = _build_three_language_test_app()
+    response = app.test_client().get(path, headers={"Host": host})
+    assert response.status_code == 301
+    assert response.location == location
+
+
+def test_sitemap_omits_the_default_language_prefix():
+    app = _build_three_language_test_app()
+    response = app.test_client().get("/sitemap.xml", headers={"Host": "example.com"})
+    assert "http://example.com/en/" not in response.text
 
 
 @pytest.mark.parametrize(
@@ -939,7 +978,7 @@ def test_www_domains_serve_and_link_their_languages():
 
 
 @pytest.mark.parametrize(("host", "lists_pl"), [("example.com", True), ("example.de", False)])
-def test_sitemap_lists_path_languages_on_the_main_host_only(host: str, lists_pl: bool):
+def test_sitemap_lists_domainless_languages_on_the_main_host_only(host: str, lists_pl: bool):
     app = _build_three_language_test_app()
     response = app.test_client().get("/sitemap.xml", headers={"Host": host})
     assert f"http://{host}/blog/" in response.text

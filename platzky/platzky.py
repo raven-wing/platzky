@@ -27,7 +27,13 @@ from platzky.db.db import DB
 from platzky.db.db_loader import get_db
 from platzky.engine import Engine
 from platzky.feature_flags import FakeLogin
-from platzky.language_routing import LANG_CODE_ARG, language_url, multilang, served_languages
+from platzky.language_routing import (
+    LANG_CODE_ARG,
+    any_converter,
+    language_url,
+    multilang,
+    served_languages,
+)
 from platzky.login import login
 from platzky.plugin.content_transformer import ContentTransformerPluginBase
 from platzky.plugin.login import LoginPluginBase
@@ -307,6 +313,22 @@ def create_engine(
             Redirect to the language's home URL, or 404 if the language is not configured
         """
         return _change_language_response(config, lang)
+
+    unprefixed = any_converter(config.site_languages.unprefixed_languages)
+
+    @app.route(f"/<{unprefixed}:lang>/", defaults={"path": ""}, methods=["GET"])
+    @app.route(f"/<{unprefixed}:lang>/<path:path>", methods=["GET"])
+    def unprefixed_language_prefix(lang: str, path: str) -> Response:
+        """Redirect a URL prefixed with a language that is served without a prefix.
+
+        Args:
+            lang: Code of the default language, or of a language with its own domain
+            path: The URL path after the language prefix
+
+        Returns:
+            Permanent redirect to the page where that language is served
+        """
+        return app.redirect_to_language(lang, f"/{path}")
 
     @app.route("/", methods=["GET"])
     @multilang

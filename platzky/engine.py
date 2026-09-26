@@ -22,11 +22,13 @@ from flask import (
     has_request_context,
     jsonify,
     make_response,
+    redirect,
     request,
 )
 from flask import typing as ft
 from flask_babel import Babel
 from markupsafe import Markup
+from werkzeug.wrappers import Response as BaseResponse
 
 from platzky.attachment import Attachment, create_attachment
 from platzky.config import Config
@@ -35,6 +37,7 @@ from platzky.db.db import DB
 from platzky.feature_flags import FeatureFlag, StripContentHtml
 from platzky.language_routing import (
     LANG_CODE_ARG,
+    any_converter,
     dedicated_language,
     is_multilang,
     language_url,
@@ -402,7 +405,7 @@ class Engine(Flask):
         provide_automatic_options: Optional[bool] = None,
         **options: object,
     ) -> None:
-        """Register a route; for a ``multilang`` view, also under each path language's prefix.
+        """Register a route; for a ``multilang`` view, also under each domainless language's prefix.
 
         Args:
             rule: The URL rule.
@@ -414,16 +417,31 @@ class Engine(Flask):
         super().add_url_rule(rule, endpoint, view_func, provide_automatic_options, **options)
         if view_func is not None and is_multilang(view_func):
             self._localized_endpoints.add(endpoint or view_func.__name__)
-            lang_codes = self._platzky_config.path_languages
-            converter = "any(" + ", ".join(f"'{lang_code}'" for lang_code in lang_codes) + ")"
+            lang_codes = self._platzky_config.domainless_languages
             if lang_codes:
                 super().add_url_rule(
-                    f"/<{converter}:{LANG_CODE_ARG}>{rule}",
+                    f"/<{any_converter(lang_codes)}:{LANG_CODE_ARG}>{rule}",
                     endpoint,
                     view_func,
                     provide_automatic_options,
                     **options,
                 )
+
+    def redirect_to_language(self, lang_code: str, path: str) -> BaseResponse:
+        """Permanently redirect to a page at the address where a language is served.
+
+        Args:
+            lang_code: Language to redirect to.
+            path: Path of the page without any language prefix.
+
+        Returns:
+            A 301 redirect to ``path`` in that language, keeping the query string.
+        """
+        url = language_url(
+            self._platzky_config.site_languages, lang_code, request.scheme, request.host, path
+        )
+        query = request.query_string.decode()
+        return redirect(f"{url}?{query}" if query else url, code=301)
 
     def language_urls(self) -> dict[str, str]:
         """Return the absolute URL of the current page in each configured language.
@@ -445,25 +463,25 @@ class Engine(Flask):
         }
 
     def _path_without_language(self) -> str:
-        """Return the request path without the prefix of a path language."""
+        """Return the request path without the prefix of a domainless language."""
         locale = self.get_locale()
-        in_path_language = locale in self._platzky_config.path_languages
-        return request.path.removeprefix(f"/{locale}") if in_path_language else request.path
+        in_domainless_language = locale in self._platzky_config.domainless_languages
+        return request.path.removeprefix(f"/{locale}") if in_domainless_language else request.path
 
     def _register_language_url_processors(self) -> None:
         """Strip the language prefix from matched URLs and add it back when building them."""
 
         @self.url_value_preprocessor
         def pop_lang_code(_endpoint: Optional[str], values: Optional[dict[str, Any]]) -> None:
-            """Drop the language from view arguments; path languages exist on the main host only."""
-            if not values or values.pop(LANG_CODE_ARG, None) is None:
-                return
-            if dedicated_language(self._platzky_config.site_languages, request.host):
-                abort(404)
+            """Drop the language from view arguments; off the main host, redirect to it."""
+            lang_code = values.pop(LANG_CODE_ARG, None) if values else None
+            if lang_code and dedicated_language(self._platzky_config.site_languages, request.host):
+                path = request.path.removeprefix(f"/{lang_code}")
+                abort(self.redirect_to_language(lang_code, path))
 
         @self.url_defaults
         def inject_lang_code(endpoint: str, values: dict[str, Any]) -> None:
-            """Build localized endpoints under the prefix of the current path language."""
+            """Build localized endpoints under the prefix of the current domainless language."""
             if (
                 endpoint not in self._localized_endpoints
                 or LANG_CODE_ARG in values
@@ -471,7 +489,7 @@ class Engine(Flask):
             ):
                 return
             locale = self.get_locale()
-            if locale in self._platzky_config.path_languages:
+            if locale in self._platzky_config.domainless_languages:
                 values[LANG_CODE_ARG] = locale
 
     def is_enabled(self, flag: FeatureFlag) -> bool:

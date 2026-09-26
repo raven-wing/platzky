@@ -206,12 +206,12 @@ class TestLanguages:
             Config.model_validate(data)
 
     @pytest.mark.parametrize("lang_code", ["admin", "static", "lang", "blog", "pl pl", "pl/x"])
-    def test_path_language_code_must_be_a_free_url_segment(self, lang_code: str) -> None:
+    def test_domainless_language_code_must_be_a_free_url_segment(self, lang_code: str) -> None:
         data = _config_data(DEFAULT_LANGUAGE="en", LANGUAGES={"en": _EN, lang_code: _PL})
         with pytest.raises(ValidationError, match="served under"):
             Config.model_validate(data)
 
-    def test_path_language_code_must_not_collide_with_a_custom_blog_prefix(self) -> None:
+    def test_domainless_language_code_must_not_collide_with_a_custom_blog_prefix(self) -> None:
         data = _config_data(
             BLOG_PREFIX="/articles",
             DEFAULT_LANGUAGE="en",
@@ -220,7 +220,7 @@ class TestLanguages:
         with pytest.raises(ValidationError, match="served under"):
             Config.model_validate(data)
 
-    def test_path_languages_are_non_default_languages_without_a_domain(self) -> None:
+    def test_domainless_languages_are_non_default_languages_without_a_domain(self) -> None:
         languages = {
             "en": {**_EN, "domain": "example.com"},
             "pl": _PL,
@@ -228,7 +228,7 @@ class TestLanguages:
             "uk": {"name": "Ukrainian", "flag": "ua", "country": "UA"},
         }
         config = Config.model_validate(_config_data(DEFAULT_LANGUAGE="en", LANGUAGES=languages))
-        assert config.path_languages == ("pl", "uk")
+        assert config.domainless_languages == ("pl", "uk")
 
 
 class TestFeatureFlagSet:

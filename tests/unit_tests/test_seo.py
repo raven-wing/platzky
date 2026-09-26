@@ -129,7 +129,7 @@ class TestSitemapFiltering:
         response = app.test_client().get("/prefix/sitemap.xml")
         assert "/about" in response.text
 
-    def test_lists_localized_route_for_each_path_language_served(self) -> None:
+    def test_lists_localized_route_for_each_domainless_language_served(self) -> None:
         public_bp = Blueprint("public", __name__)
 
         @public_bp.route("/about", methods=["GET"])

@@ -47,7 +47,7 @@ class TestPlatzky:
         assert response.status_code == 302
         assert response.headers.get("Location") == "http://example.de/"
 
-    def test_change_language_to_path_language_redirects_to_its_prefix(self):
+    def test_change_language_to_domainless_language_redirects_to_its_prefix(self):
         """Switching to a language without a domain redirects to its prefix on the main host."""
         app = _engine_with_languages({"en": _EN, "de": _DE})
         response = app.test_client().get("/lang/de")
@@ -63,7 +63,7 @@ class TestPlatzky:
         assert response.headers.get("Location") == "http://localhost/"
 
     def test_change_language_from_a_domain_language_host_goes_to_the_main_domain(self):
-        """From another language's domain, a path language is reached via the default's domain."""
+        """From another language's domain, a domainless language is reached via the default's."""
         app = _engine_with_languages(
             {
                 "en": {**_EN, "domain": "example.com"},

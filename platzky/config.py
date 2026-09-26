@@ -262,7 +262,7 @@ class Config(BaseModel):
             )
         prefix_segments = {p.strip("/").split("/")[0] for p in (self.blog_prefix, self.seo_prefix)}
         reserved = RESERVED_PATH_SEGMENTS | (prefix_segments - {""})
-        for lang_code in self.path_languages:
+        for lang_code in self.domainless_languages:
             if lang_code in reserved or not _PATH_SEGMENT.fullmatch(lang_code):
                 raise ValueError(
                     f"Language {lang_code!r} has no domain, so it is served under /{lang_code}/; "
@@ -280,9 +280,9 @@ class Config(BaseModel):
         )
 
     @property
-    def path_languages(self) -> tuple[str, ...]:
-        """Codes of the non-default languages without a domain, served under ``/<code>/``."""
-        return self.site_languages.path_languages
+    def domainless_languages(self) -> tuple[str, ...]:
+        """Codes of the languages without their own domain, served under ``/<lang_code>/``."""
+        return self.site_languages.domainless_languages
 
     @field_validator("feature_flags", mode="before")
     @classmethod
