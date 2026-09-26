@@ -390,7 +390,7 @@ class Engine(Flask):
 
     def get_locale(self) -> str:
         """Return the language of the current request, derived from its host and path only."""
-        return resolve_locale(self._platzky_config, request.host, request.path)
+        return resolve_locale(self._platzky_config.site_languages, request.host, request.path)
 
     def localize_routes(self, name: str) -> None:
         """Also serve the routes of an endpoint or blueprint under each path language's prefix.
@@ -431,7 +431,7 @@ class Engine(Flask):
         languages = config.languages if translated else {}
         path = self._path_without_language()
         return {
-            lang: language_url(config, lang, request.scheme, request.host, path)
+            lang: language_url(config.site_languages, lang, request.scheme, request.host, path)
             for lang in languages
         }
 
@@ -449,7 +449,7 @@ class Engine(Flask):
             """Drop the language from view arguments; path languages exist on the main host only."""
             if not values or values.pop(LANG_CODE_ARG, None) is None:
                 return
-            if dedicated_language(self._platzky_config, request.host):
+            if dedicated_language(self._platzky_config.site_languages, request.host):
                 abort(404)
 
         @self.url_defaults

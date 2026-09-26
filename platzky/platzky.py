@@ -180,7 +180,8 @@ def _language_suggestions(
         lang: _language_suggestion(
             config,
             lang,
-            alternates.get(lang) or language_url(config, lang, request.scheme, request.host),
+            alternates.get(lang)
+            or language_url(config.site_languages, lang, request.scheme, request.host),
         )
         for lang in config.languages
         if lang != locale
@@ -213,7 +214,9 @@ def _change_language_response(config: Config, lang: str) -> Response:
     """
     if lang not in config.languages:
         return make_response(render_template(_NOT_FOUND_TEMPLATE, title="404"), 404)
-    return redirect(language_url(config, lang, request.scheme, request.host), code=302)
+    return redirect(
+        language_url(config.site_languages, lang, request.scheme, request.host), code=302
+    )
 
 
 def _home_page_response(app: Engine, config: Config) -> ResponseReturnValue:
@@ -337,7 +340,9 @@ def create_engine(
             "current_lang_country": country,
             "current_language": locale,
             "default_language": config.default_language,
-            "language_url": partial(language_url, config, scheme=request.scheme, host=request.host),
+            "language_url": partial(
+                language_url, config.site_languages, scheme=request.scheme, host=request.host
+            ),
             "language_alternates": alternates,
             "language_suggestions": _language_suggestions(config, locale, alternates),
             "url_link": _url_encode,
@@ -520,7 +525,7 @@ def create_app_from_config(
     seo_blueprint = seo.create_seo_blueprint(
         db=engine.db,
         config=engine.config,
-        language_prefixes=lambda: served_languages(config, request.host),
+        language_prefixes=lambda: served_languages(config.site_languages, request.host),
     )
     engine.register_blueprint(login_blueprint)
     engine.register_blueprint(admin_blueprint)

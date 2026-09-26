@@ -5,16 +5,34 @@ host, a language with its own ``domain`` at the root of that domain, and any oth
 under ``/<code>/`` on the main host.
 """
 
-import typing as t
-
-if t.TYPE_CHECKING:
-    from platzky.config import Config
+from collections.abc import Mapping
+from dataclasses import dataclass
 
 LANG_CODE_ARG = "lang_code"
 RESERVED_PATH_SEGMENTS = frozenset({"lang", "static", "admin", "login", "health", "api"})
 
 
-def language_for_host(config: "Config", host: str) -> str:
+@dataclass(frozen=True)
+class SiteLanguages:
+    """The configured languages as URL routing sees them.
+
+    Attributes:
+        domains: Language codes mapped to their own domain, or None for a language without one.
+        default: Code of the language served at the root of the main host.
+    """
+
+    domains: Mapping[str, str | None]
+    default: str
+
+    @property
+    def path_languages(self) -> tuple[str, ...]:
+        """Codes of the non-default languages without a domain, served under ``/<code>/``."""
+        return tuple(
+            code for code, domain in self.domains.items() if domain is None and code != self.default
+        )
+
+
+def language_for_host(languages: SiteLanguages, host: str) -> str:
     """Return the language whose ``domain`` matches ``host``, or the default language.
 
     A domain matches only the host exactly as written, ``www.`` included. A domain with an
@@ -23,7 +41,7 @@ def language_for_host(config: "Config", host: str) -> str:
     over a domain without a port, whatever their order.
 
     Args:
-        config: Application configuration.
+        languages: The site's languages.
         host: Request host, optionally with a port.
 
     Returns:
@@ -31,11 +49,7 @@ def language_for_host(config: "Config", host: str) -> str:
         language claims it.
     """
     host_without_port = host.split(":", 1)[0]
-    domains = {
-        code: language.domain
-        for code, language in config.languages.items()
-        if language.domain is not None
-    }
+    domains = {code: domain for code, domain in languages.domains.items() if domain is not None}
     exact = next((code for code, domain in domains.items() if domain == host), None)
     return exact or next(
         (
@@ -43,21 +57,21 @@ def language_for_host(config: "Config", host: str) -> str:
             for code, domain in domains.items()
             if ":" not in domain and domain == host_without_port
         ),
-        config.default_language,
+        languages.default,
     )
 
 
-def dedicated_language(config: "Config", host: str) -> str | None:
+def dedicated_language(languages: SiteLanguages, host: str) -> str | None:
     """Return the non-default language whose own domain is ``host``, if any."""
-    code = language_for_host(config, host)
-    return code if code != config.default_language else None
+    code = language_for_host(languages, host)
+    return code if code != languages.default else None
 
 
-def resolve_locale(config: "Config", host: str, path: str) -> str:
+def resolve_locale(languages: SiteLanguages, host: str, path: str) -> str:
     """Return the language a request is served in.
 
     Args:
-        config: Application configuration.
+        languages: The site's languages.
         host: Request host.
         path: Request path.
 
@@ -65,35 +79,37 @@ def resolve_locale(config: "Config", host: str, path: str) -> str:
         The language whose own domain is ``host``; else the path language whose prefix
         ``path`` starts with; else the default language.
     """
-    if code := dedicated_language(config, host):
+    if code := dedicated_language(languages, host):
         return code
-    for lang in config.path_languages:
+    for lang in languages.path_languages:
         if path == f"/{lang}" or path.startswith(f"/{lang}/"):
             return lang
-    return config.default_language
+    return languages.default
 
 
-def served_languages(config: "Config", host: str) -> dict[str, str]:
+def served_languages(languages: SiteLanguages, host: str) -> dict[str, str]:
     """Map each language served on ``host`` to its URL prefix.
 
     Args:
-        config: Application configuration.
+        languages: The site's languages.
         host: Request host.
 
     Returns:
         ``{code: ""}`` on a language's own domain; otherwise the default language with an
         empty prefix plus every path language with ``"/<code>"``.
     """
-    if code := dedicated_language(config, host):
+    if code := dedicated_language(languages, host):
         return {code: ""}
-    return {config.default_language: "", **{lang: f"/{lang}" for lang in config.path_languages}}
+    return {languages.default: "", **{lang: f"/{lang}" for lang in languages.path_languages}}
 
 
-def language_url(config: "Config", lang: str, scheme: str, host: str, path: str = "/") -> str:
+def language_url(
+    languages: SiteLanguages, lang: str, scheme: str, host: str, path: str = "/"
+) -> str:
     """Return the absolute URL of a page in a language, valid from any host.
 
     Args:
-        config: Application configuration.
+        languages: The site's languages.
         lang: Language code to link to.
         scheme: URL scheme of the current request.
         host: Host of the current request.
@@ -104,12 +120,11 @@ def language_url(config: "Config", lang: str, scheme: str, host: str, path: str 
         languages, ``path`` or ``/<code>path`` on the current host, or on the default
         language's domain when the current host belongs to another language.
     """
-    languages = config.languages
-    language = languages.get(lang)
-    if language and language.domain and lang != config.default_language:
-        return f"{scheme}://{language.domain}{path}"
-    default = languages.get(config.default_language)
-    if default and default.domain and dedicated_language(config, host):
-        host = default.domain
-    prefix = "" if lang == config.default_language else f"/{lang}"
+    domain = languages.domains.get(lang)
+    if domain and lang != languages.default:
+        return f"{scheme}://{domain}{path}"
+    default_domain = languages.domains.get(languages.default)
+    if default_domain and dedicated_language(languages, host):
+        host = default_domain
+    prefix = "" if lang == languages.default else f"/{lang}"
     return f"{scheme}://{host}{prefix}{path}"
