@@ -173,14 +173,13 @@ def _config_data(**overrides: object) -> dict[str, object]:
 class TestLanguages:
     """Tests for DEFAULT_LANGUAGE and the URL each language is served at."""
 
-    def test_default_language_is_en_with_several_languages(self) -> None:
-        config = Config.model_validate(_config_data(LANGUAGES={"pl": _PL, "en": _EN}))
-        assert config.default_language == "en"
+    def test_default_language_is_the_first_of_several_languages(self) -> None:
+        config = Config.model_validate(_config_data(LANGUAGES={"pl": _PL, "de": _DE}))
+        assert config.default_language == "pl"
 
-    def test_default_language_must_be_set_when_en_is_not_among_several(self) -> None:
-        data = _config_data(LANGUAGES={"pl": _PL, "de": _DE})
-        with pytest.raises(ValidationError, match="not one of the configured LANGUAGES"):
-            Config.model_validate(data)
+    def test_default_language_is_the_first_even_when_en_is_configured(self) -> None:
+        config = Config.model_validate(_config_data(LANGUAGES={"pl": _PL, "en": _EN}))
+        assert config.default_language == "pl"
 
     def test_default_language_is_implied_with_one_language(self) -> None:
         config = Config.model_validate(_config_data(LANGUAGES={"pl": _PL}))

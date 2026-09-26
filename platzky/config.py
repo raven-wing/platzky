@@ -221,11 +221,11 @@ class Config(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def fill_default_language(cls, data: object) -> object:
-        """Imply DEFAULT_LANGUAGE: the only configured language, otherwise ``en``."""
+        """Imply DEFAULT_LANGUAGE: the first configured language, otherwise ``en``."""
         if not isinstance(data, dict) or data.get("DEFAULT_LANGUAGE"):
             return data
         languages = data.get("LANGUAGES") or {}
-        implied = next(iter(languages)) if len(languages) == 1 else "en"
+        implied = next(iter(languages), "en")
         return {**data, "DEFAULT_LANGUAGE": implied}
 
     @model_validator(mode="after")

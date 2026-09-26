@@ -90,9 +90,10 @@ Serving Routes in Every Language
 --------------------------------
 
 A language without its own ``domain`` is served under its code (``/pl/…``), but only on
-routes that ask for it. The built-in homepage and blog routes do. Routes that a plugin
-contributes do not until whoever registers their blueprint, usually the application
-embedding platzky, calls :meth:`~platzky.engine.Engine.localize_routes` after registering it:
+routes registered for it with :meth:`~platzky.engine.Engine.localize_routes`. Platzky does
+this for the built-in homepage and blog routes. A plugin's routes stay at their plain path,
+served only in the default language, until whoever registers their blueprint, usually the
+application embedding platzky, calls ``localize_routes`` after registering it:
 
 .. code-block:: python
 

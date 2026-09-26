@@ -144,10 +144,10 @@ Localization Settings
 ^^^^^^^^^^^^^^^^^^^^
 
 :Type: ``str``
-:Default: the only configured language, otherwise ``"en"``
+:Default: the first configured language, otherwise ``"en"``
 
-Language served at the root of the site. It must be one of the ``LANGUAGES`` keys, so set
-it when several languages are configured and none of them is ``en``.
+Language served at the root of the site. It must be one of the ``LANGUAGES`` keys. Set it
+when the root language shouldn't be the first one listed in ``LANGUAGES``.
 
 .. code-block:: yaml
 
