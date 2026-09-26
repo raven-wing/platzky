@@ -24,6 +24,7 @@ from flask import (
     make_response,
     request,
 )
+from flask import typing as ft
 from flask_babel import Babel
 from markupsafe import Markup
 
@@ -35,6 +36,7 @@ from platzky.feature_flags import FeatureFlag, StripContentHtml
 from platzky.language_routing import (
     LANG_CODE_ARG,
     dedicated_language,
+    is_multilang,
     language_url,
     resolve_locale,
 )
@@ -392,28 +394,35 @@ class Engine(Flask):
         """Return the language of the current request, derived from its host and path only."""
         return resolve_locale(self._platzky_config.site_languages, request.host, request.path)
 
-    def localize_routes(self, name: str) -> None:
-        """Also serve the routes of an endpoint or blueprint under each path language's prefix.
-
-        Call it after the routes are registered. While a request is in a path language,
-        ``url_for`` builds these endpoints under that language's prefix.
+    def add_url_rule(
+        self,
+        rule: str,
+        endpoint: Optional[str] = None,
+        view_func: Optional[ft.RouteCallable] = None,
+        provide_automatic_options: Optional[bool] = None,
+        **options: object,
+    ) -> None:
+        """Register a route; for a ``multilang`` view, also under each path language's prefix.
 
         Args:
-            name: An endpoint name, or a blueprint name to localize all of its endpoints.
+            rule: The URL rule.
+            endpoint: The endpoint name; the view's name by default.
+            view_func: The view function.
+            provide_automatic_options: Whether to add an automatic ``OPTIONS`` response.
+            **options: Further options for the underlying ``Rule``.
         """
-        codes = self._platzky_config.path_languages
-        converter = "any(" + ", ".join(f"'{code}'" for code in codes) + ")"
-        for rule in list(self.url_map.iter_rules()):
-            if rule.endpoint != name and not rule.endpoint.startswith(f"{name}."):
-                continue
-            if LANG_CODE_ARG in rule.arguments:
-                continue
-            self._localized_endpoints.add(rule.endpoint)
+        super().add_url_rule(rule, endpoint, view_func, provide_automatic_options, **options)
+        if view_func is not None and is_multilang(view_func):
+            self._localized_endpoints.add(endpoint or view_func.__name__)
+            codes = self._platzky_config.path_languages
+            converter = "any(" + ", ".join(f"'{code}'" for code in codes) + ")"
             if codes:
-                self.add_url_rule(
-                    f"/<{converter}:{LANG_CODE_ARG}>{rule.rule}",
-                    provide_automatic_options=getattr(rule, "provide_automatic_options", None),
-                    **rule.get_empty_kwargs(),
+                super().add_url_rule(
+                    f"/<{converter}:{LANG_CODE_ARG}>{rule}",
+                    endpoint,
+                    view_func,
+                    provide_automatic_options,
+                    **options,
                 )
 
     def language_urls(self) -> dict[str, str]:

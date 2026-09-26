@@ -90,19 +90,25 @@ Serving Routes in Every Language
 --------------------------------
 
 A language without its own ``domain`` is served under its code (``/pl/…``), but only on
-routes registered for it with :meth:`~platzky.engine.Engine.localize_routes`. Platzky does
-this for the built-in homepage and blog routes. A plugin's routes stay at their plain path,
-served only in the default language, until whoever registers their blueprint, usually the
-application embedding platzky, calls ``localize_routes`` after registering it:
+views marked with ``platzky.multilang``, as the built-in homepage and blog views are.
+Other routes stay at their plain path, served only in the default language. Mark a view
+that renders per language (it reads ``get_locale()``) below its ``route`` decorator:
 
 .. code-block:: python
 
-    app = create_app_from_config(config)
-    app.register_blueprint(shop_blueprint)
-    app.localize_routes(shop_blueprint.name)
+    from platzky import multilang
 
-Each route is then also served as ``/<code>/…``. While a request is in a path language,
-``url_for`` builds these endpoints with its prefix and ``get_locale()`` returns it. Routes
+    @shop.route("/")
+    @multilang
+    def index():
+        ...
+
+    @shop.route("/webhook")  # not marked: no /pl/shop/webhook
+    def webhook():
+        ...
+
+The view is then also served as ``/<code>/…``. While a request is in a path language,
+``url_for`` builds its URL with that prefix and ``get_locale()`` returns the language. Views
 without view arguments also get ``hreflang`` links to their version in every language.
 
 Packaging a Plugin

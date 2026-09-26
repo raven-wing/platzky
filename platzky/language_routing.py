@@ -5,11 +5,36 @@ host, a language with its own ``domain`` at the root of that domain, and any oth
 under ``/<code>/`` on the main host.
 """
 
+import typing as t
 from collections.abc import Mapping
 from dataclasses import dataclass
 
 LANG_CODE_ARG = "lang_code"
 RESERVED_PATH_SEGMENTS = frozenset({"lang", "static", "admin", "login", "health", "api"})
+
+_MULTILANG_ATTR = "platzky_multilang"
+View = t.TypeVar("View", bound=t.Callable[..., t.Any])
+
+
+def multilang(view: View) -> View:
+    """Serve a view in every language: also under ``/<code>/`` for each path language.
+
+    Place it below the ``route`` decorator. While a request is in a path language, ``url_for``
+    builds the view's URL under that language's prefix.
+
+    Args:
+        view: The view function to mark.
+
+    Returns:
+        The same view, marked.
+    """
+    setattr(view, _MULTILANG_ATTR, True)
+    return view
+
+
+def is_multilang(view: t.Callable[..., t.Any]) -> bool:
+    """Return whether ``view`` was marked with ``multilang``."""
+    return getattr(view, _MULTILANG_ATTR, False)
 
 
 @dataclass(frozen=True)

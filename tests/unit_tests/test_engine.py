@@ -2,9 +2,10 @@ from typing import Any, cast
 
 import pytest
 from bs4 import BeautifulSoup, Tag
-from flask import url_for
+from flask import Blueprint, url_for
 from werkzeug.test import TestResponse
 
+from platzky import multilang
 from platzky.config import Config
 from platzky.db.json_db import Json
 from platzky.engine import Engine
@@ -702,6 +703,35 @@ def test_anonymous_page_view_sets_no_cookie(test_app: Engine):
 @pytest.mark.parametrize("path", ["/en/", "/xx/", "/en/blog/page/test"])
 def test_only_path_languages_have_a_prefix(test_app: Engine, path: str):
     assert test_app.test_client().get(path).status_code == 404
+
+
+def _register_shop(app: Engine) -> None:
+    shop = Blueprint("shop", __name__, url_prefix="/shop")
+
+    @shop.route("/")
+    @multilang
+    def index() -> str:
+        return f"{app.get_locale()} {url_for('shop.index')} {url_for('shop.webhook')}"
+
+    @shop.route("/webhook")
+    def webhook() -> str:
+        return "webhook"
+
+    app.register_blueprint(shop)
+
+
+def test_multilang_view_is_served_in_path_languages(test_app: Engine):
+    _register_shop(test_app)
+    client = test_app.test_client()
+    assert client.get("/shop/").text == "en /shop/ /shop/webhook"
+    assert client.get("/pl/shop/").text == "pl /pl/shop/ /shop/webhook"
+
+
+def test_view_without_multilang_has_no_language_prefix(test_app: Engine):
+    _register_shop(test_app)
+    client = test_app.test_client()
+    assert client.get("/shop/webhook").status_code == 200
+    assert client.get("/pl/shop/webhook").status_code == 404
 
 
 def test_url_for_follows_the_language_of_the_request(test_app: Engine):

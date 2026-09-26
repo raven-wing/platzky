@@ -27,7 +27,7 @@ from platzky.db.db import DB
 from platzky.db.db_loader import get_db
 from platzky.engine import Engine
 from platzky.feature_flags import FakeLogin
-from platzky.language_routing import LANG_CODE_ARG, language_url, served_languages
+from platzky.language_routing import LANG_CODE_ARG, language_url, multilang, served_languages
 from platzky.login import login
 from platzky.plugin.content_transformer import ContentTransformerPluginBase
 from platzky.plugin.login import LoginPluginBase
@@ -309,6 +309,7 @@ def create_engine(
         return _change_language_response(config, lang)
 
     @app.route("/", methods=["GET"])
+    @multilang
     def home_page() -> ResponseReturnValue:
         """Render the configured homepage, falling back to the blog index.
 
@@ -316,8 +317,6 @@ def create_engine(
             Rendered HTML of the resolved destination, or the 404 page.
         """
         return _home_page_response(app, config)
-
-    app.localize_routes("home_page")
 
     @app.context_processor
     def utils() -> dict[str, t.Any]:
@@ -530,7 +529,6 @@ def create_app_from_config(
     engine.register_blueprint(login_blueprint)
     engine.register_blueprint(admin_blueprint)
     engine.register_blueprint(blog_blueprint)
-    engine.localize_routes(blog_blueprint.name)
     engine.register_blueprint(seo_blueprint)
 
     Minify(app=engine, html=True, js=True, cssless=True)
