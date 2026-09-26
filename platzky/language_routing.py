@@ -128,12 +128,14 @@ def resolve_locale(languages: SiteLanguages, host: str, path: str) -> str:
         The language served on ``host`` whose prefix ``path`` starts with; else the language
         served at the host's root.
     """
-    prefixed = (
-        lang
-        for lang, prefix in served_languages(languages, host).items()
-        if prefix and (path == prefix or path.startswith(f"{prefix}/"))
+    return next(
+        (
+            lang
+            for lang, prefix in served_languages(languages, host).items()
+            if prefix and (path == prefix or path.startswith(f"{prefix}/"))
+        ),
+        language_for_host(languages, host),
     )
-    return next(prefixed, language_for_host(languages, host))
 
 
 def language_url(
