@@ -435,13 +435,13 @@ class Engine(Flask):
             path: Path of the page without any language prefix.
 
         Returns:
-            A 301 redirect to ``path`` in that language, keeping the query string.
+            A 308 redirect to ``path`` in that language, keeping the method, body and query string.
         """
         url = language_url(
             self._platzky_config.site_languages, lang_code, request.scheme, request.host, path
         )
         query = request.query_string.decode()
-        return redirect(f"{url}?{query}" if query else url, code=301)
+        return redirect(f"{url}?{query}" if query else url, code=308)
 
     def language_urls(self) -> dict[str, str]:
         """Return the absolute URL of the current page in each configured language.

@@ -193,6 +193,12 @@ class TestLanguages:
         with pytest.raises(ValidationError, match="not one of the configured LANGUAGES"):
             Config.model_validate(data)
 
+    def test_domain_must_be_lowercase(self) -> None:
+        languages = {"en": {**_EN, "domain": "Example.com"}}
+        data = _config_data(DEFAULT_LANGUAGE="en", LANGUAGES=languages)
+        with pytest.raises(ValidationError, match="must be lowercase"):
+            Config.model_validate(data)
+
     def test_domains_must_be_unique(self) -> None:
         languages = {"en": {**_EN, "domain": "example.com"}, "pl": {**_PL, "domain": "example.com"}}
         data = _config_data(DEFAULT_LANGUAGE="en", LANGUAGES=languages)

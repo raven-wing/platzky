@@ -202,10 +202,10 @@ where it is: ``example.com/en/blog/`` to ``example.com/blog/``, ``example.com/de
 
 Domains must be unique, and once any other language has a ``domain`` the default language
 needs one too, so pages on the other domains can link back to it. Write each ``domain``
-exactly as the site is served: with ``USE_WWW`` on (the default) that is the ``www.`` form,
-e.g. ``domain: www.example.de``. A ``domain`` without a port matches any port; include
-a port (e.g. ``domain: example.de:5000``) to match only that port, as in local or staging
-setups.
+exactly as the site is served, in lowercase: with ``USE_WWW`` on (the default) that is the
+``www.`` form, e.g. ``domain: www.example.de``. A ``domain`` without a port matches any port;
+include a port (e.g. ``domain: example.de:5000``) to match only that port, as in local or
+staging setups.
 
 The language switcher links to each language's home page, and ``/lang/<code>`` redirects
 there. Pages that exist in every language (the homepage, the blog index and other localized

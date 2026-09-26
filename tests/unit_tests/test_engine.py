@@ -717,7 +717,7 @@ def test_default_language_prefix_redirects_to_the_unprefixed_page(
     test_app: Engine, path: str, location: str
 ):
     response = test_app.test_client().get(path)
-    assert response.status_code == 301
+    assert response.status_code == 308
     assert response.location == location
 
 
@@ -858,8 +858,15 @@ def test_language_prefix_redirects_to_where_the_language_is_served(
 ):
     app = _build_three_language_test_app()
     response = app.test_client().get(path, headers={"Host": host})
-    assert response.status_code == 301
+    assert response.status_code == 308
     assert response.location == location
+
+
+def test_language_prefix_redirect_keeps_the_request_method():
+    app = _build_three_language_test_app()
+    response = app.test_client().post("/pl/blog/some-post", headers={"Host": "example.de"})
+    assert response.status_code == 308
+    assert response.location == "http://example.com/pl/blog/some-post"
 
 
 def test_sitemap_omits_the_default_language_prefix():

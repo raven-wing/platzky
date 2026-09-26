@@ -36,6 +36,17 @@ class LanguageConfig(BaseModel):
     country: str
     domain: t.Optional[str] = None
 
+    @field_validator("domain")
+    @classmethod
+    def validate_domain_is_lowercase(cls, domain: t.Optional[str]) -> t.Optional[str]:
+        """Reject a domain with capitals, which would never match: browsers lowercase hosts."""
+        if domain is not None and domain != domain.lower():
+            raise ValueError(
+                f"domain {domain!r} must be lowercase ({domain.lower()!r}); browsers send the "
+                "host in lowercase, so it would never match."
+            )
+        return domain
+
 
 Languages = dict[str, LanguageConfig]
 LanguagesMapping = t.Mapping[str, t.Mapping[str, str]]
