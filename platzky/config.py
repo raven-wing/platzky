@@ -245,16 +245,16 @@ class Config(BaseModel):
                 f"LANGUAGES: {', '.join(self.languages)}"
             )
         domain_owners: dict[str, str] = {}
-        for code, language in self.languages.items():
+        for lang_code, language in self.languages.items():
             domain = language.domain
             if domain is None:
                 continue
             if domain in domain_owners:
                 raise ValueError(
-                    f"Languages {domain_owners[domain]!r} and {code!r} share the domain "
+                    f"Languages {domain_owners[domain]!r} and {lang_code!r} share the domain "
                     f"{domain!r}; each language needs its own URL."
                 )
-            domain_owners[domain] = code
+            domain_owners[domain] = lang_code
         if domain_owners and self.languages[self.default_language].domain is None:
             raise ValueError(
                 f"DEFAULT_LANGUAGE {self.default_language!r} needs a domain because other "
@@ -262,11 +262,11 @@ class Config(BaseModel):
             )
         prefix_segments = {p.strip("/").split("/")[0] for p in (self.blog_prefix, self.seo_prefix)}
         reserved = RESERVED_PATH_SEGMENTS | (prefix_segments - {""})
-        for code in self.path_languages:
-            if code in reserved or not _PATH_SEGMENT.fullmatch(code):
+        for lang_code in self.path_languages:
+            if lang_code in reserved or not _PATH_SEGMENT.fullmatch(lang_code):
                 raise ValueError(
-                    f"Language {code!r} has no domain, so it is served under /{code}/; its code "
-                    "must use only letters, digits, '-' or '_' and must not be one of: "
+                    f"Language {lang_code!r} has no domain, so it is served under /{lang_code}/; "
+                    "its code must use only letters, digits, '-' or '_' and must not be one of: "
                     f"{', '.join(sorted(reserved))}"
                 )
         return self
@@ -275,7 +275,7 @@ class Config(BaseModel):
     def site_languages(self) -> SiteLanguages:
         """The configured languages as URL routing sees them."""
         return SiteLanguages(
-            domains={code: language.domain for code, language in self.languages.items()},
+            domains={lang_code: language.domain for lang_code, language in self.languages.items()},
             default=self.default_language,
         )
 

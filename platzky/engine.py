@@ -414,9 +414,9 @@ class Engine(Flask):
         super().add_url_rule(rule, endpoint, view_func, provide_automatic_options, **options)
         if view_func is not None and is_multilang(view_func):
             self._localized_endpoints.add(endpoint or view_func.__name__)
-            codes = self._platzky_config.path_languages
-            converter = "any(" + ", ".join(f"'{code}'" for code in codes) + ")"
-            if codes:
+            lang_codes = self._platzky_config.path_languages
+            converter = "any(" + ", ".join(f"'{lang_code}'" for lang_code in lang_codes) + ")"
+            if lang_codes:
                 super().add_url_rule(
                     f"/<{converter}:{LANG_CODE_ARG}>{rule}",
                     endpoint,

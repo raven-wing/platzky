@@ -53,7 +53,9 @@ class SiteLanguages:
     def path_languages(self) -> tuple[str, ...]:
         """Codes of the non-default languages without a domain, served under ``/<code>/``."""
         return tuple(
-            code for code, domain in self.domains.items() if domain is None and code != self.default
+            lang_code
+            for lang_code, domain in self.domains.items()
+            if domain is None and lang_code != self.default
         )
 
 
@@ -74,12 +76,14 @@ def language_for_host(languages: SiteLanguages, host: str) -> str:
         language claims it.
     """
     host_without_port = host.split(":", 1)[0]
-    domains = {code: domain for code, domain in languages.domains.items() if domain is not None}
-    exact = next((code for code, domain in domains.items() if domain == host), None)
+    domains = {
+        lang_code: domain for lang_code, domain in languages.domains.items() if domain is not None
+    }
+    exact = next((lang_code for lang_code, domain in domains.items() if domain == host), None)
     return exact or next(
         (
-            code
-            for code, domain in domains.items()
+            lang_code
+            for lang_code, domain in domains.items()
             if ":" not in domain and domain == host_without_port
         ),
         languages.default,
@@ -88,8 +92,8 @@ def language_for_host(languages: SiteLanguages, host: str) -> str:
 
 def dedicated_language(languages: SiteLanguages, host: str) -> str | None:
     """Return the non-default language whose own domain is ``host``, if any."""
-    code = language_for_host(languages, host)
-    return code if code != languages.default else None
+    lang_code = language_for_host(languages, host)
+    return lang_code if lang_code != languages.default else None
 
 
 def resolve_locale(languages: SiteLanguages, host: str, path: str) -> str:
@@ -104,8 +108,8 @@ def resolve_locale(languages: SiteLanguages, host: str, path: str) -> str:
         The language whose own domain is ``host``; else the path language whose prefix
         ``path`` starts with; else the default language.
     """
-    if code := dedicated_language(languages, host):
-        return code
+    if lang_code := dedicated_language(languages, host):
+        return lang_code
     for lang in languages.path_languages:
         if path == f"/{lang}" or path.startswith(f"/{lang}/"):
             return lang
@@ -120,11 +124,11 @@ def served_languages(languages: SiteLanguages, host: str) -> dict[str, str]:
         host: Request host.
 
     Returns:
-        ``{code: ""}`` on a language's own domain; otherwise the default language with an
+        ``{lang_code: ""}`` on a language's own domain; otherwise the default language with an
         empty prefix plus every path language with ``"/<code>"``.
     """
-    if code := dedicated_language(languages, host):
-        return {code: ""}
+    if lang_code := dedicated_language(languages, host):
+        return {lang_code: ""}
     return {languages.default: "", **{lang: f"/{lang}" for lang in languages.path_languages}}
 
 

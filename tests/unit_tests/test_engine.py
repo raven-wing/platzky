@@ -422,7 +422,7 @@ def test_domain_with_the_request_port_wins_over_one_without_a_port(
             "SECRET_KEY": "secret",  # NOSONAR - hardcoded secret acceptable in tests
             "USE_WWW": False,
             "DEFAULT_LANGUAGE": "en",
-            "LANGUAGES": {code: languages[code] for code in order},
+            "LANGUAGES": {lang_code: languages[lang_code] for lang_code in order},
             "DB": {"TYPE": "json", "DATA": {"site_content": {}}},
         }
     )
