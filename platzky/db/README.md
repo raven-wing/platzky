@@ -51,7 +51,7 @@ DB:
   TYPE: github_json
   REPO_NAME: "username/repository"
   GITHUB_TOKEN: "your_github_token"
-  BRANCH_NAME: "main"
+  BRANCH_NAME: "onlydata"  # read from and committed to, one commit per write
   PATH_TO_FILE: "data.json"
 ```
 

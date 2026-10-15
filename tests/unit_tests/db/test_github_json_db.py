@@ -3,8 +3,8 @@ import json
 from unittest.mock import MagicMock, patch
 
 import pytest
+from github import GithubException
 
-from platzky.db.exceptions import ReadOnlyStorageError
 from platzky.db.github_json_db import (
     GithubJsonDb,
     GithubJsonDbConfig,
@@ -98,18 +98,62 @@ def test_raises_error_for_invalid_json_content():
             GithubJsonDb("fake_token", "fake_repo", "main", "path/to/file.json")
 
 
-def test_add_comment_raises_read_only_storage_error():
-    """GithubJsonDb is read-only: writes must fail loudly, not vanish silently."""
+def _repo_with_post(sha: str = "sha-1") -> MagicMock:
+    mock_repo = MagicMock()
+    mock_file = MagicMock()
+    content = json.dumps({"site_content": {"posts": [{"slug": "post-1", "comments": []}]}})
+    mock_file.content = base64.b64encode(content.encode()).decode()
+    mock_file.decoded_content = content.encode()
+    mock_file.sha = sha
+    mock_repo.get_contents.return_value = mock_file
+    return mock_repo
+
+
+def test_add_comment_commits_to_configured_branch():
     with patch("platzky.db.github_json_db.Github") as MockGithub:
-        mock_repo = MagicMock()
-        mock_file = MagicMock()
-        content = json.dumps({"site_content": {"posts": [{"slug": "post-1", "comments": []}]}})
-        mock_file.content = base64.b64encode(content.encode()).decode()
-        mock_file.decoded_content = content.encode()
+        mock_repo = _repo_with_post()
+        mock_repo.update_file.return_value = {"content": MagicMock(sha="sha-2")}
         MockGithub.return_value.get_repo.return_value = mock_repo
-        mock_repo.get_contents.return_value = mock_file
 
-        db = GithubJsonDb("fake_token", "fake_repo", "main", "path/to/file.json")
+        db = GithubJsonDb("fake_token", "fake_repo", "onlydata", "path/to/file.json")
+        db.add_comment("Zażółć Gęślą", "Jaźń", "post-1")
 
-        with pytest.raises(ReadOnlyStorageError):
+        mock_repo.get_contents.assert_called_once_with("path/to/file.json", ref="onlydata")
+        path, _message, content, sha = mock_repo.update_file.call_args.args
+        assert path == "path/to/file.json"
+        assert sha == "sha-1"
+        assert mock_repo.update_file.call_args.kwargs == {"branch": "onlydata"}
+        assert "Zażółć Gęślą" in content
+        assert content.startswith('{\n  "site_content"')
+        comments = json.loads(content)["site_content"]["posts"][0]["comments"]
+        assert [(c["author"], c["comment"]) for c in comments] == [("Zażółć Gęślą", "Jaźń")]
+
+
+def test_consecutive_writes_use_sha_of_previous_commit():
+    with patch("platzky.db.github_json_db.Github") as MockGithub:
+        mock_repo = _repo_with_post()
+        mock_repo.update_file.side_effect = [
+            {"content": MagicMock(sha="sha-2")},
+            {"content": MagicMock(sha="sha-3")},
+        ]
+        MockGithub.return_value.get_repo.return_value = mock_repo
+
+        db = GithubJsonDb("fake_token", "fake_repo", "onlydata", "path/to/file.json")
+        db.add_comment("A", "first", "post-1")
+        db.add_comment("B", "second", "post-1")
+
+        shas = [call.args[3] for call in mock_repo.update_file.call_args_list]
+        assert shas == ["sha-1", "sha-2"]
+
+
+def test_failed_commit_leaves_data_unchanged():
+    with patch("platzky.db.github_json_db.Github") as MockGithub:
+        mock_repo = _repo_with_post()
+        mock_repo.update_file.side_effect = GithubException(409, "conflict", None)
+        MockGithub.return_value.get_repo.return_value = mock_repo
+
+        db = GithubJsonDb("fake_token", "fake_repo", "onlydata", "path/to/file.json")
+
+        with pytest.raises(GithubException):
             db.add_comment("Test User", "New comment", "post-1")
+        assert db.data["site_content"]["posts"][0]["comments"] == []

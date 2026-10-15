@@ -111,16 +111,22 @@ normal GitHub workflows (PRs, history, diffs), without running a database server
       REPO_NAME: username/repository
       GITHUB_TOKEN: your_github_token
       PATH_TO_FILE: data.json
-      BRANCH_NAME: main
+      BRANCH_NAME: onlydata
 
 **Options:**
 
 * ``TYPE``: Must be ``github_json``
 * ``REPO_NAME``: Repository in ``owner/repo`` form
-* ``GITHUB_TOKEN``: GitHub token with read access to the repository (write
-  access if you need commits back)
+* ``GITHUB_TOKEN``: GitHub token with contents read/write access to the repository
+  (read access is enough if nothing is ever written)
 * ``PATH_TO_FILE``: Path to the JSON file within the repository
-* ``BRANCH_NAME``: Branch to read from (defaults to ``main``)
+* ``BRANCH_NAME``: Branch to read from and commit to (defaults to ``main``)
+
+**Writes:** each write (e.g. a new comment) is committed to ``BRANCH_NAME`` as
+indented JSON, one commit per write. To review changes before they land, point
+``BRANCH_NAME`` at a dedicated data branch and merge it into your main branch
+through pull requests. If the file changes on GitHub after Platzky loaded it,
+the next write fails rather than overwriting it; restart to reload.
 
 **Prerequisites:**
 
@@ -136,8 +142,9 @@ normal GitHub workflows (PRs, history, diffs), without running a database server
 
 * Higher latency than local storage (network call to GitHub's API)
 * Subject to GitHub API rate limits
-* Read-only from Platzky's perspective: writes raise an error rather than
-  being persisted back to the repository
+* Changes made on GitHub after startup aren't picked up until restart, and
+  block further writes until then
+* Every write is a commit, so a busy site produces a noisy history
 * Not suitable for high-frequency writes
 
 GraphQL (Headless CMS)
