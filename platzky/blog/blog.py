@@ -7,6 +7,9 @@ from os.path import dirname
 from typing import TypeVar
 
 from flask import Blueprint, abort, make_response, render_template, request
+from markdown_it import MarkdownIt
+from markupsafe import Markup
+from mdit_py_plugins.tasklists import tasklists_plugin
 from werkzeug.exceptions import HTTPException
 from werkzeug.wrappers import Response
 
@@ -22,6 +25,19 @@ from . import comment_form
 _ContentT = TypeVar("_ContentT", Post, Page)
 
 logger = logging.getLogger(__name__)
+
+# HTML passes through because a post body is CMS-authored and shortcodes have already been
+# rendered into it by the time it is converted.
+_markdown = (
+    MarkdownIt("commonmark", {"html": True})
+    .enable(["table", "strikethrough"])
+    .use(tasklists_plugin)
+)
+
+
+def _render_markdown(content: str) -> Markup:
+    """Convert CMS-authored Markdown to HTML."""
+    return Markup(_markdown.render(str(content)))
 
 
 def create_blog_blueprint(
@@ -161,7 +177,10 @@ def create_blog_blueprint(
             "post.html",
             post=post,
             # Markup vouches: a post body is written by someone with CMS write access.
-            content=content_transformer(CmsAuthored(post.contentInMarkdown), POST),
+            # Shortcodes run before Markdown, which would otherwise escape their quotes.
+            content=_render_markdown(
+                content_transformer(CmsAuthored(post.contentInMarkdown), POST)
+            ),
             post_slug=post_slug,
             form=comment_form.CommentForm(),
             comment_sent=request.args.get("comment_sent"),
@@ -186,7 +205,9 @@ def create_blog_blueprint(
             title=page.title,
             css=page.css,
             # Markup vouches, as for a post body.
-            content=content_transformer(CmsAuthored(page.contentInMarkdown), PAGE),
+            content=_render_markdown(
+                content_transformer(CmsAuthored(page.contentInMarkdown), PAGE)
+            ),
             cover_image=cover_image_url,
         )
 

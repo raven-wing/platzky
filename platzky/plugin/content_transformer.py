@@ -278,9 +278,9 @@ class ContentTransformerRegistry:
             content_type: The kind of content, e.g. ``POST``.
             strip_html: Overrule vouching and remove HTML tags the author wrote, keeping
                 the text they wrapped and logging what went. The site owner's call, behind
-                ``STRIP_CONTENT_HTML``: shortcodes still render, but a site turning it on
-                needs some other way to format a post, because HTML is currently the only
-                one platzky has. A ``"raw"`` shortcode body is exempt: it is verbatim by
+                ``STRIP_CONTENT_HTML``: shortcodes still render, and a post or page keeps
+                its Markdown formatting, which is converted after this. A ``"raw"``
+                shortcode body is exempt: it is verbatim by
                 declaration, which makes it the way an author marks HTML they mean to
                 keep. Only vouched content has one — unvouched content is escaped at the
                 boundary, raw bodies included.
