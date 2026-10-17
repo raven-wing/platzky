@@ -53,3 +53,17 @@ A Platzky application is an ordinary WSGI application, so serve it with a produc
 
 Started this way the application is not in development mode: no reloader, no interactive
 debugger, and ``FAKE_LOGIN`` is refused. Set ``LOG_LEVEL`` if you need verbose logs there.
+
+Outside development mode the application also assumes it is served over HTTPS:
+
+* It trusts ``X-Forwarded-Proto`` from one proxy in front of it, as set by Google App Engine,
+  Cloud Run, or a TLS-terminating reverse proxy such as nginx or Caddy.
+* The session cookie is marked ``Secure``.
+* HTTPS responses carry ``Strict-Transport-Security: max-age=31536000``, so browsers use only
+  HTTPS for that host for a year.
+
+.. warning::
+    Serving a production application over plain HTTP is not supported. Browsers drop the
+    ``Secure`` session cookie there, so admin login, CSRF-protected forms such as comments, and
+    the language choice all stop working. Chrome and Firefox treat ``http://localhost`` as
+    secure, so a production build tried locally still works there.
