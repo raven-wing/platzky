@@ -6,7 +6,11 @@ import pytest
 
 from platzky import create_app_from_config
 from platzky.config import Config, LanguageConfig
+<<<<<<< Updated upstream
 from platzky.debug import DebugBlueprintProductionError
+=======
+from platzky.engine import Engine
+>>>>>>> Stashed changes
 from platzky.platzky import (
     create_app,
     create_engine,
@@ -206,3 +210,119 @@ class TestPlatzky:
             match="Cannot register DebugBlueprint 'fake_login' in production",
         ):
             create_app_from_config(config)
+<<<<<<< Updated upstream
+=======
+
+
+class TestLogging:
+    @pytest.fixture(autouse=True)
+    def root_logger(self) -> Iterator[logging.Logger]:
+        """Restore the root logger, which creating an application configures."""
+        root_logger = logging.getLogger()
+        level, handlers = root_logger.level, root_logger.handlers[:]
+        yield root_logger
+        root_logger.setLevel(level)
+        root_logger.handlers = handlers
+
+    @staticmethod
+    def _create_app(development: bool = False, log_level: str | None = None) -> None:
+        raw_config = {
+            "APP_NAME": "testing App Name",
+            "SECRET_KEY": "secret",
+            "DB": {"TYPE": "json", "DATA": {}},
+        }
+        if log_level is not None:
+            raw_config["LOG_LEVEL"] = log_level
+        config = Config.model_validate(raw_config)
+        with patch("platzky.platzky.get_db", return_value=MagicMock()):
+            create_app_from_config(config, development=development)
+
+    def test_defaults_to_info(self, root_logger: logging.Logger):
+        self._create_app()
+
+        assert root_logger.level == logging.INFO
+
+    def test_development_enables_debug_level(self, root_logger: logging.Logger):
+        self._create_app(development=True)
+
+        assert root_logger.level == logging.DEBUG
+
+    def test_log_level_applies_outside_development(self, root_logger: logging.Logger):
+        self._create_app(log_level="WARNING")
+
+        assert root_logger.level == logging.WARNING
+
+    def test_log_level_wins_over_development(self, root_logger: logging.Logger):
+        self._create_app(development=True, log_level="WARNING")
+
+        assert root_logger.level == logging.WARNING
+
+    def test_log_level_covers_other_libraries(self):
+        self._create_app(log_level="DEBUG")
+
+        assert logging.getLogger("some_other_library").getEffectiveLevel() == logging.DEBUG
+
+    @pytest.mark.parametrize(
+        "level", ["VERBOSE", "debug", "Debug"], ids=["unknown", "lower", "mixed"]
+    )
+    def test_invalid_log_level_is_rejected(self, level: str):
+        with pytest.raises(ValidationError, match="LOG_LEVEL"):
+            self._create_app(log_level=level)
+
+    def test_adds_one_handler_when_none_configured(self, root_logger: logging.Logger):
+        root_logger.handlers = []
+
+        self._create_app()
+        self._create_app()
+
+        assert len(root_logger.handlers) == 1
+
+    def test_keeps_application_handlers(self, root_logger: logging.Logger):
+        app_handler = logging.NullHandler()
+        root_logger.handlers = [app_handler]
+
+        self._create_app()
+
+        assert root_logger.handlers == [app_handler]
+
+
+class TestHttpsEnforcement:
+    @staticmethod
+    def _create_app(development: bool = False) -> Engine:
+        config = Config.model_validate(
+            {
+                "APP_NAME": "testing App Name",
+                "SECRET_KEY": "secret",
+                "DB": {"TYPE": "json", "DATA": {}},
+            }
+        )
+        with patch("platzky.platzky.get_db", return_value=MagicMock()):
+            return create_app_from_config(config, development=development)
+
+    def test_sends_hsts_behind_https_proxy(self):
+        client = self._create_app().test_client()
+
+        response = client.get("/health/liveness", headers={"X-Forwarded-Proto": "https"})
+
+        assert response.headers["Strict-Transport-Security"] == "max-age=31536000"
+
+    def test_no_hsts_over_plain_http(self):
+        client = self._create_app().test_client()
+
+        response = client.get("/health/liveness")
+
+        assert "Strict-Transport-Security" not in response.headers
+
+    def test_no_hsts_in_development(self):
+        client = self._create_app(development=True).test_client()
+
+        response = client.get("/health/liveness", base_url="https://localhost")
+
+        assert "Strict-Transport-Security" not in response.headers
+
+    @pytest.mark.parametrize("development", [False, True], ids=["production", "development"])
+    def test_session_cookie_is_secure_outside_development(self, development: bool):
+        app = self._create_app(development=development)
+
+        assert app.config["SESSION_COOKIE_SECURE"] is not development
+>>>>>>> Stashed changes
