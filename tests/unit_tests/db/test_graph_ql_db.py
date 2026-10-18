@@ -4,6 +4,7 @@ from unittest.mock import Mock, patch
 import pytest
 from gql import Client
 
+from platzky.content import HtmlContent
 from platzky.db.exceptions import NotFoundError
 from platzky.db.graph_ql_db import (
     GraphQL,
@@ -171,6 +172,7 @@ def test_get_post(graph_ql_db: GraphQL, mock_client: Mock):
     assert post.title == "Test Post"
     assert post.slug == "test-post"
     assert post.css == ".masthead { background: teal; }"
+    assert post.content == HtmlContent("<p>Test content</p>")
     mock_client.execute.assert_called_once()
 
 

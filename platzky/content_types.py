@@ -24,21 +24,21 @@ from markupsafe import Markup
 
 
 class CmsAuthored(Markup):
-    """Content written by someone with CMS write access, to be embedded as written.
+    """Content written by someone with CMS write access, to be embedded as HTML.
 
     Passing this to ``transform_content`` is the caller's declaration of *provenance*, not
     a claim that the content is harmless — the caller is the only party that knows where
     content came from, so only the caller can say. It buys three things: the content is
-    embedded rather than escaped, its author is held to strict shortcode syntax so their
-    own mistakes are reported to them, and ``STRIP_CONTENT_HTML`` has authored HTML to
-    strip. Anything else — a plain ``str``, or a bare ``Markup`` from elsewhere — is
-    treated as written by a stranger: escaped at the boundary, and parsed leniently so a
-    typo cannot take a page down.
+    embedded rather than escaped — sanitized, so its formatting survives and script does
+    not; its author is held to strict shortcode syntax so their own mistakes are reported
+    to them; and ``STRIP_CONTENT_HTML`` has authored HTML to strip. Anything else — a plain
+    ``str``, or a bare ``Markup`` from elsewhere — is treated as written by a stranger:
+    escaped at the boundary, and parsed leniently so a typo cannot take a page down.
 
     A ``Markup`` subclass, so a template still renders it without escaping and the
-    surrounding Jinja machinery is unchanged. Wrapping visitor input in it is how a
-    cross-site scripting hole gets made, which is why each use in platzky names the author
-    it is vouching for.
+    surrounding Jinja machinery is unchanged. Wrapping visitor input in it would hand a
+    stranger HTML formatting and let their malformed tag fail the render, which is why
+    each use in platzky names the author it is vouching for.
     """
 
 

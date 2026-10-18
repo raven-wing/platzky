@@ -76,7 +76,7 @@ def _standardize_post(post: dict[str, Any]) -> dict[str, Any]:
         "slug": post["slug"],
         "title": post["title"],
         "excerpt": post["excerpt"],
-        "contentInMarkdown": post["contentInRichText"]["html"],
+        "contentInHTML": post["contentInRichText"]["html"],
         "comments": [_standardize_comment(comment) for comment in post["comments"]],
         "tags": post["tags"],
         "language": post["language"],

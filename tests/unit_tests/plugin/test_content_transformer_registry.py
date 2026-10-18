@@ -17,6 +17,7 @@ from platzky.content_types import (
     CmsAuthored,
     ContentType,
 )
+from platzky.html_sanitizer import ContentNotAllowed
 from platzky.plugin.content_transformer import (
     ContentTransformerPluginBase,
     ContentTransformerRegistry,
@@ -78,6 +79,42 @@ class AttrPlugin(ContentTransformerPluginBase):
         BUILTIN_CONTENT_TYPES, "Exercised by tests."
     )
     shortcodes: ClassVar[dict[str, Shortcode]] = {"wrap": _WrapShortcode()}
+
+
+class _StyledShortcode(Shortcode):
+    name = "styled"
+    description = "Emit markup an author could not write, as a plugin may."
+    kind = "void"
+
+    def render(
+        self,
+        attrs: ShortcodeAttrs,  # noqa: ARG002
+        content: str,  # noqa: ARG002
+        children: Sequence[Markup],  # noqa: ARG002
+    ) -> str:
+        """Return a span carrying an inline style."""
+        return '<span style="color: red">styled</span>'
+
+
+class StyledPlugin(ContentTransformerPluginBase):
+    """Registers a shortcode whose output the sanitizer would strip."""
+
+    accepted_content_types: Mapping[ContentType, str] = dict.fromkeys(
+        BUILTIN_CONTENT_TYPES, "Exercised by tests."
+    )
+    shortcodes: ClassVar[dict[str, Shortcode]] = {"styled": _StyledShortcode()}
+
+
+class _StyledLetterPlugin(ContentTransformerPluginBase):
+    """Filters text into markup the sanitizer would strip."""
+
+    accepted_content_types: Mapping[ContentType, str] = dict.fromkeys(
+        BUILTIN_CONTENT_TYPES, "Exercised by tests."
+    )
+
+    def transform_text(self, text: str) -> str:
+        """Colour every 'a'."""
+        return text.replace("a", '<span style="color: red">a</span>')
 
 
 class AnyPlugin(ContentTransformerPluginBase):
@@ -251,6 +288,100 @@ class TestTrustBoundary:
         result = registry.transform_content([plugin], CmsAuthored("<em>hi</em>"), "post")
 
         assert result == "<em>hi</em>"
+
+    @pytest.mark.parametrize(
+        ("html", "offence"),
+        [
+            ("<b>bold</b><script>alert(1)</script>", "<script> is not allowed"),
+            ('<img src="/a.png" onerror="x">', 'attribute "onerror" on <img> is not allowed'),
+            ('<a href="javascript:alert(1)">x</a>', '"javascript:" links in "href" on <a>'),
+            ('<p style="color: red">x</p>', 'attribute "style" on <p> is not allowed'),
+        ],
+    )
+    def test_vouched_content_with_disallowed_html_is_refused(
+        self, registry: ContentTransformerRegistry, html: str, offence: str
+    ) -> None:
+        """Vouching keeps an author's formatting; script is refused, not quietly dropped."""
+        with pytest.raises(ContentNotAllowed, match=offence):
+            registry.transform_content([], CmsAuthored(html), "post")
+
+    def test_vouched_content_keeps_allowed_html(self, registry: ContentTransformerRegistry) -> None:
+        """Formatting an author may write passes, comments aside."""
+        result = registry.transform_content(
+            [], CmsAuthored('<!-- note --><b class="x">bold</b> <a href="/ok">y</a>'), "post"
+        )
+
+        assert result == '<b class="x">bold</b> <a href="/ok">y</a>'
+
+    def test_author_html_inside_a_shortcode_is_checked(
+        self, registry: ContentTransformerRegistry
+    ) -> None:
+        """What an element wraps is still the author's, so wrapping it does not launder it."""
+        plugin = ShoutPlugin({})
+        registry.grant(plugin, frozenset({"post"}))
+
+        with pytest.raises(ContentNotAllowed, match="<script>"):
+            registry.transform_content(
+                [plugin], CmsAuthored("[shout]hi<script>alert(1)</script>[/shout]"), "post"
+            )
+
+    def test_shortcode_output_is_not_sanitized(self, registry: ContentTransformerRegistry) -> None:
+        """A granted plugin's markup is trusted, so it keeps what an author may not write."""
+        plugin = StyledPlugin({})
+        registry.grant(plugin, frozenset({"post"}))
+
+        result = registry.transform_content([plugin], CmsAuthored("own [styled]"), "post")
+
+        assert result == 'own <span style="color: red">styled</span>'
+
+    def test_filter_output_is_not_sanitized(self, registry: ContentTransformerRegistry) -> None:
+        """A filter is a granted plugin's code, so its markup is trusted like a shortcode's."""
+        letters = _StyledLetterPlugin({})
+        registry.grant(letters, frozenset({"post"}))
+
+        result = registry.transform_content([letters], CmsAuthored("<b>ab</b>"), "post")
+
+        assert result == '<b><span style="color: red">a</span>b</b>'
+
+    def test_an_author_cannot_forge_a_shortcode_placeholder(
+        self, registry: ContentTransformerRegistry
+    ) -> None:
+        """Placeholders carry a per-render nonce, so one an author writes stays their text."""
+        plugin = StyledPlugin({})
+        registry.grant(plugin, frozenset({"post"}))
+
+        result = registry.transform_content(
+            [plugin], CmsAuthored("[styled] platzky-shortcode-0-0"), "post"
+        )
+
+        assert result == '<span style="color: red">styled</span> platzky-shortcode-0-0'
+
+    def test_format_text_output_is_checked(self, registry: ContentTransformerRegistry) -> None:
+        """What the format makes of the author's text is still theirs, so it is checked."""
+        with pytest.raises(ContentNotAllowed, match="<script>"):
+            registry.transform_content(
+                [], CmsAuthored("hi"), "post", format_text=lambda t, _i: f"{t}<script></script>"
+            )
+
+    def test_format_text_formats_vouched_content(
+        self, registry: ContentTransformerRegistry
+    ) -> None:
+        """The format turns the author's text into HTML."""
+        result = registry.transform_content(
+            [], CmsAuthored("hi"), "post", format_text=lambda text, _inline: f"<b>{text}</b>"
+        )
+
+        assert result == "<b>hi</b>"
+
+    def test_format_text_is_not_applied_to_unvouched_content(
+        self, registry: ContentTransformerRegistry
+    ) -> None:
+        """A stranger's text stays the escaped text it was, never formatted into markup."""
+        result = registry.transform_content(
+            [], "hi", "post", format_text=lambda text, _inline: f"<b>{text}</b>"
+        )
+
+        assert result == "hi"
 
     def test_unvouched_tag_without_attributes_still_fires(
         self, registry: ContentTransformerRegistry
@@ -679,7 +810,7 @@ class TestFiltersNeverSeeRenderedMarkup:
         )
 
         # The 'a' inside the title attribute is untouched; both in the text are wrapped.
-        assert result == '<a title="a > b"><i>a</i>nd <i>a</i> word</a>'
+        assert result == '<a title="a &gt; b"><i>a</i>nd <i>a</i> word</a>'
 
     def test_a_raw_body_survives_another_plugin_entirely(
         self, registry: ContentTransformerRegistry

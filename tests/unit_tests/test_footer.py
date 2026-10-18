@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 
 import pytest
@@ -64,6 +65,14 @@ def test_no_footer_configured_renders_no_footer_row(url: str):
 
 
 @pytest.mark.parametrize("url", CONTENT_URLS)
+def test_site_footer_renders_markdown(url: str):
+    html = _html(_app(site_footer={"en": '**Bold** and [link url="/x"]a *link*[/link]'}), url)
+    assert "<p><strong>Bold</strong> and" in html
+    assert 'href="/x"' in html
+    assert "<em>link</em>" in html
+
+
+@pytest.mark.parametrize("url", CONTENT_URLS)
 def test_site_footer_renders_builtin_shortcodes(url: str):
     html = _html(_app(site_footer={"en": '[link url="/x"]Site footer[/link]'}), url)
     assert 'id="footer-row"' in html
@@ -117,3 +126,17 @@ def test_malformed_site_footer_hides_footer_instead_of_breaking_the_page(url: st
     assert response.status_code in (200, 404)
     assert 'id="footer-row"' not in html
     assert "Never closed" not in html
+
+
+@pytest.mark.parametrize("url", CONTENT_URLS)
+def test_site_footer_with_disallowed_html_hides_footer_and_logs_why(
+    url: str, caplog: pytest.LogCaptureFixture
+):
+    app = _app(site_footer={"en": "Footer <script>alert(1)</script>"})
+    with caplog.at_level(logging.ERROR):
+        response = app.test_client().get(url)
+    html = response.get_data(as_text=True)
+    assert response.status_code == 200
+    assert 'id="footer-row"' not in html
+    assert "alert(1)" not in html
+    assert "<script> is not allowed" in caplog.text

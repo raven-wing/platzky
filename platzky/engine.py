@@ -55,6 +55,7 @@ from platzky.plugin.html_injector import HtmlInjectorPluginBase, HtmlInjectorPlu
 from platzky.plugin.notifier import Notification, NotifierPluginBase, NotifyPluginConfig
 from platzky.plugin.plugin_config import PluginConfigBase
 from platzky.shortcodes import Shortcode
+from platzky.shortcodes.parser import as_written
 from platzky.sitemap import SitemapProvider
 
 logger = logging.getLogger(__name__)
@@ -205,14 +206,21 @@ class Engine(Flask):
         """The content-type vocabulary in play: builtins, application's, and plugins'."""
         return self.content_transformers.known_content_types
 
-    def transform_content(self, content: str, content_type: ContentType) -> Markup:
+    def transform_content(
+        self,
+        content: str,
+        content_type: ContentType,
+        *,
+        format_text: Callable[[str, bool], str] = as_written,
+    ) -> Markup:
         """Apply all registered content-filter plugins for the given content type.
 
         Args:
-            content: The content to transform. Pass ``Markup`` to vouch for it, which
-                embeds it as written and holds its author to strict shortcode syntax;
-                anything else is escaped at the boundary.
+            content: The content to transform. Pass ``CmsAuthored`` to vouch for it, which
+                keeps its HTML formatting, sanitized, and holds its author to strict
+                shortcode syntax; anything else is escaped at the boundary.
             content_type: The kind of content, e.g. ``POST``.
+            format_text: Turns vouched content's text into HTML, e.g. from Markdown.
 
         Returns:
             The content after every permitted transformer has run, safe to embed in a
@@ -223,6 +231,7 @@ class Engine(Flask):
             content,
             content_type,
             strip_html=self.is_enabled(StripContentHtml),
+            format_text=format_text,
         )
 
     def shortcodes_for(self, content_type: ContentType) -> dict[str, Shortcode]:

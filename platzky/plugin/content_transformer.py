@@ -4,17 +4,18 @@ from __future__ import annotations
 
 import logging
 from abc import ABC
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from typing import ClassVar, cast
 
 import jinja2.ext
 from markupsafe import Markup, escape
 
 from platzky.content_types import ALL_CONTENT_TYPES, CmsAuthored, ContentType
+from platzky.html_sanitizer import sanitize_html
 from platzky.plugin.plugin import PluginBase
 from platzky.plugin.plugin_config import PluginConfigBase
 from platzky.shortcodes import Shortcode
-from platzky.shortcodes.parser import render_document
+from platzky.shortcodes.parser import as_written, render_document
 
 
 class ContentTransformerPluginConfig(PluginConfigBase):
@@ -258,6 +259,7 @@ class ContentTransformerRegistry:
         content_type: ContentType,
         *,
         strip_html: bool = False,
+        format_text: Callable[[str, bool], str] = as_written,
     ) -> Markup:
         """Run every permitted transformer over the content, in order.
 
@@ -266,7 +268,8 @@ class ContentTransformerRegistry:
 
         Content is escaped on the way in unless the caller vouched for it by passing
         ``Markup`` — the caller is the only party that knows where it came from, so the
-        default is the safe one and vouching is the deliberate act. Everything the
+        default is the safe one and vouching is the deliberate act. Vouched content keeps
+        its HTML formatting but is sanitized, so no author can run script. Everything the
         pipeline adds afterwards is markup platzky itself produced, by plugins that turned
         offered and granted this content type, so it is trusted by construction and shortcodes
         embed their content directly. See ``Shortcode.render``.
@@ -278,16 +281,17 @@ class ContentTransformerRegistry:
             content_type: The kind of content, e.g. ``POST``.
             strip_html: Overrule vouching and remove HTML tags the author wrote, keeping
                 the text they wrapped and logging what went. The site owner's call, behind
-                ``STRIP_CONTENT_HTML``: shortcodes still render, and a post or page keeps
-                its Markdown formatting, which is converted after this. A ``"raw"``
-                shortcode body is exempt: it is verbatim by
-                declaration, which makes it the way an author marks HTML they mean to
-                keep. Only vouched content has one — unvouched content is escaped at the
-                boundary, raw bodies included.
+                ``STRIP_CONTENT_HTML``: shortcodes still render. A ``"raw"`` shortcode
+                body is exempt: it is verbatim by declaration, which makes it the way an
+                author marks HTML they mean to keep. Only vouched content has one —
+                unvouched content is escaped at the boundary, raw bodies included.
+            format_text: Turns vouched content's text into HTML before it is sanitized,
+                e.g. from Markdown; told whether the text sits inside a shortcode element.
+                Unvouched content is never formatted: it stays the escaped text it was.
 
         Returns:
             The content after every permitted transformer has run, as ``Markup``: whatever
-            the caller vouched for was embedded as written, and whatever they did not was
+            the caller vouched for was formatted and sanitized, and whatever they did not was
             escaped at the boundary, so the result is safe to embed either way and no
             caller has to assert that again.
         """
@@ -324,6 +328,10 @@ class ContentTransformerRegistry:
             # Unvouched content was escaped above, raw bodies with it, so it has no tags
             # left to strip and no way to pass one through a raw body either.
             strip_html=strip_html and vouched,
+            format_text=format_text if vouched else as_written,
+            # Shortcode output is never sanitized, only what the author wrote: a granted
+            # plugin's markup is trusted by construction, as above.
+            sanitize=sanitize_html if vouched else as_written,
         )
         if removed:
             # Lossy and silent otherwise, so say what went and how much of it.

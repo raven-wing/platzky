@@ -7,17 +7,16 @@ from os.path import dirname
 from typing import TypeVar
 
 from flask import Blueprint, abort, make_response, render_template, request
-from markdown_it import MarkdownIt
-from markupsafe import Markup
-from mdit_py_plugins.tasklists import tasklists_plugin
 from werkzeug.exceptions import HTTPException
 from werkzeug.wrappers import Response
 
-from platzky.content_types import PAGE, POST, CmsAuthored
-from platzky.content_types import ContentType as FilterContentType
+from platzky.content import ContentTransformer
+from platzky.content_types import PAGE, POST
 from platzky.db.db import DB
 from platzky.db.exceptions import NotFoundError, ReadOnlyStorageError
+from platzky.html_sanitizer import ContentNotAllowed
 from platzky.models import Page, Post
+from platzky.shortcodes import ShortcodeError
 from platzky.sitemap import SitemapEntry, UrlFor, single_url
 
 from . import comment_form
@@ -26,25 +25,12 @@ _ContentT = TypeVar("_ContentT", Post, Page)
 
 logger = logging.getLogger(__name__)
 
-# HTML passes through because a post body is CMS-authored and shortcodes have already been
-# rendered into it by the time it is converted.
-_markdown = (
-    MarkdownIt("commonmark", {"html": True})
-    .enable(["table", "strikethrough"])
-    .use(tasklists_plugin)
-)
-
-
-def _render_markdown(content: str) -> Markup:
-    """Convert CMS-authored Markdown to HTML."""
-    return Markup(_markdown.render(str(content)))
-
 
 def create_blog_blueprint(
     db: DB,
     blog_prefix: str,
     locale_func: Callable[[], str],
-    content_transformer: Callable[[str, FilterContentType], str],
+    content_transformer: ContentTransformer,
 ) -> Blueprint:
     """Create and configure the blog blueprint with all routes and handlers.
 
@@ -75,6 +61,20 @@ def create_blog_blueprint(
             Tuple of rendered 404 template and HTTP 404 status code
         """
         return render_template("404.html", title="404"), 404
+
+    @blog.errorhandler(ContentNotAllowed)
+    @blog.errorhandler(ShortcodeError)
+    def content_error(e: ContentNotAllowed | ShortcodeError) -> tuple[str, int]:
+        """Show that a post or page cannot be rendered, and log why for whoever can fix it.
+
+        Args:
+            e: What in the content's HTML or shortcodes is wrong
+
+        Returns:
+            Tuple of rendered error template and HTTP 500 status code
+        """
+        logger.error("Content at %s cannot be rendered: %s", request.path, e)
+        return render_template("content_error.html"), 500
 
     def post_entries(lang: str, url: UrlFor) -> list[SitemapEntry]:
         """List every post in a language for the sitemap, dated when it has a date."""
@@ -176,11 +176,7 @@ def create_blog_blueprint(
         return render_template(
             "post.html",
             post=post,
-            # Markup vouches: a post body is written by someone with CMS write access.
-            # Shortcodes run before Markdown, which would otherwise escape their quotes.
-            content=_render_markdown(
-                content_transformer(CmsAuthored(post.contentInMarkdown), POST)
-            ),
+            content=post.content.to_html(content_transformer, POST),
             post_slug=post_slug,
             form=comment_form.CommentForm(),
             comment_sent=request.args.get("comment_sent"),
@@ -204,10 +200,7 @@ def create_blog_blueprint(
             "page.html",
             title=page.title,
             css=page.css,
-            # Markup vouches, as for a post body.
-            content=_render_markdown(
-                content_transformer(CmsAuthored(page.contentInMarkdown), PAGE)
-            ),
+            content=page.content.to_html(content_transformer, PAGE),
             cover_image=cover_image_url,
         )
 

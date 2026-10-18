@@ -6,7 +6,10 @@ import re
 from typing import Annotated
 
 import humanize
-from pydantic import AfterValidator, BaseModel, Field
+from pydantic import AfterValidator, BaseModel, Field, model_validator
+from typing_extensions import Self
+
+from platzky.content import Content, HtmlContent, MarkdownContent
 
 
 def _ensure_utc(v: datetime.datetime) -> datetime.datetime:
@@ -116,7 +119,8 @@ class Post(BaseModel):
         author: Name of the post author
         slug: URL-friendly unique identifier for the post
         title: Post title
-        contentInMarkdown: Post content in Markdown format
+        contentInMarkdown: Post content in Markdown format; set this or ``contentInHTML``
+        contentInHTML: Post content in HTML; set this or ``contentInMarkdown``
         excerpt: Short summary or preview of the post
         coverImage: Cover image for the post
         language: Language code for the post content (defaults to 'en')
@@ -131,7 +135,8 @@ class Post(BaseModel):
     author: str
     slug: str
     title: str
-    contentInMarkdown: str
+    contentInMarkdown: str | None = None
+    contentInHTML: str | None = None
     excerpt: str
     coverImage: Image = Field(default_factory=Image)
     language: str = "en"
@@ -139,6 +144,27 @@ class Post(BaseModel):
     tags: list[str] = Field(default_factory=list)
     date: DateTimeField | None = None
     css: CssField = ""
+
+    @model_validator(mode="after")
+    def check_exactly_one_content(self) -> Self:
+        """Require the content in exactly one format, so neither silently wins.
+
+        Raises:
+            ValueError: If both ``contentInMarkdown`` and ``contentInHTML`` are set, or
+                neither is.
+        """
+        if (self.contentInMarkdown is None) == (self.contentInHTML is None):
+            raise ValueError("Set exactly one of contentInMarkdown and contentInHTML")
+        return self
+
+    @property
+    def content(self) -> Content:
+        """The post's content, in the format it was written in."""
+        return (
+            HtmlContent(self.contentInHTML)
+            if self.contentInHTML is not None
+            else MarkdownContent(self.contentInMarkdown or "")
+        )
 
     def __lt__(self, other: object) -> bool:
         """Compare posts by date for sorting.
@@ -174,7 +200,8 @@ class Footer(BaseModel):
     """The site-wide footer and how it is presented.
 
     Attributes:
-        content: Footer content in shortcode markup, for one language. Empty shows no footer.
+        content: Footer content in Markdown with shortcodes, for one language. Empty shows no
+            footer.
         collapsible: Whether readers may collapse the footer
     """
 
