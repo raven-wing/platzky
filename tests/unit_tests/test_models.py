@@ -4,7 +4,7 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from platzky.content import Content
+from platzky.content import ContentSource
 from platzky.models import Color, Image, Page, Post
 from platzky.text_format import HTML, MARKDOWN
 
@@ -154,13 +154,13 @@ class TestCssField:
             make_post(css="</STYLE  ><script>alert(1)</script>")
 
 
-class TestPostContent:
+class TestPostSource:
     def test_markdown_content_is_markdown(self):
-        assert make_post().content == Content("content", MARKDOWN)
+        assert make_post().source == ContentSource("content", MARKDOWN)
 
     def test_html_content_is_html(self):
         post = make_post(contentInMarkdown=None, contentInHTML="<p>hi</p>")
-        assert post.content == Content("<p>hi</p>", HTML)
+        assert post.source == ContentSource("<p>hi</p>", HTML)
 
     def test_both_formats_are_rejected(self):
         with pytest.raises(ValidationError, match="exactly one"):

@@ -8,7 +8,7 @@ from typing import ClassVar
 
 import pytest
 
-from platzky.content import Content
+from platzky.content import ContentSource
 from platzky.content_types import BUILTIN_CONTENT_TYPES, POST, ContentType
 from platzky.plugin.content_transformer import (
     ContentTransformerPluginBase,
@@ -40,7 +40,7 @@ def _apply(content: str) -> str:
     plugin = _BuiltinTestPlugin({})
     registry = ContentTransformerRegistry(BUILTIN_CONTENT_TYPES)
     registry.grant(plugin, frozenset({POST}))
-    return registry.transform_content([plugin], Content(content, HTML), POST)
+    return registry.transform_content([plugin], ContentSource(content, HTML), POST)
 
 
 class TestImageShortcode:

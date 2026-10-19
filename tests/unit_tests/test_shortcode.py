@@ -6,7 +6,7 @@ from collections.abc import Mapping, Sequence
 import pytest
 from markupsafe import Markup
 
-from platzky.content import Content
+from platzky.content import ContentSource
 from platzky.content_types import BUILTIN_CONTENT_TYPES, POST, ContentType
 from platzky.plugin.content_transformer import (
     ContentTransformerPluginBase,
@@ -43,7 +43,7 @@ def _apply_shortcodes(content: str, shortcodes: dict[str, Shortcode]) -> str:
     plugin = _TestPlugin({})
     registry = ContentTransformerRegistry(BUILTIN_CONTENT_TYPES)
     registry.grant(plugin, frozenset({POST}))
-    return registry.transform_content([plugin], Content(content, HTML), POST)
+    return registry.transform_content([plugin], ContentSource(content, HTML), POST)
 
 
 def _sc(tag: str) -> Shortcode:

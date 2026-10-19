@@ -1,4 +1,4 @@
-"""Content written by someone with CMS write access, and how it is handed to the renderer."""
+"""The source of CMS-authored content, and how it is handed to the renderer."""
 
 from dataclasses import dataclass
 from typing import Protocol
@@ -10,8 +10,8 @@ from platzky.text_format import TextFormat
 
 
 @dataclass(frozen=True)
-class Content:
-    """Text written by someone with CMS write access, in the format they wrote it in.
+class ContentSource:
+    """Content as someone with CMS write access wrote it, before it is rendered.
 
     Passing one to ``transform_content`` is the caller's declaration of *provenance*, not
     a claim that the text is harmless — the caller is the only party that knows where
@@ -27,7 +27,7 @@ class Content:
     why each use in platzky names the author it is vouching for.
 
     Attributes:
-        text: The text as the author wrote it.
+        text: The text as the author wrote it, shortcodes and all.
         text_format: The format it is written in, e.g. ``MARKDOWN``.
     """
 
@@ -38,6 +38,6 @@ class Content:
 class ContentTransformer(Protocol):
     """Renders content of one type through the permitted transformers; see ``Engine``."""
 
-    def __call__(self, content: Content | str, content_type: ContentType) -> Markup:
+    def __call__(self, content: ContentSource | str, content_type: ContentType) -> Markup:
         """Render ``content`` as ``content_type``; a plain ``str`` is escaped first."""
         ...

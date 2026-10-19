@@ -33,7 +33,7 @@ from werkzeug.wrappers import Response as BaseResponse
 
 from platzky.attachment import Attachment, create_attachment
 from platzky.config import Config
-from platzky.content import Content
+from platzky.content import ContentSource
 from platzky.content_types import BUILTIN_CONTENT_TYPES, ContentType
 from platzky.db.db import DB
 from platzky.feature_flags import FeatureFlag, StripContentHtml
@@ -206,11 +206,11 @@ class Engine(Flask):
         """The content-type vocabulary in play: builtins, application's, and plugins'."""
         return self.content_transformers.known_content_types
 
-    def transform_content(self, content: Content | str, content_type: ContentType) -> Markup:
+    def transform_content(self, content: ContentSource | str, content_type: ContentType) -> Markup:
         """Apply all registered content-filter plugins for the given content type.
 
         Args:
-            content: The content to transform. Pass a ``Content`` to vouch for it, which
+            content: The content to transform. Pass a ``ContentSource`` to vouch for it, which
                 formats it in its ``text_format``, embeds it, and holds its author to strict
                 shortcode syntax; anything else is escaped at the boundary.
             content_type: The kind of content, e.g. ``POST``.

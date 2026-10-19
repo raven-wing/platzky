@@ -22,7 +22,7 @@ from platzky.config import (
     Config,
     languages_dict,
 )
-from platzky.content import Content
+from platzky.content import ContentSource
 from platzky.content_types import FOOTER, PAGE, POST, ContentType
 from platzky.db.db import DB
 from platzky.db.db_loader import get_db
@@ -137,7 +137,7 @@ def _rendered_footer(app: Engine, content: str) -> Markup:
     # instead would escape the author's tags into visible text, and would have the
     # shortcode parser treat their mistakes as a stranger's.
     try:
-        rendered = app.transform_content(Content(content, MARKDOWN), FOOTER)
+        rendered = app.transform_content(ContentSource(content, MARKDOWN), FOOTER)
     except ShortcodeError:
         # This is called on every page render, so one malformed tag would otherwise 500
         # the whole site, the 404 handler included. Drop the footer instead; the log names

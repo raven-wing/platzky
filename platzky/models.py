@@ -9,7 +9,7 @@ import humanize
 from pydantic import AfterValidator, BaseModel, Field, model_validator
 from typing_extensions import Self
 
-from platzky.content import Content
+from platzky.content import ContentSource
 from platzky.text_format import HTML, MARKDOWN
 
 
@@ -159,12 +159,12 @@ class Post(BaseModel):
         return self
 
     @property
-    def content(self) -> Content:
-        """The post's content, in the format it was written in."""
+    def source(self) -> ContentSource:
+        """The post's content as its author wrote it, ready to be rendered."""
         return (
-            Content(self.contentInHTML, HTML)
+            ContentSource(self.contentInHTML, HTML)
             if self.contentInHTML is not None
-            else Content(self.contentInMarkdown or "", MARKDOWN)
+            else ContentSource(self.contentInMarkdown or "", MARKDOWN)
         )
 
     def __lt__(self, other: object) -> bool:

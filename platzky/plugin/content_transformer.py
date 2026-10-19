@@ -10,7 +10,7 @@ from typing import ClassVar, cast
 import jinja2.ext
 from markupsafe import Markup, escape
 
-from platzky.content import Content
+from platzky.content import ContentSource
 from platzky.content_types import ALL_CONTENT_TYPES, ContentType
 from platzky.plugin.plugin import PluginBase
 from platzky.plugin.plugin_config import PluginConfigBase
@@ -256,7 +256,7 @@ class ContentTransformerRegistry:
     def transform_content(
         self,
         plugins: Iterable[ContentTransformerPluginBase],
-        content: Content | str,
+        content: ContentSource | str,
         content_type: ContentType,
         *,
         strip_html: bool = False,
@@ -267,7 +267,7 @@ class ContentTransformerRegistry:
         than silently passing partial output to the next stage.
 
         Content is escaped on the way in unless the caller vouched for it by passing a
-        ``Content`` — the caller is the only party that knows where it came from, so the
+        ``ContentSource`` — the caller is the only party that knows where it came from, so the
         default is the safe one and vouching is the deliberate act. Everything the
         pipeline adds afterwards is markup platzky itself produced, by plugins that turned
         offered and granted this content type, so it is trusted by construction and shortcodes
@@ -276,7 +276,7 @@ class ContentTransformerRegistry:
         Args:
             plugins: Content transformers in registration order.
             content: The content to transform. A plain ``str`` is treated as untrusted and
-                escaped; a ``Content`` is taken as vouched for, and formatted in its own
+                escaped; a ``ContentSource`` is taken as vouched for, and formatted in its own
                 ``text_format``.
             content_type: The kind of content, e.g. ``POST``.
             strip_html: Overrule vouching and remove HTML tags the author wrote, keeping
@@ -296,11 +296,11 @@ class ContentTransformerRegistry:
         # mistakes get reported, whether there is any authored HTML left for the site owner
         # to strip, and whether the text is formatted at all.
         #
-        # Only Content counts, not any Markup: Markup means "already escaped, render as
+        # Only ContentSource counts, not any Markup: Markup means "already escaped, render as
         # is", which a caller can reach for to fix a display bug, and that is not the same
         # claim as "someone with CMS access wrote this". Asking for a type of its own makes
         # the claim deliberate, and keeps a stray Markup from widening what is trusted.
-        vouched = isinstance(content, Content)
+        vouched = isinstance(content, ContentSource)
         # escape() is a no-op on anything carrying __html__, so this is the whole rule.
         # It makes content safe; it does not stop shortcode parsing. Brackets survive, so
         # a bare tag in untrusted content still fires — harmlessly, since what it wraps is

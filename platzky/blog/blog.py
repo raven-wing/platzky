@@ -174,7 +174,7 @@ def create_blog_blueprint(
         return render_template(
             "post.html",
             post=post,
-            content=content_transformer(post.content, POST),
+            content=content_transformer(post.source, POST),
             post_slug=post_slug,
             form=comment_form.CommentForm(),
             comment_sent=request.args.get("comment_sent"),
@@ -198,7 +198,7 @@ def create_blog_blueprint(
             "page.html",
             title=page.title,
             css=page.css,
-            content=content_transformer(page.content, PAGE),
+            content=content_transformer(page.source, PAGE),
             cover_image=cover_image_url,
         )
 

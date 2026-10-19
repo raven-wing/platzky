@@ -11,7 +11,7 @@ from typing import ClassVar
 import pytest
 from markupsafe import Markup, escape
 
-from platzky.content import Content
+from platzky.content import ContentSource
 from platzky.content_types import (
     ALL_CONTENT_TYPES,
     BUILTIN_CONTENT_TYPES,
@@ -289,7 +289,7 @@ class TestTrustBoundary:
         plugin = ShoutPlugin({})
         registry.grant(plugin, frozenset({"post"}))
 
-        result = registry.transform_content([plugin], Content("<em>hi</em>", HTML), "post")
+        result = registry.transform_content([plugin], ContentSource("<em>hi</em>", HTML), "post")
 
         assert result == "<em>hi</em>"
 
@@ -301,7 +301,7 @@ class TestTrustBoundary:
         registry.grant(plugin, frozenset({"post"}))
 
         result = registry.transform_content(
-            [plugin], Content("[styled] <platzky-shortcode-0-0>", HTML), "post"
+            [plugin], ContentSource("[styled] <platzky-shortcode-0-0>", HTML), "post"
         )
 
         assert result == '<span style="color: red">styled</span> <platzky-shortcode-0-0>'
@@ -310,7 +310,7 @@ class TestTrustBoundary:
         self, registry: ContentTransformerRegistry
     ) -> None:
         """The format turns the author's text into HTML."""
-        result = registry.transform_content([], Content("hi", _BoldFormat()), "post")
+        result = registry.transform_content([], ContentSource("hi", _BoldFormat()), "post")
 
         assert result == "<b>hi</b>"
 
@@ -323,7 +323,7 @@ class TestTrustBoundary:
 
         result = registry.transform_content(
             [plugin],
-            Content("a [shout]b[/shout]", _ShoutedBFormat()),
+            ContentSource("a [shout]b[/shout]", _ShoutedBFormat()),
             "post",
         )
 
@@ -391,7 +391,7 @@ class TestTrustBoundary:
         plugin = AttrPlugin({})
         registry.grant(plugin, frozenset({"post"}))
 
-        unclosed = Content("[wrap]hi", HTML)
+        unclosed = ContentSource("[wrap]hi", HTML)
 
         with pytest.raises(ShortcodeError):
             registry.transform_content([plugin], unclosed, "post")
@@ -402,7 +402,8 @@ class TestTrustBoundary:
         registry.grant(plugin, frozenset({"post"}))
 
         assert (
-            registry.transform_content([plugin], Content("[shout]hi[/shout]", HTML), "post") == "HI"
+            registry.transform_content([plugin], ContentSource("[shout]hi[/shout]", HTML), "post")
+            == "HI"
         )
 
 
@@ -415,9 +416,9 @@ class TestStripContentHtml:
         plugin = ShoutPlugin({})
         registry.grant(plugin, frozenset({"post"}))
 
-        assert registry.transform_content([plugin], Content('a <img src="x">', HTML), "post") == (
-            'a <img src="x">'
-        )
+        assert registry.transform_content(
+            [plugin], ContentSource('a <img src="x">', HTML), "post"
+        ) == ('a <img src="x">')
 
     def test_on_removes_the_tag_and_keeps_the_text(
         self, registry: ContentTransformerRegistry
@@ -426,7 +427,10 @@ class TestStripContentHtml:
         registry.grant(plugin, frozenset({"post"}))
 
         result = registry.transform_content(
-            [plugin], Content('a <b>bold</b> and <img src="x">', HTML), "post", strip_html=True
+            [plugin],
+            ContentSource('a <b>bold</b> and <img src="x">', HTML),
+            "post",
+            strip_html=True,
         )
 
         assert result == "a bold and "
@@ -440,7 +444,7 @@ class TestStripContentHtml:
 
         with caplog.at_level(logging.WARNING):
             registry.transform_content(
-                [plugin], Content('<b>x</b> <img src="y">', HTML), "post", strip_html=True
+                [plugin], ContentSource('<b>x</b> <img src="y">', HTML), "post", strip_html=True
             )
 
         assert "Removed 2 HTML tag(s) from post content" in caplog.text
@@ -454,7 +458,7 @@ class TestStripContentHtml:
 
         with caplog.at_level(logging.WARNING):
             registry.transform_content(
-                [plugin], Content("just words", HTML), "post", strip_html=True
+                [plugin], ContentSource("just words", HTML), "post", strip_html=True
             )
 
         assert "Removed" not in caplog.text
@@ -467,7 +471,10 @@ class TestStripContentHtml:
         registry.grant(plugin, frozenset({"post"}))
 
         result = registry.transform_content(
-            [plugin], Content('<img alt="a > b" src="/a.png">clean', HTML), "post", strip_html=True
+            [plugin],
+            ContentSource('<img alt="a > b" src="/a.png">clean', HTML),
+            "post",
+            strip_html=True,
         )
 
         assert result == "clean"
@@ -480,7 +487,7 @@ class TestStripContentHtml:
         registry.grant(plugin, frozenset({"post"}))
 
         result = registry.transform_content(
-            [plugin], Content("[shout]hi[/shout]", HTML), "post", strip_html=True
+            [plugin], ContentSource("[shout]hi[/shout]", HTML), "post", strip_html=True
         )
 
         assert result == "HI"
@@ -498,7 +505,7 @@ class TestStripContentHtml:
         registry.grant(plugin, frozenset({"post"}))
 
         result = registry.transform_content(
-            [plugin], Content('[wrap tone="loud"]hi[/wrap]', HTML), "post", strip_html=True
+            [plugin], ContentSource('[wrap tone="loud"]hi[/wrap]', HTML), "post", strip_html=True
         )
 
         assert result == '<span class="loud">hi</span>'
@@ -510,7 +517,10 @@ class TestStripContentHtml:
         registry.grant(plugin, frozenset({"post"}))
 
         result = registry.transform_content(
-            [plugin], Content('<b>x</b> [wrap tone="loud"]hi[/wrap]', HTML), "post", strip_html=True
+            [plugin],
+            ContentSource('<b>x</b> [wrap tone="loud"]hi[/wrap]', HTML),
+            "post",
+            strip_html=True,
         )
 
         assert result == 'x <span class="loud">hi</span>'
@@ -523,7 +533,10 @@ class TestStripContentHtml:
         registry.grant(plugin, frozenset({"post"}))
 
         result = registry.transform_content(
-            [plugin], Content('[code]<img src="/a.png">[/code]', HTML), "post", strip_html=True
+            [plugin],
+            ContentSource('[code]<img src="/a.png">[/code]', HTML),
+            "post",
+            strip_html=True,
         )
 
         assert result == '<pre><img src="/a.png"></pre>'
@@ -547,7 +560,7 @@ class TestStripContentHtml:
 
         result = registry.transform_content(
             [plugin],
-            Content("<b>x</b> [code]<i>y</i>[/code] <b>z</b>", HTML),
+            ContentSource("<b>x</b> [code]<i>y</i>[/code] <b>z</b>", HTML),
             "post",
             strip_html=True,
         )
@@ -563,7 +576,10 @@ class TestStripContentHtml:
 
         with caplog.at_level(logging.WARNING):
             registry.transform_content(
-                [plugin], Content("<b>x</b> [code]<i>y</i>[/code]", HTML), "post", strip_html=True
+                [plugin],
+                ContentSource("<b>x</b> [code]<i>y</i>[/code]", HTML),
+                "post",
+                strip_html=True,
             )
 
         assert "Removed 1 HTML tag(s) from post content (b)" in caplog.text
@@ -752,7 +768,7 @@ class TestFiltersNeverSeeRenderedMarkup:
             registry.grant(plugin, frozenset({"post"}))
 
         result = registry.transform_content(
-            [wrap, letters], Content('[wrap tone="loud"]hi[/wrap] and a plan', HTML), "post"
+            [wrap, letters], ContentSource('[wrap tone="loud"]hi[/wrap] and a plan', HTML), "post"
         )
 
         assert result == '<span class="loud">hi</span> <i>a</i>nd <i>a</i> pl<i>a</i>n'
@@ -765,7 +781,7 @@ class TestFiltersNeverSeeRenderedMarkup:
         registry.grant(letters, frozenset({"post"}))
 
         result = registry.transform_content(
-            [letters], Content('<a title="a > b">and a word</a>', HTML), "post"
+            [letters], ContentSource('<a title="a > b">and a word</a>', HTML), "post"
         )
 
         # The 'a' inside the title attribute is untouched; both in the text are wrapped.
@@ -780,7 +796,7 @@ class TestFiltersNeverSeeRenderedMarkup:
             registry.grant(plugin, frozenset({"post"}))
 
         result = registry.transform_content(
-            [code, letters], Content("[code]a [wrap]x[/wrap][/code] a", HTML), "post"
+            [code, letters], ContentSource("[code]a [wrap]x[/wrap][/code] a", HTML), "post"
         )
 
         assert result == "<pre>a [wrap]x[/wrap]</pre> <i>a</i>"
