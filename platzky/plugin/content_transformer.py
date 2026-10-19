@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from abc import ABC
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Iterable, Mapping
 from typing import ClassVar, cast
 
 import jinja2.ext
@@ -14,7 +14,8 @@ from platzky.content_types import ALL_CONTENT_TYPES, CmsAuthored, ContentType
 from platzky.plugin.plugin import PluginBase
 from platzky.plugin.plugin_config import PluginConfigBase
 from platzky.shortcodes import Shortcode
-from platzky.shortcodes.parser import as_written, render_document
+from platzky.shortcodes.parser import render_document
+from platzky.text_format import HTML, TextFormat
 
 
 class ContentTransformerPluginConfig(PluginConfigBase):
@@ -258,7 +259,7 @@ class ContentTransformerRegistry:
         content_type: ContentType,
         *,
         strip_html: bool = False,
-        format_text: Callable[[str, bool], str] = as_written,
+        text_format: TextFormat = HTML,
     ) -> Markup:
         """Run every permitted transformer over the content, in order.
 
@@ -283,8 +284,7 @@ class ContentTransformerRegistry:
                 body is exempt: it is verbatim by declaration, which makes it the way an
                 author marks HTML they mean to keep. Only vouched content has one —
                 unvouched content is escaped at the boundary, raw bodies included.
-            format_text: Turns vouched content's text into HTML, e.g. from Markdown; told
-                whether the text sits inside a shortcode element.
+            text_format: The format vouched content is written in, e.g. ``MARKDOWN``.
                 Unvouched content is never formatted: it stays the escaped text it was.
 
         Returns:
@@ -326,7 +326,7 @@ class ContentTransformerRegistry:
             # Unvouched content was escaped above, raw bodies with it, so it has no tags
             # left to strip and no way to pass one through a raw body either.
             strip_html=strip_html and vouched,
-            format_text=format_text if vouched else as_written,
+            text_format=text_format if vouched else HTML,
         )
         if removed:
             # Lossy and silent otherwise, so say what went and how much of it.

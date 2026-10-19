@@ -55,8 +55,8 @@ from platzky.plugin.html_injector import HtmlInjectorPluginBase, HtmlInjectorPlu
 from platzky.plugin.notifier import Notification, NotifierPluginBase, NotifyPluginConfig
 from platzky.plugin.plugin_config import PluginConfigBase
 from platzky.shortcodes import Shortcode
-from platzky.shortcodes.parser import as_written
 from platzky.sitemap import SitemapProvider
+from platzky.text_format import HTML, TextFormat
 
 logger = logging.getLogger(__name__)
 
@@ -211,7 +211,7 @@ class Engine(Flask):
         content: str,
         content_type: ContentType,
         *,
-        format_text: Callable[[str, bool], str] = as_written,
+        text_format: TextFormat = HTML,
     ) -> Markup:
         """Apply all registered content-filter plugins for the given content type.
 
@@ -220,7 +220,7 @@ class Engine(Flask):
                 embeds it as written and holds its author to strict shortcode syntax;
                 anything else is escaped at the boundary.
             content_type: The kind of content, e.g. ``POST``.
-            format_text: Turns vouched content's text into HTML, e.g. from Markdown.
+            text_format: The format vouched content is written in, e.g. ``MARKDOWN``.
 
         Returns:
             The content after every permitted transformer has run, safe to embed in a
@@ -231,7 +231,7 @@ class Engine(Flask):
             content,
             content_type,
             strip_html=self.is_enabled(StripContentHtml),
-            format_text=format_text,
+            text_format=text_format,
         )
 
     def shortcodes_for(self, content_type: ContentType) -> dict[str, Shortcode]:

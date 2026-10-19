@@ -104,6 +104,22 @@ class StyledPlugin(ContentTransformerPluginBase):
     shortcodes: ClassVar[dict[str, Shortcode]] = {"styled": _StyledShortcode()}
 
 
+class _BoldFormat:
+    """A text format wrapping the author's text in bold, so formatting is visible."""
+
+    def to_html(self, text: str, *, inline: bool) -> str:  # noqa: ARG002
+        """Wrap the text in <b>."""
+        return f"<b>{text}</b>"
+
+
+class _ShoutedBFormat:
+    """A text format that would change any shouted B it were handed."""
+
+    def to_html(self, text: str, *, inline: bool) -> str:  # noqa: ARG002
+        """Replace every B."""
+        return text.replace("B", "x")
+
+
 class AnyPlugin(ContentTransformerPluginBase):
     """Declares no constraint on where it runs."""
 
@@ -289,17 +305,17 @@ class TestTrustBoundary:
 
         assert result == '<span style="color: red">styled</span> <platzky-shortcode-0-0>'
 
-    def test_format_text_formats_vouched_content(
+    def test_text_format_formats_vouched_content(
         self, registry: ContentTransformerRegistry
     ) -> None:
         """The format turns the author's text into HTML."""
         result = registry.transform_content(
-            [], CmsAuthored("hi"), "post", format_text=lambda text, _inline: f"<b>{text}</b>"
+            [], CmsAuthored("hi"), "post", text_format=_BoldFormat()
         )
 
         assert result == "<b>hi</b>"
 
-    def test_format_text_does_not_reach_shortcode_output(
+    def test_text_format_does_not_reach_shortcode_output(
         self, registry: ContentTransformerRegistry
     ) -> None:
         """Shortcode output is held out of the format, which sees a placeholder instead."""
@@ -310,18 +326,16 @@ class TestTrustBoundary:
             [plugin],
             CmsAuthored("a [shout]b[/shout]"),
             "post",
-            format_text=lambda text, _inline: text.replace("B", "x"),
+            text_format=_ShoutedBFormat(),
         )
 
         assert result == "a B"
 
-    def test_format_text_is_not_applied_to_unvouched_content(
+    def test_text_format_is_not_applied_to_unvouched_content(
         self, registry: ContentTransformerRegistry
     ) -> None:
         """A stranger's text stays the escaped text it was, never formatted into markup."""
-        result = registry.transform_content(
-            [], "hi", "post", format_text=lambda text, _inline: f"<b>{text}</b>"
-        )
+        result = registry.transform_content([], "hi", "post", text_format=_BoldFormat())
 
         assert result == "hi"
 

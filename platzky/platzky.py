@@ -33,7 +33,6 @@ from platzky.language_routing import (
     language_url,
 )
 from platzky.login import login
-from platzky.markdown import render_markdown
 from platzky.plugin.content_transformer import ContentTransformerPluginBase
 from platzky.plugin.login import LoginPluginBase
 from platzky.plugin.plugin import PluginBase
@@ -42,6 +41,7 @@ from platzky.seo import seo
 from platzky.shortcodes import Shortcode, ShortcodeError
 from platzky.shortcodes.builtins import get_builtin_shortcodes
 from platzky.sitemap import single_url
+from platzky.text_format import MARKDOWN
 from platzky.www_handler import redirect_nonwww_to_www, redirect_www_to_nonwww
 
 logger = logging.getLogger(__name__)
@@ -137,7 +137,7 @@ def _rendered_footer(app: Engine, content: str) -> Markup:
     # text, and would have the shortcode parser treat their mistakes as a stranger's.
     authored = CmsAuthored(content)
     try:
-        rendered = app.transform_content(authored, FOOTER, format_text=render_markdown)
+        rendered = app.transform_content(authored, FOOTER, text_format=MARKDOWN)
     except ShortcodeError:
         # This is called on every page render, so one malformed tag would otherwise 500
         # the whole site, the 404 handler included. Drop the footer instead; the log names
