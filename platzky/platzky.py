@@ -41,6 +41,7 @@ from platzky.seo import seo
 from platzky.shortcodes import Shortcode, ShortcodeError
 from platzky.shortcodes.builtins import get_builtin_shortcodes
 from platzky.sitemap import single_url
+from platzky.text_format import MARKDOWN
 from platzky.www_handler import redirect_nonwww_to_www, redirect_www_to_nonwww
 
 logger = logging.getLogger(__name__)
@@ -126,7 +127,7 @@ def _rendered_footer(app: Engine, content: str) -> Markup:
 
     Args:
         app: The application, for its content transformers.
-        content: The footer as an author wrote it, in shortcode markup.
+        content: The footer as an author wrote it, in Markdown with shortcodes.
 
     Returns:
         The rendered footer, empty when a shortcode in it is malformed.
@@ -134,7 +135,7 @@ def _rendered_footer(app: Engine, content: str) -> Markup:
     # Only someone with CMS access can write the footer, so its HTML is embedded as
     # written. Passing a plain str instead would escape the author's tags into visible
     # text, and would have the shortcode parser treat their mistakes as a stranger's.
-    authored = ContentSource(content)
+    authored = ContentSource(content, MARKDOWN)
     try:
         rendered = app.transform_content(authored, FOOTER)
     except ShortcodeError:

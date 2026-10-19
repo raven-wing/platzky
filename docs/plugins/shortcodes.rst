@@ -37,7 +37,7 @@ A shortcode declares which shape it is, and the parser holds authors to it::
     Takes a closing tag, but its body is verbatim: brackets inside are characters, not
     syntax, so an author can write *about* a shortcode rather than invoking one. Nothing
     in the pipeline reaches inside: not another plugin's filter, not another plugin's
-    shortcodes, not ``STRIP_CONTENT_HTML``. The built-in ``[html]`` is the one in tree;
+    shortcodes, not Markdown, not ``STRIP_CONTENT_HTML``. The built-in ``[html]`` is the one in tree;
     ``[latex]`` or ``[mermaid]`` would want the same.
 
 **A wrapper is told what it wrapped.** :meth:`~platzky.shortcodes.shortcode.Shortcode.render`
@@ -69,9 +69,9 @@ is left with nothing to close. Parsed strictly, anyone able to write a comment c
 page render by using a shortcode perfectly correctly.
 
 Verbatim means verbatim, HTML included. A raw body is taken out of the document before
-any filter or stripping pass runs, so HTML written inside one reaches the page as HTML
-even where ``STRIP_CONTENT_HTML`` is removing the HTML around it — which is what makes
-``[html]`` the way an author marks a piece they mean. The hatch belongs to whoever the
+any filter, formatting or stripping pass runs, so HTML written inside one reaches the page
+as HTML even where ``STRIP_CONTENT_HTML`` is removing the HTML around it — which is what
+makes ``[html]`` the way an author marks a piece they mean. The hatch belongs to whoever the
 caller vouched for: content nobody vouched for is escaped at the boundary, raw bodies
 with it, so a raw shortcode is never a way to get markup out of a stranger's text.
 

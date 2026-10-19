@@ -14,7 +14,8 @@ from platzky.content_types import ALL_CONTENT_TYPES, ContentSource, ContentType
 from platzky.plugin.plugin import PluginBase
 from platzky.plugin.plugin_config import PluginConfigBase
 from platzky.shortcodes import Shortcode
-from platzky.shortcodes.parser import render_document
+from platzky.shortcodes.rendering import render_document
+from platzky.text_format import HTML
 
 
 class ContentTransformerPluginConfig(PluginConfigBase):
@@ -274,26 +275,25 @@ class ContentTransformerRegistry:
         Args:
             plugins: Content transformers in registration order.
             content: The content to transform. A plain ``str`` is treated as untrusted and
-                escaped; a ``ContentSource`` is taken as vouched for and passed through.
+                escaped; a ``ContentSource`` is taken as vouched for, and formatted in its
+                own ``text_format``.
             content_type: The kind of content, e.g. ``POST``.
             strip_html: Overrule vouching and remove HTML tags the author wrote, keeping
                 the text they wrapped and logging what went. The site owner's call, behind
-                ``STRIP_CONTENT_HTML``: shortcodes still render, but a site turning it on
-                needs some other way to format a post, because HTML is currently the only
-                one platzky has. A ``"raw"`` shortcode body is exempt: it is verbatim by
-                declaration, which makes it the way an author marks HTML they mean to
-                keep. Only vouched content has one — unvouched content is escaped at the
-                boundary, raw bodies included.
+                ``STRIP_CONTENT_HTML``: shortcodes still render. A ``"raw"`` shortcode
+                body is exempt: it is verbatim by declaration, which makes it the way an
+                author marks HTML they mean to keep. Only vouched content has one —
+                unvouched content is escaped at the boundary, raw bodies included.
 
         Returns:
             The content after every permitted transformer has run, as ``Markup``: whatever
-            the caller vouched for was embedded as written, and whatever they did not was
+            the caller vouched for was formatted and embedded, and whatever they did not was
             escaped at the boundary, so the result is safe to embed either way and no
             caller has to assert that again.
         """
-        # Whether anyone vouched decides three separate things: what gets escaped, whose
-        # mistakes get reported, and whether there is any authored HTML left for the site
-        # owner to strip.
+        # Whether anyone vouched decides four separate things: what gets escaped, whose
+        # mistakes get reported, whether there is any authored HTML left for the site
+        # owner to strip, and whether the text is formatted at all.
         #
         # Only ContentSource counts, not any Markup: Markup means "already escaped, render
         # as is", which a caller can reach for to fix a display bug, and that is not the
@@ -304,8 +304,13 @@ class ContentTransformerRegistry:
         # It makes content safe; it does not stop shortcode parsing. Brackets survive, so
         # a bare tag in untrusted content still fires — harmlessly, since what it wraps is
         # already escaped — while a quoted attribute does not survive and that tag renders
-        # literally. Safety does not depend on which happens.
-        text = content.text if isinstance(content, ContentSource) else str(escape(content))
+        # literally. Safety does not depend on which happens. A stranger's text is never
+        # formatted: it stays the escaped text it was.
+        text, text_format = (
+            (content.text, content.text_format)
+            if isinstance(content, ContentSource)
+            else (str(escape(content)), HTML)
+        )
         # That mangling is also why only vouched content is parsed strictly. Escaping the
         # quotes out of `[tag a="b"]x[/tag]` leaves an opening tag that no longer matches
         # and a closing tag that does, so a stranger writing an ordinary shortcode would
@@ -324,6 +329,7 @@ class ContentTransformerRegistry:
             # Unvouched content was escaped above, raw bodies with it, so it has no tags
             # left to strip and no way to pass one through a raw body either.
             strip_html=strip_html and vouched,
+            text_format=text_format,
         )
         if removed:
             # Lossy and silent otherwise, so say what went and how much of it.

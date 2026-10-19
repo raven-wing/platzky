@@ -7,7 +7,8 @@ A shortcode declares its ``kind``, which says whether a closing tag belongs::
 
 Plugins register handlers through the ``shortcodes`` class variable on
 ``ContentTransformerPluginBase``. How a document of them is read and rendered — nesting,
-raw bodies, what happens to a malformed tag — lives in :mod:`platzky.shortcodes.parser`.
+raw bodies, what happens to a malformed tag — lives in :mod:`platzky.shortcodes.parser` and
+:mod:`platzky.shortcodes.rendering`.
 """
 
 import inspect
@@ -36,8 +37,9 @@ _VALID_SHORTCODE_NAME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_-]*$")
 #: change parsing at all — ``render`` runs afterwards and so could never stop it.
 #:
 #: A raw body is verbatim against the whole pipeline: no plugin's text filter reaches into
-#: it, no plugin's shortcodes are rendered inside it, and ``STRIP_CONTENT_HTML`` does not
-#: remove the HTML tags in it, because the document is parsed once before any of them run.
+#: it, no plugin's shortcodes are rendered inside it, it is not formatted, and
+#: ``STRIP_CONTENT_HTML`` does not remove the HTML tags in it, because the document is
+#: parsed once before any of them run.
 #: Verbatim is not a safety property, and a raw shortcode is not a place to put content
 #: nobody vouched for: what the caller vouched for is embedded as written, and what it did
 #: not was escaped at the boundary, body and all.

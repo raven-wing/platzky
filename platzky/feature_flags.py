@@ -84,9 +84,8 @@ StripContentHtml = FeatureFlag(
         "the caller vouched for the content. Shortcodes still render, and an [html] block "
         "keeps the HTML written inside it, which is how an author marks a piece they "
         "mean. Each removal is "
-        "logged, since it is lossy. Off by default because HTML is currently the only "
-        "formatting a post body has — with no markdown renderer wired up, turning this on "
-        "leaves plain text and shortcodes."
+        "logged, since it is lossy. Markdown formatting is unaffected, since it is "
+        "converted to HTML after the stripping."
     ),
 )
 

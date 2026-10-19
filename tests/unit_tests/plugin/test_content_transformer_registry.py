@@ -22,6 +22,7 @@ from platzky.plugin.content_transformer import (
     ContentTransformerRegistry,
 )
 from platzky.shortcodes import Shortcode, ShortcodeAttr, ShortcodeAttrs, ShortcodeError
+from platzky.text_format import MARKDOWN
 
 
 class _ShoutShortcode(Shortcode):
@@ -78,6 +79,54 @@ class AttrPlugin(ContentTransformerPluginBase):
         BUILTIN_CONTENT_TYPES, "Exercised by tests."
     )
     shortcodes: ClassVar[dict[str, Shortcode]] = {"wrap": _WrapShortcode()}
+
+
+class _StyledShortcode(Shortcode):
+    name = "styled"
+    description = "Emit markup of its own, as a plugin may."
+    kind = "void"
+
+    def render(
+        self,
+        attrs: ShortcodeAttrs,  # noqa: ARG002
+        content: str,  # noqa: ARG002
+        children: Sequence[Markup],  # noqa: ARG002
+    ) -> str:
+        """Return a span carrying an inline style."""
+        return '<span style="color: red">styled</span>'
+
+
+class StyledPlugin(ContentTransformerPluginBase):
+    """Registers a void shortcode with markup of its own."""
+
+    accepted_content_types: Mapping[ContentType, str] = dict.fromkeys(
+        BUILTIN_CONTENT_TYPES, "Exercised by tests."
+    )
+    shortcodes: ClassVar[dict[str, Shortcode]] = {"styled": _StyledShortcode()}
+
+
+class _BoldFormat:
+    """A text format wrapping the author's text in bold, so formatting is visible."""
+
+    def to_html(self, text: str) -> str:
+        """Wrap the text in <b>."""
+        return f"<b>{text}</b>"
+
+    def to_inline_html(self, text: str) -> str:
+        """Wrap the text in <b>."""
+        return f"<b>{text}</b>"
+
+
+class _ReplacesBFormat:
+    """A text format that turns every "B" into "x", so the result shows what it reached."""
+
+    def to_html(self, text: str) -> str:
+        """Replace every B."""
+        return text.replace("B", "x")
+
+    def to_inline_html(self, text: str) -> str:
+        """Replace every B."""
+        return text.replace("B", "x")
 
 
 class AnyPlugin(ContentTransformerPluginBase):
@@ -262,6 +311,44 @@ class TestTrustBoundary:
         )
 
         assert result == '<span class="loud"></span>never closed'
+
+    def test_an_author_cannot_forge_a_shortcode_placeholder(
+        self, registry: ContentTransformerRegistry
+    ) -> None:
+        """Placeholders carry a per-render nonce, so one an author writes stays their text."""
+        plugin = StyledPlugin({})
+        registry.grant(plugin, frozenset({"post"}))
+
+        result = registry.transform_content(
+            [plugin], ContentSource("[styled] <platzky-shortcode-0-0>"), "post"
+        )
+
+        assert result == '<span style="color: red">styled</span> <platzky-shortcode-0-0>'
+
+    def test_text_format_formats_vouched_content(
+        self, registry: ContentTransformerRegistry
+    ) -> None:
+        """The format turns the author's text into HTML."""
+        result = registry.transform_content([], ContentSource("hi", _BoldFormat()), "post")
+
+        assert result == "<b>hi</b>"
+
+    def test_text_format_does_not_reach_shortcode_output(
+        self, registry: ContentTransformerRegistry
+    ) -> None:
+        """Only the author's text is formatted; a shortcode's output is finished HTML.
+
+        ``[shout]`` outputs "B", and the format turns every "B" into "x". The "B" surviving
+        means the format never saw the shortcode's output, only a placeholder in its place.
+        """
+        plugin = ShoutPlugin({})
+        registry.grant(plugin, frozenset({"post"}))
+
+        result = registry.transform_content(
+            [plugin], ContentSource("a [shout]b[/shout]", _ReplacesBFormat()), "post"
+        )
+
+        assert result == "a B"  # "a x" would mean the format reached the shortcode's output
 
     def test_unvouched_tag_without_attributes_still_fires(
         self, registry: ContentTransformerRegistry
@@ -707,3 +794,17 @@ class TestFiltersNeverSeeRenderedMarkup:
         )
 
         assert result == "<pre>a [wrap]x[/wrap]</pre> <i>a</i>"
+
+    def test_a_filter_does_not_reach_a_shortcode_shown_in_code(
+        self, registry: ContentTransformerRegistry
+    ) -> None:
+        """Markdown escapes the placeholder of a shortcode in a code span into text."""
+        wrap, letters = AttrPlugin({}), _LetterAPlugin({})
+        for plugin in (wrap, letters):
+            registry.grant(plugin, frozenset({"post"}))
+
+        result = registry.transform_content(
+            [wrap, letters], ContentSource("`[wrap]hi[/wrap]` a", MARKDOWN), "post"
+        )
+
+        assert result == "<p><code>[wrap]hi[/wrap]</code> <i>a</i></p>\n"

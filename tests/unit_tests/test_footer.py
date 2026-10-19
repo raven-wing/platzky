@@ -64,6 +64,14 @@ def test_no_footer_configured_renders_no_footer_row(url: str):
 
 
 @pytest.mark.parametrize("url", CONTENT_URLS)
+def test_site_footer_renders_markdown(url: str):
+    html = _html(_app(site_footer={"en": '**Bold** and [link url="/x"]a *link*[/link]'}), url)
+    assert "<p><strong>Bold</strong> and" in html
+    assert 'href="/x"' in html
+    assert "<em>link</em>" in html
+
+
+@pytest.mark.parametrize("url", CONTENT_URLS)
 def test_site_footer_renders_builtin_shortcodes(url: str):
     html = _html(_app(site_footer={"en": '[link url="/x"]Site footer[/link]'}), url)
     assert 'id="footer-row"' in html

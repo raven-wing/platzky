@@ -17,6 +17,7 @@ from platzky.db.exceptions import NotFoundError, ReadOnlyStorageError
 from platzky.models import Page, Post
 from platzky.shortcodes import ShortcodeError
 from platzky.sitemap import SitemapEntry, UrlFor, single_url
+from platzky.text_format import MARKDOWN
 
 from . import comment_form
 
@@ -175,7 +176,7 @@ def create_blog_blueprint(
             "post.html",
             post=post,
             # Vouched for: a post body is written by someone with CMS write access.
-            content=content_transformer(ContentSource(post.contentInMarkdown), POST),
+            content=content_transformer(ContentSource(post.contentInMarkdown, MARKDOWN), POST),
             post_slug=post_slug,
             form=comment_form.CommentForm(),
             comment_sent=request.args.get("comment_sent"),
@@ -200,7 +201,7 @@ def create_blog_blueprint(
             title=page.title,
             css=page.css,
             # Vouched for, as a post body is.
-            content=content_transformer(ContentSource(page.contentInMarkdown), PAGE),
+            content=content_transformer(ContentSource(page.contentInMarkdown, MARKDOWN), PAGE),
             cover_image=cover_image_url,
         )
 

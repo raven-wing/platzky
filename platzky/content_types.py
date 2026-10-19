@@ -22,6 +22,8 @@ would make it process-global and let one app's content types leak into another's
 
 from dataclasses import dataclass
 
+from platzky.text_format import HTML, TextFormat
+
 
 @dataclass(frozen=True)
 class ContentSource:
@@ -30,11 +32,11 @@ class ContentSource:
     Passing one to ``transform_content`` is the caller's declaration of *provenance*, not
     a claim that the content is harmless — the caller is the only party that knows where
     content came from, so only the caller can say. It buys three things: the content is
-    embedded rather than escaped, its author is held to strict shortcode syntax so their
-    own mistakes are reported to them, and ``STRIP_CONTENT_HTML`` has authored HTML to
-    strip. Anything else — a plain ``str``, or a bare ``Markup`` from elsewhere — is
-    treated as written by a stranger: escaped at the boundary, and parsed leniently so a
-    typo cannot take a page down.
+    formatted and embedded rather than escaped, its author is held to strict shortcode
+    syntax so their own mistakes are reported to them, and ``STRIP_CONTENT_HTML`` has
+    authored HTML to strip. Anything else — a plain ``str``, or a bare ``Markup`` from
+    elsewhere — is treated as written by a stranger: escaped at the boundary, never
+    formatted, and parsed leniently so a typo cannot take a page down.
 
     Not ``Markup``, so a template cannot render it without going through the renderer.
     Wrapping visitor input in it is how a cross-site scripting hole gets made, which is
@@ -42,9 +44,11 @@ class ContentSource:
 
     Attributes:
         text: The content as the author wrote it, shortcodes and all.
+        text_format: The format it is written in, e.g. ``MARKDOWN``.
     """
 
     text: str
+    text_format: TextFormat = HTML
 
 
 ContentType = str
