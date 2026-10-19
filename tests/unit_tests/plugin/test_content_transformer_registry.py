@@ -80,6 +80,30 @@ class AttrPlugin(ContentTransformerPluginBase):
     shortcodes: ClassVar[dict[str, Shortcode]] = {"wrap": _WrapShortcode()}
 
 
+class _StyledShortcode(Shortcode):
+    name = "styled"
+    description = "Emit markup of its own, as a plugin may."
+    kind = "void"
+
+    def render(
+        self,
+        attrs: ShortcodeAttrs,  # noqa: ARG002
+        content: str,  # noqa: ARG002
+        children: Sequence[Markup],  # noqa: ARG002
+    ) -> str:
+        """Return a span carrying an inline style."""
+        return '<span style="color: red">styled</span>'
+
+
+class StyledPlugin(ContentTransformerPluginBase):
+    """Registers a void shortcode with markup of its own."""
+
+    accepted_content_types: Mapping[ContentType, str] = dict.fromkeys(
+        BUILTIN_CONTENT_TYPES, "Exercised by tests."
+    )
+    shortcodes: ClassVar[dict[str, Shortcode]] = {"styled": _StyledShortcode()}
+
+
 class AnyPlugin(ContentTransformerPluginBase):
     """Declares no constraint on where it runs."""
 
@@ -251,6 +275,55 @@ class TestTrustBoundary:
         result = registry.transform_content([plugin], CmsAuthored("<em>hi</em>"), "post")
 
         assert result == "<em>hi</em>"
+
+    def test_an_author_cannot_forge_a_shortcode_placeholder(
+        self, registry: ContentTransformerRegistry
+    ) -> None:
+        """Placeholders carry a per-render nonce, so one an author writes stays their text."""
+        plugin = StyledPlugin({})
+        registry.grant(plugin, frozenset({"post"}))
+
+        result = registry.transform_content(
+            [plugin], CmsAuthored("[styled] <platzky-shortcode-0-0>"), "post"
+        )
+
+        assert result == '<span style="color: red">styled</span> <platzky-shortcode-0-0>'
+
+    def test_format_text_formats_vouched_content(
+        self, registry: ContentTransformerRegistry
+    ) -> None:
+        """The format turns the author's text into HTML."""
+        result = registry.transform_content(
+            [], CmsAuthored("hi"), "post", format_text=lambda text, _inline: f"<b>{text}</b>"
+        )
+
+        assert result == "<b>hi</b>"
+
+    def test_format_text_does_not_reach_shortcode_output(
+        self, registry: ContentTransformerRegistry
+    ) -> None:
+        """Shortcode output is held out of the format, which sees a placeholder instead."""
+        plugin = ShoutPlugin({})
+        registry.grant(plugin, frozenset({"post"}))
+
+        result = registry.transform_content(
+            [plugin],
+            CmsAuthored("a [shout]b[/shout]"),
+            "post",
+            format_text=lambda text, _inline: text.replace("B", "x"),
+        )
+
+        assert result == "a B"
+
+    def test_format_text_is_not_applied_to_unvouched_content(
+        self, registry: ContentTransformerRegistry
+    ) -> None:
+        """A stranger's text stays the escaped text it was, never formatted into markup."""
+        result = registry.transform_content(
+            [], "hi", "post", format_text=lambda text, _inline: f"<b>{text}</b>"
+        )
+
+        assert result == "hi"
 
     def test_unvouched_tag_without_attributes_still_fires(
         self, registry: ContentTransformerRegistry

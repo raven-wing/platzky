@@ -174,7 +174,8 @@ class Footer(BaseModel):
     """The site-wide footer and how it is presented.
 
     Attributes:
-        content: Footer content in shortcode markup, for one language. Empty shows no footer.
+        content: Footer content in Markdown with shortcodes, for one language. Empty shows no
+            footer.
         collapsible: Whether readers may collapse the footer
     """
 

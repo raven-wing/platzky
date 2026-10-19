@@ -10,10 +10,11 @@ from flask import Blueprint, abort, make_response, render_template, request
 from werkzeug.exceptions import HTTPException
 from werkzeug.wrappers import Response
 
+from platzky.content import ContentTransformer
 from platzky.content_types import PAGE, POST, CmsAuthored
-from platzky.content_types import ContentType as FilterContentType
 from platzky.db.db import DB
 from platzky.db.exceptions import NotFoundError, ReadOnlyStorageError
+from platzky.markdown import render_markdown
 from platzky.models import Page, Post
 from platzky.shortcodes import ShortcodeError
 from platzky.sitemap import SitemapEntry, UrlFor, single_url
@@ -29,7 +30,7 @@ def create_blog_blueprint(
     db: DB,
     blog_prefix: str,
     locale_func: Callable[[], str],
-    content_transformer: Callable[[str, FilterContentType], str],
+    content_transformer: ContentTransformer,
 ) -> Blueprint:
     """Create and configure the blog blueprint with all routes and handlers.
 
@@ -175,7 +176,9 @@ def create_blog_blueprint(
             "post.html",
             post=post,
             # Markup vouches: a post body is written by someone with CMS write access.
-            content=content_transformer(CmsAuthored(post.contentInMarkdown), POST),
+            content=content_transformer(
+                CmsAuthored(post.contentInMarkdown), POST, format_text=render_markdown
+            ),
             post_slug=post_slug,
             form=comment_form.CommentForm(),
             comment_sent=request.args.get("comment_sent"),
@@ -200,7 +203,9 @@ def create_blog_blueprint(
             title=page.title,
             css=page.css,
             # Markup vouches, as for a post body.
-            content=content_transformer(CmsAuthored(page.contentInMarkdown), PAGE),
+            content=content_transformer(
+                CmsAuthored(page.contentInMarkdown), PAGE, format_text=render_markdown
+            ),
             cover_image=cover_image_url,
         )
 

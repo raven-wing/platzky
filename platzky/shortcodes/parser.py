@@ -1,8 +1,9 @@
 """Shortcode parsing and rendering — the document machinery behind ``transform_content``.
 
-A document is parsed once into nodes, then walked three times — strip, filter, render —
-so no pass ever sees what a later one produces. ``render_document`` is the whole public
-surface; everything else here serves it.
+A document is parsed once into nodes, then walked twice — strip, render — so no pass ever
+sees what a later one produces. Rendering formats and filters the author's text, with
+each shortcode's output held out of both. ``render_document`` and
+``as_written`` are the whole public surface; everything else here serves it.
 
 Shortcodes nest, including inside another of the same name: tags are matched with a stack,
 so a closing tag pairs with the opening tag it belongs to rather than the nearest one.
@@ -12,6 +13,7 @@ from __future__ import annotations
 
 import logging
 import re
+import secrets
 from collections.abc import Callable, Iterator, Sequence
 from dataclasses import dataclass
 from html.parser import HTMLParser
@@ -378,24 +380,23 @@ def _strip_text_nodes(nodes: list[_Node]) -> list[str]:
     return removed
 
 
-def _filter_text(nodes: list[_Node], filters: Sequence[Callable[[str], str]]) -> None:
-    """Run every filter over the document's text, and nothing else.
-
-    A filter never sees a tag's attributes, another shortcode's output, or a raw element's
-    content. HTML is held back too, by ``_HTML_TAG_RE``: it is the one kind of markup still
-    sitting in text at this point, since platzky parses shortcodes but not HTML.
-    """
-    for node in _text_nodes(nodes):
-        node.text = _filter_around_html(node.text, filters)
-
-
-def _filter_around_html(text: str, filters: Sequence[Callable[[str], str]]) -> str:
-    """Apply each filter to one node's text, keeping HTML tags out of their reach.
+def _filter_around(
+    text: str, filters: Sequence[Callable[[str], str]], held_back: re.Pattern[str]
+) -> str:
+    """Apply each filter to the text, keeping what ``held_back`` matches out of their reach.
 
     Applied one filter at a time, so a filter's own output is held back from the next.
+
+    Args:
+        text: HTML whose text the filters may change.
+        filters: Every permitted ``transform_text``, in pipeline order.
+        held_back: One capturing group matching what no filter may see.
+
+    Returns:
+        The text after every filter has run.
     """
     for transform in filters:
-        parts = _HTML_TAG_RE.split(text)
+        parts = held_back.split(text)
         text = "".join(part if index % 2 else transform(part) for index, part in enumerate(parts))
     return text
 
@@ -441,8 +442,93 @@ def _describe_child(child: _Node) -> str:
     )
 
 
-def _render_node(node: _Node) -> str:
-    """Render one node to HTML, innermost element first.
+@dataclass(frozen=True)
+class _Authoring:
+    """How the author's text in a document becomes HTML, and how shortcode output is kept out.
+
+    Shortcode output is code's, not the author's, so it must reach neither ``format`` nor
+    a filter: a placeholder stands in for each element while the author's text is
+    processed, and the element's output replaces it afterwards. The nonce keeps an author
+    from writing a placeholder of their own.
+    """
+
+    format: Callable[[str, bool], str]
+    filters: Sequence[Callable[[str], str]]
+    nonce: str
+
+    def placeholder(self, index: int) -> str:
+        """The tag standing in for a run's ``index``-th element while its text is formatted.
+
+        A tag rather than text, so a shortcode alone on a line reaches a Markdown renderer
+        as an HTML block, not as a paragraph that would wrap its output in ``<p>``.
+        """
+        return f"<{self._prefix()}{index}>"
+
+    def to_html(self, source: str, *, format_text: bool, inline: bool) -> str:
+        """Format and filter a run's text, leaving each placeholder where it was.
+
+        Filters run last, on what the reader will see rather than on the author's syntax.
+        HTML tags, placeholders among them, are held back from them, so a filter never
+        sees a tag's attributes or another shortcode's output.
+
+        Args:
+            source: The run's text with a placeholder for each element.
+            format_text: Whether there is author text to format at all.
+            inline: Whether the run sits inside an element, so has no block structure.
+
+        Returns:
+            HTML, still holding the placeholders.
+        """
+        formatted = self.format(source, inline) if format_text else source
+        return _filter_around(formatted, self.filters, _HTML_TAG_RE)
+
+    def substitute(self, html: str, outputs: Sequence[str]) -> str:
+        """Put each element's output where its placeholder is."""
+        return re.sub(
+            rf"<{re.escape(self._prefix())}(\d+)>",
+            lambda match: outputs[int(match.group(1))],
+            html,
+        )
+
+    def _prefix(self) -> str:
+        """The part of every placeholder shared by all elements of this document."""
+        return f"platzky-shortcode-{self.nonce}-"
+
+
+def _render_run(
+    nodes: Sequence[_Node], authoring: _Authoring, *, inline: bool
+) -> tuple[str, list[str]]:
+    """Render sibling nodes: the author's text formatted and filtered, elements as rendered.
+
+    Args:
+        nodes: The siblings, in document order.
+        authoring: How the author's text becomes HTML.
+        inline: Whether the run sits inside an element.
+
+    Returns:
+        The run's HTML, and each element's output in document order.
+    """
+    outputs: list[str] = []
+    source = ""
+    for node in nodes:
+        if isinstance(node, _Text):
+            source += node.text
+        else:
+            source += authoring.placeholder(len(outputs))
+            outputs.append(_render_node(node, authoring))
+    # Whitespace between an element's children is layout, not prose: formatting it would
+    # turn an indented child into a Markdown code block.
+    has_text = any(isinstance(node, _Text) and node.text.strip() for node in nodes)
+    html = authoring.to_html(
+        source,
+        format_text=has_text or not inline,
+        inline=inline and "\n\n" not in source,
+    )
+    return authoring.substitute(html, outputs), outputs
+
+
+def _render_node(node: _RawElement | _Element, authoring: _Authoring) -> str:
+    """Render one element to HTML, innermost element first.
 
     An element's children are rendered one at a time rather than as a joined string, so
     the element can be told how many things it wrapped. Text between them is joined into
@@ -450,13 +536,12 @@ def _render_node(node: _Node) -> str:
     elements, which is what a stylesheet addresses.
 
     Args:
-        node: The node to render.
+        node: The element to render.
+        authoring: How the author's text becomes HTML.
 
     Returns:
-        The node's HTML.
+        The element's HTML.
     """
-    if isinstance(node, _Text):
-        return node.text
     if isinstance(node, _RawElement):
         return _render_element(node.shortcode, node.raw_attrs, node.content, ())
     if disallowed := _disallowed_children(node):
@@ -470,17 +555,14 @@ def _render_node(node: _Node) -> str:
             ", ".join(_describe_child(child) for child in disallowed),
         )
         return ""
-    rendered = [(child, _render_node(child)) for child in node.children]
-    content = "".join(html for _, html in rendered)
-    children = tuple(
-        Markup(html) for child, html in rendered if html and not isinstance(child, _Text)
-    )
+    content, outputs = _render_run(node.children, authoring, inline=True)
+    children = tuple(Markup(html) for html in outputs if html)
     return _render_element(node.shortcode, node.raw_attrs, content, children)
 
 
-def _render(nodes: Sequence[_Node]) -> str:
-    """Render parsed nodes to HTML, innermost element first."""
-    return "".join(_render_node(node) for node in nodes)
+def as_written(text: str, _inline: bool = False) -> str:
+    """Leave text as it is: the format of plain HTML, and of content nobody vouched for."""
+    return text
 
 
 def render_document(
@@ -490,12 +572,14 @@ def render_document(
     *,
     strict: bool,
     strip_html: bool = False,
+    format_text: Callable[[str, bool], str] = as_written,
 ) -> tuple[str, list[str]]:
-    """Parse the content once, strip and filter its text, then render its elements.
+    """Parse the content once, strip its text, then render it.
 
-    The order is the point: a filter that ran after rendering would be handed markup an
-    earlier shortcode produced, and stripping that ran before parsing could not tell HTML
-    left in prose from HTML marked to keep inside a raw element.
+    The order is the point: stripping that ran before parsing could not tell HTML left in
+    prose from HTML marked to keep inside a raw element. Formatting and filtering happen
+    while rendering, on the author's text only, with each shortcode's output held out of
+    both — a filter is never handed markup a shortcode produced.
 
     Args:
         content: The content to transform.
@@ -504,6 +588,8 @@ def render_document(
         strict: Whether a malformed tag is an error.
         strip_html: Whether to remove HTML the author wrote. Text nodes only; a raw
             element's content survives.
+        format_text: Turns the author's text into HTML, told whether the text sits inside
+            an element. Raw element content is not formatted.
 
     Returns:
         The rendered content, and the names of the HTML tags stripped from it.
@@ -515,5 +601,6 @@ def render_document(
         _parse(content, shortcodes, strict=strict) if shortcodes else [_Text(content)]
     )
     removed = _strip_text_nodes(nodes) if strip_html else []
-    _filter_text(nodes, filters)
-    return _render(nodes), removed
+    authoring = _Authoring(format_text, filters, secrets.token_hex(8))
+    rendered, _ = _render_run(nodes, authoring, inline=False)
+    return rendered, removed

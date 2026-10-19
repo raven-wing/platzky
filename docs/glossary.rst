@@ -95,9 +95,9 @@ decides what*. The terms are defined once here and used consistently everywhere 
 
    raw body
       The text between the tags of a ``raw`` :term:`shortcode`. It is lifted out of the
-      document whole: no shortcode inside it renders, no text filter reaches it, and
-      ``STRIP_CONTENT_HTML`` does not remove HTML from it. That is what makes ``[html]``
-      the way an author marks markup they mean.
+      document whole: no shortcode inside it renders, no text filter reaches it, it is
+      not formatted as Markdown, and ``STRIP_CONTENT_HTML`` does not remove HTML from it.
+      That is what makes ``[html]`` the way an author marks markup they mean.
 
    feature flag
       A :class:`~platzky.feature_flags.FeatureFlag` the :term:`site owner` switches under
