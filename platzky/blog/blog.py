@@ -11,13 +11,12 @@ from werkzeug.exceptions import HTTPException
 from werkzeug.wrappers import Response
 
 from platzky.content import ContentTransformer
-from platzky.content_types import PAGE, POST, CmsAuthored
+from platzky.content_types import PAGE, POST
 from platzky.db.db import DB
 from platzky.db.exceptions import NotFoundError, ReadOnlyStorageError
 from platzky.models import Page, Post
 from platzky.shortcodes import ShortcodeError
 from platzky.sitemap import SitemapEntry, UrlFor, single_url
-from platzky.text_format import MARKDOWN
 
 from . import comment_form
 
@@ -175,10 +174,7 @@ def create_blog_blueprint(
         return render_template(
             "post.html",
             post=post,
-            # Markup vouches: a post body is written by someone with CMS write access.
-            content=content_transformer(
-                CmsAuthored(post.contentInMarkdown), POST, text_format=MARKDOWN
-            ),
+            content=content_transformer(post.content, POST),
             post_slug=post_slug,
             form=comment_form.CommentForm(),
             comment_sent=request.args.get("comment_sent"),
@@ -202,10 +198,7 @@ def create_blog_blueprint(
             "page.html",
             title=page.title,
             css=page.css,
-            # Markup vouches, as for a post body.
-            content=content_transformer(
-                CmsAuthored(page.contentInMarkdown), PAGE, text_format=MARKDOWN
-            ),
+            content=content_transformer(page.content, PAGE),
             cover_image=cover_image_url,
         )
 

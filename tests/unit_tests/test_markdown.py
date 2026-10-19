@@ -6,13 +6,18 @@ from platzky.platzky import create_app_from_config
 CONTENT_URLS = ["/blog/slug", "/blog/page/slug"]
 
 
-def _html(url: str, markdown: str, flags: dict[str, bool] | None = None) -> str:
+def _html(
+    url: str,
+    markdown: str,
+    flags: dict[str, bool] | None = None,
+    content_field: str = "contentInMarkdown",
+) -> str:
     content = {
         "author": "author",
         "slug": "slug",
         "title": "title",
         "language": "en",
-        "contentInMarkdown": markdown,
+        content_field: markdown,
         "excerpt": "excerpt",
     }
     config = Config.model_validate(
@@ -109,3 +114,16 @@ def test_indented_shortcode_children_are_not_code_blocks(url: str):
 def test_markdown_never_links_to_script(url: str):
     html = _html(url, "[x](javascript:alert(2))")
     assert 'href="javascript:' not in html
+
+
+@pytest.mark.parametrize("url", CONTENT_URLS)
+def test_html_content_is_not_formatted_as_markdown(url: str):
+    html = _html(url, "<p>**not bold**</p>", content_field="contentInHTML")
+    assert "<p>**not bold**</p>" in html
+    assert "<strong>" not in html
+
+
+@pytest.mark.parametrize("url", CONTENT_URLS)
+def test_html_content_renders_shortcodes(url: str):
+    html = _html(url, '<p>[link url="/x"]go[/link]</p>', content_field="contentInHTML")
+    assert '<a href="/x"' in html

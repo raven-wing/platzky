@@ -4,7 +4,9 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
+from platzky.content import Content
 from platzky.models import Color, Image, Page, Post
+from platzky.text_format import HTML, MARKDOWN
 
 
 def make_post(**overrides) -> Post:
@@ -150,3 +152,20 @@ class TestCssField:
     def test_style_breakout_is_rejected_case_and_whitespace_insensitive(self):
         with pytest.raises(ValidationError):
             make_post(css="</STYLE  ><script>alert(1)</script>")
+
+
+class TestPostContent:
+    def test_markdown_content_is_markdown(self):
+        assert make_post().content == Content("content", MARKDOWN)
+
+    def test_html_content_is_html(self):
+        post = make_post(contentInMarkdown=None, contentInHTML="<p>hi</p>")
+        assert post.content == Content("<p>hi</p>", HTML)
+
+    def test_both_formats_are_rejected(self):
+        with pytest.raises(ValidationError, match="exactly one"):
+            make_post(contentInHTML="<p>hi</p>")
+
+    def test_neither_format_is_rejected(self):
+        with pytest.raises(ValidationError, match="exactly one"):
+            make_post(contentInMarkdown=None)

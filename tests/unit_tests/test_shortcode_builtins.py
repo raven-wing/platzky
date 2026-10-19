@@ -8,7 +8,8 @@ from typing import ClassVar
 
 import pytest
 
-from platzky.content_types import BUILTIN_CONTENT_TYPES, POST, CmsAuthored, ContentType
+from platzky.content import Content
+from platzky.content_types import BUILTIN_CONTENT_TYPES, POST, ContentType
 from platzky.plugin.content_transformer import (
     ContentTransformerPluginBase,
     ContentTransformerRegistry,
@@ -18,6 +19,7 @@ from platzky.shortcodes.image import image_shortcode
 from platzky.shortcodes.link import LinkShortcode, link_shortcode
 from platzky.shortcodes.slideshow import DEFAULT_WIDTH, MAX_SLIDES
 from platzky.shortcodes.urls import LINK_URL_POLICY, UrlFault, UrlNotPermitted, UrlPolicy
+from platzky.text_format import HTML
 
 
 class _BuiltinTestPlugin(ContentTransformerPluginBase):
@@ -38,7 +40,7 @@ def _apply(content: str) -> str:
     plugin = _BuiltinTestPlugin({})
     registry = ContentTransformerRegistry(BUILTIN_CONTENT_TYPES)
     registry.grant(plugin, frozenset({POST}))
-    return registry.transform_content([plugin], CmsAuthored(content), POST)
+    return registry.transform_content([plugin], Content(content, HTML), POST)
 
 
 class TestImageShortcode:
