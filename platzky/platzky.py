@@ -456,7 +456,7 @@ def _add_hsts_header(response: Response) -> Response:
 def _enforce_https(engine: Engine) -> None:
     """Trust the proxy's X-Forwarded-Proto, mark the session cookie secure and send HSTS."""
     # App Engine and Cloud Run terminate TLS in Google's front end, one hop in front of the app.
-    engine.wsgi_app = ProxyFix(engine.wsgi_app, x_proto=1)
+    engine.wsgi_app = ProxyFix(engine.wsgi_app, x_for=0, x_proto=1)
     engine.config["SESSION_COOKIE_SECURE"] = True
     engine.after_request(_add_hsts_header)
 

@@ -57,7 +57,11 @@ debugger, and ``FAKE_LOGIN`` is refused. Set ``LOG_LEVEL`` if you need verbose l
 Outside development mode the application also assumes it is served over HTTPS:
 
 * It trusts ``X-Forwarded-Proto`` from one proxy in front of it, as set by Google App Engine,
-  Cloud Run, or a TLS-terminating reverse proxy such as nginx or Caddy.
+  Cloud Run, or a TLS-terminating reverse proxy such as nginx or Caddy. That proxy must
+  overwrite the header rather than pass on a client-supplied one. When proxies are chained,
+  for example a load balancer in front of nginx, the inner one must forward the outer one's
+  ``X-Forwarded-Proto`` instead of its own scheme. The client address is not taken from
+  ``X-Forwarded-For``.
 * The session cookie is marked ``Secure``.
 * HTTPS responses carry ``Strict-Transport-Security: max-age=31536000``, so browsers use only
   HTTPS for that host for a year.

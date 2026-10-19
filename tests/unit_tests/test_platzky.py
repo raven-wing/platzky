@@ -4,6 +4,7 @@ from collections.abc import Callable, Iterator
 from unittest.mock import MagicMock, patch
 
 import pytest
+from flask import request
 from pydantic import ValidationError
 
 from platzky import create_app_from_config
@@ -304,6 +305,18 @@ class TestHttpsEnforcement:
         response = client.get("/health/liveness")
 
         assert "Strict-Transport-Security" not in response.headers
+
+    def test_ignores_forwarded_client_address(self):
+        app = self._create_app()
+        app.add_url_rule("/remote-addr", "remote_addr", lambda: request.remote_addr or "")
+
+        response = app.test_client().get(
+            "/remote-addr",
+            base_url="http://www.localhost",
+            headers={"X-Forwarded-For": "203.0.113.7"},
+        )
+
+        assert response.text == "127.0.0.1"
 
     def test_no_hsts_in_development(self):
         client = self._create_app(development=True).test_client()
