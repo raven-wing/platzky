@@ -4,12 +4,14 @@ from typing import Any, cast
 import pytest
 from bs4 import BeautifulSoup, Tag
 from flask import Blueprint, url_for
+from flask_babel import get_locale
 from werkzeug.test import TestResponse
 
 from platzky.config import Config
 from platzky.db.json_db import Json
 from platzky.engine import Engine
 from platzky.feature_flags import FakeLogin
+from platzky.language_routing import LOCALE_QUERY_ARG
 from platzky.models import CmsModule
 from platzky.platzky import create_app_from_config
 from platzky.sitemap import SitemapEntry, UrlFor, single_url
@@ -1058,3 +1060,113 @@ def test_sitemap_lists_domainless_languages_on_the_main_host_only(host: str, lis
     response = app.test_client().get("/sitemap.xml", headers={"Host": host})
     assert f"http://{host}/blog/" in response.text
     assert (f"http://{host}/pl/blog/" in response.text) is lists_pl
+
+
+def _babel_locale() -> str:
+    return str(get_locale())
+
+
+def _build_api_test_app() -> Engine:
+    app = _build_three_language_test_app()
+    app.config["WTF_CSRF_ENABLED"] = False
+    api = Blueprint("api", __name__, url_prefix="/api")
+    api.add_url_rule("/greeting", "greeting", _babel_locale, query_locale=True)
+    api.add_url_rule("/form", "form", _babel_locale, methods=["POST"], query_locale=True)
+    api.add_url_rule("/plain", "plain", _babel_locale)
+    app.register_blueprint(api)
+    return app
+
+
+@pytest.mark.parametrize(
+    ("query", "locale"),
+    [
+        ("?lang=pl", "pl"),
+        ("?lang=de", "de"),
+        ("", "en"),
+        ("?lang=xx", "en"),
+        ("?lang=", "en"),
+    ],
+)
+def test_query_locale_route_takes_a_configured_language_from_the_query(query: str, locale: str):
+    client = _build_api_test_app().test_client()
+    response = client.get(f"/api/greeting{query}", headers={"Host": "example.com"})
+    assert response.text == locale
+
+
+def test_query_locale_route_ignores_an_unknown_language_on_another_host():
+    client = _build_api_test_app().test_client()
+    response = client.get("/api/greeting?lang=xx", headers={"Host": "example.de"})
+    assert response.text == "de"
+
+
+def test_route_without_query_locale_ignores_the_query():
+    client = _build_api_test_app().test_client()
+    response = client.get("/api/plain?lang=pl", headers={"Host": "example.com"})
+    assert response.text == "en"
+
+
+def test_query_locale_post_reads_the_language_from_the_query_not_the_body():
+    client = _build_api_test_app().test_client()
+    from_query = client.post("/api/form?lang=pl", headers={"Host": "example.com"})
+    from_body = client.post(
+        "/api/form", data={LOCALE_QUERY_ARG: "pl"}, headers={"Host": "example.com"}
+    )
+    assert (from_query.text, from_body.text) == ("pl", "en")
+
+
+def test_query_locale_and_multilang_together_are_rejected(test_app: Engine):
+    with pytest.raises(ValueError, match="multilang"):
+        test_app.add_url_rule("/both", view_func=_babel_locale, multilang=True, query_locale=True)
+
+
+@pytest.mark.parametrize("multilang_first", [True, False])
+def test_query_locale_and_multilang_on_one_endpoint_are_rejected(
+    test_app: Engine, multilang_first: bool
+):
+    """Two routes of one endpoint would otherwise let /pl/x?lang=de resolve to de."""
+    first, second = ("/x", "/api/x") if multilang_first else ("/api/x", "/x")
+    test_app.add_url_rule(
+        first, "x", _babel_locale, multilang=multilang_first, query_locale=not multilang_first
+    )
+    with pytest.raises(ValueError, match="query_locale"):
+        test_app.add_url_rule(
+            second, "x", _babel_locale, multilang=not multilang_first, query_locale=multilang_first
+        )
+
+
+@pytest.mark.parametrize("query_locale_first", [True, False])
+def test_query_locale_on_and_off_on_one_endpoint_are_rejected(
+    test_app: Engine, query_locale_first: bool
+):
+    """Two routes of one endpoint would otherwise let the opted-out one read ?lang=."""
+    test_app.add_url_rule("/a", "x", _babel_locale, query_locale=query_locale_first)
+    with pytest.raises(ValueError, match="query_locale"):
+        test_app.add_url_rule("/b", "x", _babel_locale, query_locale=not query_locale_first)
+
+
+@pytest.mark.parametrize("query_locale_first", [True, False])
+def test_query_locale_differing_from_a_rule_without_a_view_is_rejected(
+    test_app: Engine, query_locale_first: bool
+):
+    """A rule registered before its view is bound still fixes the endpoint's query_locale."""
+    test_app.add_url_rule("/a", "x", query_locale=query_locale_first)
+    with pytest.raises(ValueError, match="query_locale"):
+        test_app.add_url_rule("/b", "x", _babel_locale, query_locale=not query_locale_first)
+
+
+@pytest.mark.parametrize(("query", "url"), [("?lang=pl", "/pl/blog/"), ("", "/blog/")])
+def test_url_for_in_query_locale_route_follows_the_query_language(query: str, url: str):
+    app = _build_three_language_test_app()
+    api = Blueprint("api", __name__, url_prefix="/api")
+    api.add_url_rule(
+        "/blog-link", "blog_link", lambda: url_for("blog.all_posts"), query_locale=True
+    )
+    app.register_blueprint(api)
+    response = app.test_client().get(f"/api/blog-link{query}", headers={"Host": "example.com"})
+    assert response.text == url
+
+
+def test_query_locale_does_not_change_pages():
+    client = _build_api_test_app().test_client()
+    response = client.get("/blog/?lang=pl", headers={"Host": "example.com"})
+    assert _language_indicator(response) == "en"

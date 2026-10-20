@@ -108,6 +108,42 @@ The view is then also served as ``/<code>/…``. While a request is in a domainl
 ``url_for`` builds its URL with that prefix and ``get_locale()`` returns the language. Views
 without view arguments also get ``hreflang`` links to their version in every language.
 
+.. _plugin-query-locale-routes:
+
+Taking the Language from the Query String
+-----------------------------------------
+
+A JSON endpoint that returns translated text (``gettext``) is called by pages in every
+language, but lives at one unprefixed URL: ``example.com/pl/`` calls ``example.com/api/…``,
+which the host and path resolve to the default language. Register such a route with
+``query_locale=True`` and ``get_locale()`` takes the language from the ``lang`` query argument
+(``platzky.LOCALE_QUERY_ARG``) whenever it names a configured language, including one with its
+own domain. Without the argument, or with an unknown or empty one, the host and path decide as
+usual. The argument is read from the query string only, so ``POST`` requests pass it in the URL
+too:
+
+.. code-block:: python
+
+    @books.route("/api/summary", query_locale=True)
+    def summary():
+        return {"summary": gettext("A book about hobbits")}
+
+The frontend sends the page's language code with each call: the ``current_language`` the page
+was rendered with, e.g. exposed by the template as ``window.APP_LANG = "{{ current_language }}"``
+and sent as ``fetch(`/books/api/summary?lang=${window.APP_LANG}`)``. Don't send the ``<html
+lang>`` attribute: it holds a full tag such as ``pl-PL``, which names no configured language, so
+the request would fall back to the host's language.
+
+``url_for`` in such a route follows the query language too, but builds a URL on the current
+host: ``?lang=pl`` on ``example.com`` builds ``/pl/…``, as the calling page expects. A language
+served on its own domain has no URL on the current host, so for ``?lang=de`` on ``example.com``
+the built link leads to the host's own language instead. Pages call their API on their own host,
+so this only matters when the query names another domain's language.
+
+A route takes its language either from its URL or from the query, so combining
+``query_locale`` with ``multilang`` raises ``ValueError`` when the route is registered.
+Routes without ``query_locale`` ignore the argument.
+
 .. _plugin-sitemap-routes:
 
 Listing Routes in the Sitemap
