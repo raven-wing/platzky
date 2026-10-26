@@ -27,8 +27,8 @@ def _file_payload(raw: str) -> dict[str, Any]:
 
 @pytest.fixture
 def mock_get():
-    with patch("platzky.db.github_json_db.requests.get") as mock:
-        yield mock
+    with patch("platzky.db.github_json_db.requests.Session") as session_cls:
+        yield session_cls.return_value.get
 
 
 def test_returns_correct_db_config_type():
@@ -117,3 +117,35 @@ def test_add_comment_raises_read_only_storage_error(mock_get: MagicMock):
 
     with pytest.raises(ReadOnlyStorageError):
         db.add_comment("Test User", "New comment", "post-1")
+
+
+def test_omits_authorization_header_without_token(mock_get: MagicMock):
+    mock_get.return_value = _api_response(_file_payload("{}"))
+
+    GithubJsonDb("", "owner/repo", "main", "file.json")
+
+    assert "Authorization" not in mock_get.call_args.kwargs["headers"]
+
+
+def test_reports_non_json_api_response_separately_from_data_file_errors(mock_get: MagicMock):
+    response = _api_response({})
+    response.json.side_effect = requests.exceptions.JSONDecodeError("Expecting value", "<html>", 0)
+    mock_get.return_value = response
+
+    with pytest.raises(ValueError, match="not JSON") as exc_info:
+        GithubJsonDb("fake_token", "fake_repo", "main", "file.json")
+
+    assert "Error parsing JSON content" not in str(exc_info.value)
+
+
+def test_session_mounts_retrying_adapter():
+    with patch("platzky.db.github_json_db.requests.Session") as session_cls:
+        session = session_cls.return_value
+        session.get.return_value = _api_response(_file_payload("{}"))
+
+        GithubJsonDb("fake_token", "fake_repo", "main", "file.json")
+
+    prefix, adapter = session.mount.call_args.args
+    assert prefix == "https://"
+    assert adapter.max_retries.total == 3
+    assert 503 in adapter.max_retries.status_forcelist
