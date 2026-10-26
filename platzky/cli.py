@@ -1,6 +1,7 @@
 """Command line interface for running a Platzky application."""
 
 import ipaddress
+import os
 from importlib.resources import files
 from pathlib import Path
 from secrets import token_hex
@@ -45,7 +46,7 @@ def _is_loopback(host: str) -> bool:
     try:
         is_loopback = ipaddress.ip_address(host.strip("[]")).is_loopback
     except ValueError:
-        is_loopback = host.lower() == _LOOPBACK_HOSTNAME
+        is_loopback = host.lower().rstrip(".") == _LOOPBACK_HOSTNAME
     return is_loopback
 
 
@@ -60,7 +61,8 @@ def cli() -> None:
 @click.option("--port", default=5000, show_default=True, type=int, help="Port to bind to.")
 def run(config_path: str, host: str, port: int) -> None:
     """Run the development server, with the reloader, the debugger and fake login available."""
-    if not _is_loopback(host):
+    # The reloader re-executes the CLI in a child process; warn only once.
+    if os.environ.get("WERKZEUG_RUN_MAIN") != "true" and not _is_loopback(host):
         click.secho(
             f"Warning: binding to {host} exposes the development server, with its debugger and "
             "fake login, to the network. Do not use it in production.",
