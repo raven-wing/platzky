@@ -152,6 +152,21 @@ class _JsonPageRepository:
             raise NotFoundError(f"Page with slug {slug} not found")
         return Page.model_validate(wanted_page)
 
+    def get_all(self, lang: str) -> list[Page]:
+        """Retrieve all pages for a specific language.
+
+        Args:
+            lang: Language code (e.g., 'en', 'pl').
+
+        Returns:
+            Pages in that language.
+        """
+        return [
+            Page.model_validate(page)
+            for page in _site_content(self._data).get("pages") or ()
+            if page.get("language", "en") == lang
+        ]
+
 
 class JsonBlogStorage:
     """BlogStorage implementation backed by a JSON document held in a JsonStore."""

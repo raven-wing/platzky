@@ -155,6 +155,21 @@ class TestPages:
         with pytest.raises(NotFoundError):
             storage.pages.get("missing")
 
+    def test_get_all_filters_by_language(self, storage: JsonBlogStorage):
+        assert [p.slug for p in storage.pages.get_all("en")] == ["page-1"]
+        assert storage.pages.get_all("de") == []
+
+    def test_get_all_defaults_missing_language_to_en(self):
+        data = sample_data()
+        del data["site_content"]["pages"][0]["language"]
+        storage = JsonBlogStorage(MemoryStore(data))
+        assert [p.slug for p in storage.pages.get_all("en")] == ["page-1"]
+
+    @pytest.mark.parametrize("site_content", [{}, {"pages": None}])
+    def test_get_all_treats_missing_or_null_pages_as_empty(self, site_content: dict[str, Any]):
+        storage = JsonBlogStorage(MemoryStore({"site_content": site_content}))
+        assert storage.pages.get_all("en") == []
+
     def test_get_raises_not_found_when_pages_key_missing(self):
         storage = JsonBlogStorage(MemoryStore({"site_content": {}}))
         with pytest.raises(NotFoundError):

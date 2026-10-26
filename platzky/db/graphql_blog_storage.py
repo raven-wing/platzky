@@ -310,6 +310,20 @@ class _GraphQLPageRepository:
             raise NotFoundError(f"Page not found: {slug}")
         return Page.model_validate(_standardize_page(page_raw))
 
+    def get_all(self, lang: str) -> list[Page]:  # noqa: ARG002
+        """Retrieve all pages for a specific language.
+
+        Pages here carry no language (they are translated through their slugs), so they
+        cannot be listed per language; this queries nothing.
+
+        Args:
+            lang: Language code (e.g., 'en', 'pl'), unused.
+
+        Returns:
+            An empty list.
+        """
+        return []
+
 
 class GraphQLBlogStorage:
     """BlogStorage implementation backed by a GraphQL CMS.

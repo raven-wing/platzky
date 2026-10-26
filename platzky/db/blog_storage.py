@@ -83,6 +83,19 @@ class PageRepository(Protocol):
         """
         ...
 
+    def get_all(self, lang: str) -> list[Page]:
+        """Retrieve all pages for a specific language.
+
+        A backend whose pages carry no language returns an empty list.
+
+        Args:
+            lang: Language code (e.g., 'en', 'pl').
+
+        Returns:
+            Pages in that language.
+        """
+        ...
+
 
 class BlogStorage(Protocol):
     """Repository-shaped view over an app's blog content."""

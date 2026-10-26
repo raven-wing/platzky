@@ -100,7 +100,7 @@ class GraphQL(DB):
         Returns:
             An empty list
         """
-        return []
+        return self._blog_storage.pages.get_all(lang)
 
     def get_menu_items_in_lang(self, lang: str) -> list[MenuItem]:
         """Retrieve menu items for a specific language.

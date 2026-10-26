@@ -219,6 +219,12 @@ class TestPages:
 
         assert page.css == ""
 
+    def test_get_all_is_not_supported_and_queries_nothing(
+        self, storage: GraphQLBlogStorage, mock_client: Mock
+    ):
+        assert storage.pages.get_all("en") == []
+        mock_client.execute.assert_not_called()
+
     def test_get_raises_not_found_for_unknown_slug(
         self, storage: GraphQLBlogStorage, mock_client: Mock
     ):

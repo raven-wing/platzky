@@ -198,11 +198,16 @@ def test_get_site_settings_delegates_to_site_config(
     assert result == "sentinel"
 
 
-def test_get_all_pages_is_not_supported_and_queries_nothing(
-    graph_ql_db: GraphQL, mock_client: Mock
+def test_get_all_pages_delegates_to_blog_storage(
+    graph_ql_db_with_mocked_repos: tuple[GraphQL, Mock, Mock, Mock],
 ):
-    assert graph_ql_db.get_all_pages("en") == []
-    mock_client.execute.assert_not_called()
+    db, blog_storage, _, _ = graph_ql_db_with_mocked_repos
+    blog_storage.pages.get_all.return_value = ["sentinel"]
+
+    result = db.get_all_pages("en")
+
+    blog_storage.pages.get_all.assert_called_once_with("en")
+    assert result == ["sentinel"]
 
 
 def test_get_menu_items_in_lang_delegates_to_site_config(

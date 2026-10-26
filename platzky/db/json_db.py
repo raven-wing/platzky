@@ -119,11 +119,7 @@ class Json(DB):
         Returns:
             List of Page objects
         """
-        return [
-            Page.model_validate(page)
-            for page in self._get_site_content().get("pages", ())
-            if page.get("language", "en") == lang
-        ]
+        return self._blog_storage.pages.get_all(lang)
 
     def get_post(self, slug: str) -> Post:
         """Returns a post matching the given slug.
