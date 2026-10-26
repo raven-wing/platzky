@@ -82,7 +82,7 @@ def _standardize_page(page: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _standardize_post_by_tag(post: dict[str, Any]) -> dict[str, Any]:
+def _standardize_post_by_tag(post: dict[str, Any], lang: str) -> dict[str, Any]:
     """Standardize post data from get_posts_by_tag GraphQL response.
 
     Posts returned by tag query have fewer fields than full posts.
@@ -90,6 +90,7 @@ def _standardize_post_by_tag(post: dict[str, Any]) -> dict[str, Any]:
 
     Args:
         post: Raw post data from GraphQL get_posts_by_tag response
+        lang: Language the posts were queried for; the query does not return it
 
     Returns:
         Standardized post dictionary compatible with Post model
@@ -102,7 +103,7 @@ def _standardize_post_by_tag(post: dict[str, Any]) -> dict[str, Any]:
         "contentInMarkdown": post.get("contentInMarkdown", ""),
         "comments": [],
         "tags": post["tags"],
-        "language": post.get("language", "en"),
+        "language": lang,
         "coverImage": {
             "url": (post.get("coverImage") or {}).get("image", {}).get("url", ""),
         },
@@ -154,7 +155,7 @@ class _GraphQLPostRepository:
                 comments {
                     author
                     comment
-                    date: createdAt
+                    createdAt
                 }
               }
             }
@@ -240,7 +241,7 @@ class _GraphQLPostRepository:
         raw_posts = self._get_client().execute(post, variable_values={"tag": tag, "lang": lang})[
             "posts"
         ]
-        return [Post.model_validate(_standardize_post_by_tag(p)) for p in raw_posts]
+        return [Post.model_validate(_standardize_post_by_tag(p, lang)) for p in raw_posts]
 
     def add_comment(self, author_name: str, comment: str, post_slug: str) -> None:
         """Add a new comment to a post.

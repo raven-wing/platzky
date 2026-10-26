@@ -58,29 +58,25 @@ class GraphQLSiteConfigRepository:
             """)
         result = self._get_client().execute(query)
 
-        try:
-            logo_raw = result["logos"][0]["logo"]
-            logo_url = logo_raw["image"]["url"]
-            logo = (
-                Image(url=logo_url, alternateText=logo_raw.get("alternateText") or "")
-                if logo_url
-                else None
-            )
-        except IndexError:
-            logo = None
+        # Relation nodes may be null in the CMS, so every level falls back to
+        # the documented default instead of raising.
+        logos = result.get("logos") or []
+        logo_raw = (logos[0] or {}).get("logo") if logos else None
+        logo_url = ((logo_raw or {}).get("image") or {}).get("url")
+        logo = (
+            Image(url=logo_url, alternateText=(logo_raw or {}).get("alternateText") or "")
+            if logo_url
+            else None
+        )
 
-        try:
-            favicon_url = result["favicons"][0]["favicon"]["url"]
-        except IndexError:
-            favicon_url = ""
+        favicons = result.get("favicons") or []
+        favicon_raw = (favicons[0] or {}).get("favicon") if favicons else None
+        favicon_url = (favicon_raw or {}).get("url") or ""
 
-        try:
-            theme = result["themes"][0]
-            primary_color = theme.get("primaryColor") or "white"
-            secondary_color = theme.get("secondaryColor") or "navy"
-        except IndexError:
-            primary_color = "white"
-            secondary_color = "navy"
+        themes = result.get("themes") or []
+        theme = (themes[0] or {}) if themes else {}
+        primary_color = theme.get("primaryColor") or "white"
+        secondary_color = theme.get("secondaryColor") or "navy"
 
         app_description = {
             item["language"]: item.get("applicationDescription", "")

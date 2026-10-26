@@ -1,4 +1,5 @@
 from collections.abc import Iterator
+from typing import Any
 from unittest.mock import Mock, patch
 
 import pytest
@@ -87,6 +88,41 @@ class TestGetSiteSettings:
         settings = repository.get_site_settings()
 
         assert settings.favicon_url == ""
+
+
+class TestNullRelationNodes:
+    @pytest.mark.parametrize(
+        "result",
+        [
+            {
+                "logos": [{"logo": None}],
+                "favicons": [{"favicon": None}],
+                "themes": [None],
+                "applicationSetups": [],
+            },
+            {
+                "logos": [{"logo": {"alternateText": "x", "image": None}}],
+                "favicons": [None],
+                "themes": [{"primaryColor": None, "secondaryColor": None}],
+                "applicationSetups": [],
+            },
+            {"logos": None, "favicons": None, "themes": None, "applicationSetups": []},
+        ],
+    )
+    def test_null_nodes_fall_back_to_defaults(
+        self,
+        repository: GraphQLSiteConfigRepository,
+        mock_client: Mock,
+        result: dict[str, Any],
+    ):
+        mock_client.execute.return_value = result
+
+        settings = repository.get_site_settings()
+
+        assert settings.logo is None
+        assert settings.favicon_url == ""
+        assert settings.primary_color == "white"
+        assert settings.secondary_color == "navy"
 
 
 def test_get_menu_items_in_lang(repository: GraphQLSiteConfigRepository, mock_client: Mock):

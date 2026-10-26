@@ -20,9 +20,9 @@ def get_site_content(data: dict[str, Any]) -> dict[str, Any]:
         The site_content section.
 
     Raises:
-        DBError: If site_content is missing from the document.
+        DBError: If site_content is missing or not an object.
     """
     content = data.get("site_content")
-    if content is None:
+    if not isinstance(content, dict):
         raise DBError("site_content section is missing from database")
     return content

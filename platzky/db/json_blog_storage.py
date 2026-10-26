@@ -60,7 +60,7 @@ class _JsonPostRepository:
         """
         return [
             Post.model_validate(post)
-            for post in _site_content(self._data).get("posts", ())
+            for post in _site_content(self._data).get("posts") or ()
             if post.get("language", "en") == lang
         ]
 
@@ -76,8 +76,8 @@ class _JsonPostRepository:
         """
         return [
             Post.model_validate(post)
-            for post in _site_content(self._data).get("posts", ())
-            if tag in post.get("tags", ()) and post.get("language", "en") == lang
+            for post in _site_content(self._data).get("posts") or ()
+            if tag in (post.get("tags") or ()) and post.get("language", "en") == lang
         ]
 
     def add_comment(self, author_name: str, comment: str, post_slug: str) -> None:

@@ -147,6 +147,37 @@ class TestPosts:
         assert posts[0].slug == "test-post"
         mock_client.execute.assert_called_once()
 
+    def test_get_by_tag_uses_requested_language(
+        self, storage: GraphQLBlogStorage, mock_client: Mock
+    ):
+        mock_client.execute.return_value = {
+            "posts": [
+                {
+                    "tags": ["test"],
+                    "title": "Wpis",
+                    "slug": "wpis",
+                    "excerpt": "e",
+                    "date": "2023-01-01",
+                }
+            ]
+        }
+
+        posts = storage.posts.get_by_tag("test", "pl")
+
+        assert posts[0].language == "pl"
+
+    def test_get_queries_plain_created_at_for_comments(
+        self, storage: GraphQLBlogStorage, mock_client: Mock
+    ):
+        mock_client.execute.return_value = {"post": None}
+
+        with pytest.raises(NotFoundError):
+            storage.posts.get("x")
+
+        query = str(mock_client.execute.call_args.args[0])
+        assert "date: createdAt" not in query
+        assert "createdAt" in query
+
     def test_add_comment_sends_expected_variables(
         self, storage: GraphQLBlogStorage, mock_client: Mock
     ):

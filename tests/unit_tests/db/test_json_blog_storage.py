@@ -95,12 +95,32 @@ class TestPosts:
     def test_get_by_tag_excludes_other_language(self, storage: JsonBlogStorage):
         assert storage.posts.get_by_tag("python", "pl") == []
 
-    def test_add_comment_persists_and_is_visible_via_get(self, storage: JsonBlogStorage):
+    def test_add_comment_persists_and_is_visible_via_get(
+        self, storage: JsonBlogStorage, store: JsonStore
+    ):
         storage.posts.add_comment("Alice", "Nice post!", "post-1")
         post = storage.posts.get("post-1")
         assert len(post.comments) == 1
         assert post.comments[0].author == "Alice"
         assert post.comments[0].comment == "Nice post!"
+
+        # A fresh storage re-loads from the store, so this verifies persistence
+        # (the saved JSON for FileStore), not just the shared in-memory dict.
+        reloaded = JsonBlogStorage(store).posts.get("post-1")
+        assert [(c.author, c.comment) for c in reloaded.comments] == [("Alice", "Nice post!")]
+
+    def test_null_posts_is_treated_as_missing(self):
+        storage = JsonBlogStorage(MemoryStore({"site_content": {"posts": None}}))
+        assert storage.posts.get_all("en") == []
+        assert storage.posts.get_by_tag("python", "en") == []
+        with pytest.raises(NotFoundError):
+            storage.posts.get("post-1")
+
+    def test_null_tags_is_treated_as_missing(self):
+        data = sample_data()
+        data["site_content"]["posts"][0]["tags"] = None
+        storage = JsonBlogStorage(MemoryStore(data))
+        assert storage.posts.get_by_tag("python", "en") == []
 
     def test_add_comment_raises_not_found_for_unknown_slug(self, storage: JsonBlogStorage):
         with pytest.raises(NotFoundError):
@@ -144,6 +164,12 @@ class TestPages:
 class TestSharedDocument:
     def test_site_content_missing_raises_db_error(self):
         storage = JsonBlogStorage(MemoryStore({}))
+        with pytest.raises(DBError):
+            storage.posts.get_all("en")
+
+    @pytest.mark.parametrize("content", [None, [], "text", 5])
+    def test_site_content_not_a_dict_raises_db_error(self, content: object):
+        storage = JsonBlogStorage(MemoryStore({"site_content": content}))
         with pytest.raises(DBError):
             storage.posts.get_all("en")
 
