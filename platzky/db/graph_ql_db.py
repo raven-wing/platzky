@@ -2,15 +2,13 @@
 
 # TODO: Rename file, extract to another library, remove gql and aiohttp from dependencies
 
-import threading
-
 from gql import Client, gql
-from gql.transport.aiohttp import AIOHTTPTransport
 from pydantic import Field
 from typing_extensions import override
 
 from platzky.db.db import DB, DBConfig
 from platzky.db.graphql_blog_storage import GraphQLBlogStorage
+from platzky.db.graphql_client import make_lazy_graphql_client
 from platzky.db.graphql_plugin_config_repository import GraphQLPluginConfigRepository
 from platzky.db.graphql_site_config_repository import GraphQLSiteConfigRepository
 from platzky.db.site_config_repository import SiteSettings
@@ -58,32 +56,25 @@ class GraphQL(DB):
         """
         self.module_name = "graph_ql_db"
         self.db_name = "GraphQLDb"
-        self._endpoint = endpoint
-        self._headers = {"Authorization": "bearer " + token}
-        self._local = threading.local()
-        self._blog_storage = GraphQLBlogStorage(endpoint, token)
-        self._plugins_repository = GraphQLPluginConfigRepository(endpoint, token)
-        self._site_config = GraphQLSiteConfigRepository(endpoint, token)
+        # One lazy, per-thread client source shared by this facade and every
+        # repository, so the endpoint is only ever connected to through it.
+        self._get_client = make_lazy_graphql_client(endpoint, token)
+        self._blog_storage = GraphQLBlogStorage(self._get_client)
+        self._plugins_repository = GraphQLPluginConfigRepository(self._get_client)
+        self._site_config = GraphQLSiteConfigRepository(self._get_client)
         super().__init__()
 
     def __getattr__(self, name: str) -> Client:
-        """Lazily build this thread's GraphQL client on first access to ``client``.
+        """Return this thread's GraphQL client for ``client``, building it on first use.
 
-        AIOHTTPTransport's connect/close cycle tracks a single session flag per
-        transport instance; sharing one Client across threads lets a second
-        thread's connect() race a first thread's still-open session, raising
-        TransportAlreadyConnected. A client per thread avoids that. Implemented via
-        __getattr__ rather than a property because DB.__init_subclass__ forbids
-        subclasses from adding public class-level names not in the DB interface.
+        The client is per thread and shared with the repositories -- see
+        `graphql_client.make_lazy_graphql_client`. Implemented via __getattr__
+        rather than a property because DB.__init_subclass__ forbids subclasses
+        from adding public class-level names not in the DB interface.
         """
         if name != "client":
             raise AttributeError(name)
-        client = getattr(self._local, "client", None)
-        if client is None:
-            transport = AIOHTTPTransport(url=self._endpoint, headers=self._headers)
-            client = Client(transport=transport)
-            self._local.client = client
-        return client
+        return self._get_client()
 
     def get_all_posts(self, lang: str) -> list[Post]:
         """Retrieve all published posts for a specific language.

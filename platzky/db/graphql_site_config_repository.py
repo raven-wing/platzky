@@ -1,8 +1,9 @@
 """SiteConfigRepository implementation backed by a GraphQL (Hygraph) CMS."""
 
-from gql import gql
+from typing import Callable
 
-from platzky.db.graphql_client import make_lazy_graphql_client
+from gql import Client, gql
+
 from platzky.db.site_config_repository import SiteSettings
 from platzky.models import Image, MenuItem
 
@@ -16,14 +17,14 @@ class GraphQLSiteConfigRepository:
     for free by fetching its whole config document in one `find_one`.
     """
 
-    def __init__(self, endpoint: str, token: str) -> None:
-        """Store connection details for a lazily-built, per-thread client.
+    def __init__(self, get_client: Callable[[], Client]) -> None:
+        """Store the client source.
 
         Args:
-            endpoint: GraphQL API endpoint URL.
-            token: Authentication token for the API.
+            get_client: Zero-argument callable returning the GraphQL client to
+                use for the current thread.
         """
-        self._get_client = make_lazy_graphql_client(endpoint, token)
+        self._get_client = get_client
 
     def get_site_settings(self) -> SiteSettings:
         """Retrieve branding and description settings for the app.

@@ -1,8 +1,9 @@
 """Plugin config repository implementation backed by a GraphQL (Hygraph) CMS."""
 
-from gql import gql
+from typing import Callable
 
-from platzky.db.graphql_client import make_lazy_graphql_client
+from gql import Client, gql
+
 from platzky.plugin.plugin_config import PluginConfigBase
 
 
@@ -17,14 +18,14 @@ class GraphQLPluginConfigRepository:
     (``ContentTransformerPluginConfig``, etc.) can find them by name.
     """
 
-    def __init__(self, endpoint: str, token: str) -> None:
-        """Store connection details for a lazily-built, per-thread client.
+    def __init__(self, get_client: Callable[[], Client]) -> None:
+        """Store the client source.
 
         Args:
-            endpoint: GraphQL API endpoint URL.
-            token: Authentication token for the API.
+            get_client: Zero-argument callable returning the GraphQL client to
+                use for the current thread.
         """
-        self._get_client = make_lazy_graphql_client(endpoint, token)
+        self._get_client = get_client
 
     def get_all(self) -> dict[str, PluginConfigBase]:
         """Retrieve configuration data for all plugins, keyed by plugin name.

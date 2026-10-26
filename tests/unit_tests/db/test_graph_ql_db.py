@@ -21,7 +21,7 @@ def mock_client():
 
 @pytest.fixture
 def graph_ql_db(mock_client: Mock):
-    with patch("platzky.db.graph_ql_db.Client", return_value=mock_client):
+    with patch("platzky.db.graphql_client.Client", return_value=mock_client):
         db = GraphQL(
             "https://test.endpoint", "test_token"
         )  # NOSONAR - hardcoded token acceptable in tests
@@ -52,8 +52,8 @@ def test_db_from_config():
 
 def test_graph_ql_init(mock_client: Mock):
     with (
-        patch("platzky.db.graph_ql_db.AIOHTTPTransport") as mock_transport,
-        patch("platzky.db.graph_ql_db.Client", return_value=mock_client) as mock_client_class,
+        patch("platzky.db.graphql_client.AIOHTTPTransport") as mock_transport,
+        patch("platzky.db.graphql_client.Client", return_value=mock_client) as mock_client_class,
     ):
         db = GraphQL(
             "https://test.endpoint", "test_token"
@@ -100,7 +100,7 @@ def graph_ql_db_with_mocked_repos(mock_client: Mock):
     public API without reaching into its private attributes from the test.
     """
     with (
-        patch("platzky.db.graph_ql_db.Client", return_value=mock_client),
+        patch("platzky.db.graphql_client.Client", return_value=mock_client),
         patch("platzky.db.graph_ql_db.GraphQLBlogStorage") as mock_blog_storage_class,
         patch("platzky.db.graph_ql_db.GraphQLPluginConfigRepository") as mock_plugins_class,
         patch("platzky.db.graph_ql_db.GraphQLSiteConfigRepository") as mock_site_config_class,
@@ -257,3 +257,21 @@ def test_health_check_failure(graph_ql_db: GraphQL, mock_client: Mock):
 
     with pytest.raises(Exception, match="Connection failed"):
         graph_ql_db.health_check()
+
+
+def test_facade_and_repositories_share_one_client_source(mock_client: Mock):
+    with (
+        patch("platzky.db.graph_ql_db.GraphQLBlogStorage") as blog_cls,
+        patch("platzky.db.graph_ql_db.GraphQLPluginConfigRepository") as plugins_cls,
+        patch("platzky.db.graph_ql_db.GraphQLSiteConfigRepository") as site_cls,
+    ):
+        db = GraphQL("https://test.endpoint", "test_token")
+
+    sources = {
+        blog_cls.call_args.args[0],
+        plugins_cls.call_args.args[0],
+        site_cls.call_args.args[0],
+    }
+    assert len(sources) == 1
+    with patch("platzky.db.graphql_client.Client", return_value=mock_client):
+        assert db.client is next(iter(sources))()

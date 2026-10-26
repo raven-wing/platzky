@@ -10,7 +10,7 @@ limitation) -- that's covered per-backend in each repository's own test file.
 """
 
 from typing import Any, Callable
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 
@@ -39,39 +39,30 @@ def _mongo_repository(site_content: dict[str, Any]) -> SiteConfigRepository:
 
 
 def _graphql_repository(site_content: dict[str, Any]) -> SiteConfigRepository:
-    with patch("platzky.db.graphql_client.Client") as mock_client_class:
-        mock_client = Mock()
-        if site_content:
-            mock_client.execute.return_value = {
-                "logos": [
-                    {"logo": {"alternateText": "", "image": {"url": site_content["logo_url"]}}}
-                ],
-                "favicons": [{"favicon": {"url": site_content["favicon_url"]}}],
-                "themes": [
-                    {
-                        "primaryColor": site_content["primary_color"],
-                        "secondaryColor": site_content["secondary_color"],
-                    }
-                ],
-                "applicationSetups": [
-                    {"language": lang, "applicationDescription": desc}
-                    for lang, desc in site_content.get("app_description", {}).items()
-                ],
-            }
-        else:
-            mock_client.execute.return_value = {
-                "logos": [],
-                "favicons": [],
-                "themes": [],
-                "applicationSetups": [],
-            }
-        mock_client_class.return_value = mock_client
-        repository = GraphQLSiteConfigRepository("https://test.endpoint", "test_token")
-        # Call the public get_site_settings() once, while Client is still
-        # patched, so the lazily-built client is constructed (and cached) now
-        # rather than on the caller's later, unpatched call.
-        repository.get_site_settings()
-    return repository
+    mock_client = Mock()
+    if site_content:
+        mock_client.execute.return_value = {
+            "logos": [{"logo": {"alternateText": "", "image": {"url": site_content["logo_url"]}}}],
+            "favicons": [{"favicon": {"url": site_content["favicon_url"]}}],
+            "themes": [
+                {
+                    "primaryColor": site_content["primary_color"],
+                    "secondaryColor": site_content["secondary_color"],
+                }
+            ],
+            "applicationSetups": [
+                {"language": lang, "applicationDescription": desc}
+                for lang, desc in site_content.get("app_description", {}).items()
+            ],
+        }
+    else:
+        mock_client.execute.return_value = {
+            "logos": [],
+            "favicons": [],
+            "themes": [],
+            "applicationSetups": [],
+        }
+    return GraphQLSiteConfigRepository(lambda: mock_client)
 
 
 @pytest.fixture(

@@ -1,5 +1,4 @@
-from collections.abc import Iterator
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 
@@ -12,14 +11,8 @@ def mock_client() -> Mock:
 
 
 @pytest.fixture
-def repository(mock_client: Mock) -> Iterator[GraphQLPluginConfigRepository]:
-    # Client stays patched for the whole test (not just fixture setup): the
-    # lazy client is built on the test's first real `get_all()` call, so the
-    # patch must still be active at that point, not just during construction.
-    with patch("platzky.db.graphql_client.Client", return_value=mock_client):
-        yield GraphQLPluginConfigRepository(
-            "https://test.endpoint", "test_token"
-        )  # NOSONAR - hardcoded token acceptable in tests
+def repository(mock_client: Mock) -> GraphQLPluginConfigRepository:
+    return GraphQLPluginConfigRepository(lambda: mock_client)
 
 
 class TestGraphQLPluginConfigRepository:

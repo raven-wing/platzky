@@ -6,7 +6,7 @@ of the shared cases -- present config, no config at all, an inactive plugin
 """
 
 from typing import Any, Callable
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 
@@ -27,25 +27,18 @@ def _mongo_repository(plugins: dict[str, Any]) -> PluginConfigRepository:
 
 
 def _graphql_repository(plugins: dict[str, Any]) -> PluginConfigRepository:
-    with patch("platzky.db.graphql_client.Client") as mock_client_class:
-        mock_client = Mock()
-        mock_client.execute.return_value = {
-            "pluginConfigs": [
-                {
-                    "name": name,
-                    "is_active": cfg.get("is_active", False),
-                    "config": cfg.get("config", {}),
-                }
-                for name, cfg in plugins.items()
-            ]
-        }
-        mock_client_class.return_value = mock_client
-        repository = GraphQLPluginConfigRepository("https://test.endpoint", "test_token")
-        # Call the public get_all() once, while Client is still patched, so the
-        # lazily-built client is constructed (and cached) now rather than on
-        # the caller's later, unpatched call.
-        repository.get_all()
-    return repository
+    mock_client = Mock()
+    mock_client.execute.return_value = {
+        "pluginConfigs": [
+            {
+                "name": name,
+                "is_active": cfg.get("is_active", False),
+                "config": cfg.get("config", {}),
+            }
+            for name, cfg in plugins.items()
+        ]
+    }
+    return GraphQLPluginConfigRepository(lambda: mock_client)
 
 
 @pytest.fixture(

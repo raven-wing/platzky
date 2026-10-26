@@ -5,7 +5,6 @@ from typing import Any, Callable
 from gql import Client, gql
 
 from platzky.db.exceptions import NotFoundError
-from platzky.db.graphql_client import make_lazy_graphql_client
 from platzky.models import Page, Post
 
 
@@ -315,17 +314,16 @@ class _GraphQLPageRepository:
 class GraphQLBlogStorage:
     """BlogStorage implementation backed by a GraphQL CMS.
 
-    ``posts`` and ``pages`` share one lazily-built, per-thread client rather
-    than each building their own -- see `graphql_client.make_lazy_graphql_client`.
+    ``posts`` and ``pages`` share the one client source they are given -- see
+    `graphql_client.make_lazy_graphql_client`.
     """
 
-    def __init__(self, endpoint: str, token: str) -> None:
-        """Build the shared client and the post/page repositories over it.
+    def __init__(self, get_client: Callable[[], Client]) -> None:
+        """Build the post/page repositories over a shared client source.
 
         Args:
-            endpoint: GraphQL API endpoint URL.
-            token: Authentication token for the API.
+            get_client: Zero-argument callable returning the GraphQL client to
+                use for the current thread.
         """
-        get_client = make_lazy_graphql_client(endpoint, token)
         self.posts = _GraphQLPostRepository(get_client)
         self.pages = _GraphQLPageRepository(get_client)
