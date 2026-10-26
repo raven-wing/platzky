@@ -1,8 +1,11 @@
 from typing import cast
 from unittest.mock import MagicMock, mock_open, patch
 
+import pytest
+
 from platzky.config import Config
 from platzky.db import db_loader
+from platzky.db.exceptions import UnknownDBTypeError
 from platzky.db.json_db import Json
 
 
@@ -89,3 +92,29 @@ def test_loading_graph_db_dynamically():
     config = Config.model_validate(config_data)
     db = db_loader.get_db(config.db)
     assert db.__class__.__name__ == "GraphQL"
+
+
+def test_unknown_db_type_names_type_and_lists_backends():
+    with pytest.raises(UnknownDBTypeError) as exc_info:
+        db_loader.get_db_module("nosuch")
+
+    message = str(exc_info.value)
+    assert "'nosuch'" in message
+    for backend in ("json", "json_file", "google_json", "github_json", "graph_ql", "mongodb"):
+        assert backend in message
+    assert isinstance(exc_info.value, ValueError)
+
+
+def test_known_db_type_still_loads_module():
+    module = db_loader.get_db_module("json_file")
+    assert module.__name__ == "platzky.db.json_file_db"
+
+
+def test_missing_dependency_inside_backend_is_not_reported_as_unknown_type():
+    missing = ModuleNotFoundError("No module named 'pymongo'", name="pymongo")
+    with patch("platzky.db.db_loader.importlib.import_module", side_effect=missing):
+        with pytest.raises(ModuleNotFoundError) as exc_info:
+            db_loader.get_db_module("mongodb")
+
+    assert not isinstance(exc_info.value, UnknownDBTypeError)
+    assert exc_info.value.name == "pymongo"

@@ -15,3 +15,10 @@ class NotFoundError(DBError, ValueError):
 
 class ReadOnlyStorageError(DBError):
     """The storage does not support writes."""
+
+
+class UnknownDBTypeError(DBError, ValueError):
+    """The configured ``DB.TYPE`` does not name an available database backend.
+
+    Inherits from ValueError because it reports an invalid configuration value.
+    """
