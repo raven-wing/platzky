@@ -222,7 +222,9 @@ class TestLanguages:
         with pytest.raises(ValidationError, match="needs a domain"):
             Config.model_validate(data)
 
-    @pytest.mark.parametrize("lang_code", ["admin", "static", "lang", "blog", "pl pl", "pl/x"])
+    @pytest.mark.parametrize(
+        "lang_code", ["admin", "login", "logout", "static", "lang", "blog", "pl pl", "pl/x"]
+    )
     def test_domainless_language_code_must_be_a_free_url_segment(self, lang_code: str) -> None:
         data = _config_data(DEFAULT_LANGUAGE="en", LANGUAGES={"en": _EN, lang_code: _PL})
         with pytest.raises(ValidationError, match="used as a URL segment"):

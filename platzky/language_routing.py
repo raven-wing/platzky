@@ -18,7 +18,7 @@ from functools import cached_property
 LANG_CODE_ARG = "lang_code"
 LOCALE_QUERY_ARG = "lang"
 """Query argument naming the language of a ``query_locale`` route, e.g. ``/api/x?lang=uk``."""
-RESERVED_PATH_SEGMENTS = frozenset({"lang", "static", "admin", "login", "health", "api"})
+RESERVED_PATH_SEGMENTS = frozenset({"lang", "static", "admin", "login", "logout", "health", "api"})
 
 
 @dataclass(frozen=True)
