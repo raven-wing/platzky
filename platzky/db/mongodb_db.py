@@ -8,11 +8,13 @@ from pymongo.collection import Collection
 from pymongo.database import Database
 from typing_extensions import override
 
+from platzky.db.blog_storage import BlogStorage
 from platzky.db.db import DB, DBConfig
 from platzky.db.mongo_blog_storage import MongoBlogStorage
 from platzky.db.mongo_plugin_config_repository import MongoPluginConfigRepository
 from platzky.db.mongo_site_config_repository import MongoSiteConfigRepository
-from platzky.db.site_config_repository import SiteSettings
+from platzky.db.plugin_config_repository import PluginConfigRepository
+from platzky.db.site_config_repository import SiteConfigRepository, SiteSettings
 from platzky.models import Footer, MenuItem, Page, PageMeta, Post
 from platzky.plugin.plugin_config import PluginConfigBase
 
@@ -69,9 +71,11 @@ class MongoDB(DB):
         self.pages: Collection[Any] = self.db.pages
         self.menu_items: Collection[Any] = self.db.menu_items
         self.plugins: Collection[Any] = self.db.plugins
-        self._blog_storage = MongoBlogStorage(self.posts, self.pages)
-        self._plugin_config = MongoPluginConfigRepository(self.plugins)
-        self._site_config = MongoSiteConfigRepository(self.site_content, self.menu_items)
+        self._blog_storage: BlogStorage = MongoBlogStorage(self.posts, self.pages)
+        self._plugin_config: PluginConfigRepository = MongoPluginConfigRepository(self.plugins)
+        self._site_config: SiteConfigRepository = MongoSiteConfigRepository(
+            self.site_content, self.menu_items
+        )
 
     @override
     def get_blog_meta(self, lang: str) -> PageMeta:

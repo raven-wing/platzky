@@ -1,4 +1,4 @@
-"""Protocol for site-wide configuration: branding, menu, and home page.
+"""Protocol for site-wide configuration: branding, menu, home page, footer, and blog meta.
 
 Every app needs branding (logo, colors, font, description), a nav menu, and a
 home page regardless of whether it has a blog, so this is kept separate from

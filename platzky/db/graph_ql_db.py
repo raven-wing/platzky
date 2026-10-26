@@ -6,12 +6,14 @@ from gql import Client, gql
 from pydantic import Field
 from typing_extensions import override
 
+from platzky.db.blog_storage import BlogStorage
 from platzky.db.db import DB, DBConfig
 from platzky.db.graphql_blog_storage import GraphQLBlogStorage
 from platzky.db.graphql_client import make_lazy_graphql_client
 from platzky.db.graphql_plugin_config_repository import GraphQLPluginConfigRepository
 from platzky.db.graphql_site_config_repository import GraphQLSiteConfigRepository
-from platzky.db.site_config_repository import SiteSettings
+from platzky.db.plugin_config_repository import PluginConfigRepository
+from platzky.db.site_config_repository import SiteConfigRepository, SiteSettings
 from platzky.models import Footer, MenuItem, Page, PageMeta, Post
 from platzky.plugin.plugin_config import PluginConfigBase
 
@@ -59,9 +61,11 @@ class GraphQL(DB):
         # One lazy, per-thread client source shared by this facade and every
         # repository, so the endpoint is only ever connected to through it.
         self._get_client = make_lazy_graphql_client(endpoint, token)
-        self._blog_storage = GraphQLBlogStorage(self._get_client)
-        self._plugin_config = GraphQLPluginConfigRepository(self._get_client)
-        self._site_config = GraphQLSiteConfigRepository(self._get_client)
+        self._blog_storage: BlogStorage = GraphQLBlogStorage(self._get_client)
+        self._plugin_config: PluginConfigRepository = GraphQLPluginConfigRepository(
+            self._get_client
+        )
+        self._site_config: SiteConfigRepository = GraphQLSiteConfigRepository(self._get_client)
         super().__init__()
 
     def __getattr__(self, name: str) -> Client:
@@ -91,14 +95,11 @@ class GraphQL(DB):
     def get_all_pages(self, lang: str) -> list[Page]:
         """Retrieve all pages for a specific language.
 
-        Pages here carry no language (they are translated through their slugs), so they
-        cannot be listed per language; this queries nothing.
-
         Args:
-            lang: Language code (e.g., 'en', 'pl'), unused
+            lang: Language code (e.g., 'en', 'pl')
 
         Returns:
-            An empty list
+            List of Page objects
         """
         return self._blog_storage.pages.get_all(lang)
 
@@ -175,13 +176,11 @@ class GraphQL(DB):
     def get_blog_meta(self, lang: str) -> PageMeta:
         """Retrieve the blog index's title and description for a specific language.
 
-        The CMS schema has no blog meta content type, so this queries nothing.
-
         Args:
-            lang: Language code (e.g., 'en', 'pl'), unused
+            lang: Language code (e.g., 'en', 'pl')
 
         Returns:
-            An empty blog meta
+            The blog meta
         """
         return self._site_config.get_blog_meta(lang)
 
@@ -189,13 +188,11 @@ class GraphQL(DB):
     def get_footer(self, lang: str) -> Footer:
         """Retrieve the site-wide footer for a specific language.
 
-        The CMS schema has no footer content type, so this queries nothing.
-
         Args:
-            lang: Language code (e.g., 'en', 'pl'), unused
+            lang: Language code (e.g., 'en', 'pl')
 
         Returns:
-            An empty, non-collapsible footer
+            The footer
         """
         return self._site_config.get_footer(lang)
 

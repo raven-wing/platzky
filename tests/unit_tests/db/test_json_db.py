@@ -327,11 +327,7 @@ class TestJsonDbComments:
             mock_datetime.now.return_value = test_date
             db.add_comment("Test User", "Great post!", "post-1")
 
-        post_data = next(
-            p
-            for p in db._get_site_content()["posts"]  # type: ignore[reportPrivateUsage]
-            if p["slug"] == "post-1"
-        )
+        post_data = next(p for p in db.data["site_content"]["posts"] if p["slug"] == "post-1")
         assert len(post_data["comments"]) == 1
         comment = post_data["comments"][0]
         assert comment["author"] == "Test User"

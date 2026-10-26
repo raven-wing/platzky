@@ -24,7 +24,7 @@ class PostRepository(Protocol):
             The matching post.
 
         Raises:
-            NotFoundError: If posts data is missing, or no post has this slug.
+            NotFoundError: If no post has this slug.
         """
         ...
 
@@ -60,7 +60,8 @@ class PostRepository(Protocol):
             post_slug: URL-friendly identifier of the post.
 
         Raises:
-            NotFoundError: If no post has this slug.
+            NotFoundError: If no post has this slug (backends that can check the
+                slug locally; GraphQL surfaces the CMS's error).
             ReadOnlyStorageError: If the backend does not support writes.
         """
         ...
@@ -79,7 +80,7 @@ class PageRepository(Protocol):
             The matching page.
 
         Raises:
-            NotFoundError: If pages data is missing, or no page has this slug.
+            NotFoundError: If no page has this slug.
         """
         ...
 

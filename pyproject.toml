@@ -93,7 +93,7 @@ exclude_lines = [
     "@abc.abstractmethod",
     "if TYPE_CHECKING:",
     "pragma: no cover",
-    "\\(Protocol\\)"
+    "class .*\\bProtocol\\b.*\\):"
 ]
 show_missing = true
 

@@ -5,13 +5,15 @@ from typing import Any
 from pydantic import Field
 from typing_extensions import override
 
+from platzky.db.blog_storage import BlogStorage
 from platzky.db.db import DB, DBConfig
 from platzky.db.json_blog_storage import JsonBlogStorage
 from platzky.db.json_document import JsonDocument, get_site_content
 from platzky.db.json_plugin_config_repository import JsonPluginConfigRepository
 from platzky.db.json_site_config_repository import JsonSiteConfigRepository
 from platzky.db.json_stores import JsonStore, MemoryStore
-from platzky.db.site_config_repository import SiteSettings
+from platzky.db.plugin_config_repository import PluginConfigRepository
+from platzky.db.site_config_repository import SiteConfigRepository, SiteSettings
 from platzky.models import Footer, MenuItem, Page, PageMeta, Post
 from platzky.plugin.plugin_config import PluginConfigBase
 
@@ -63,9 +65,9 @@ class Json(DB):
         # Same dict object the repositories operate on, never reassigned (only
         # mutated in place) -- see `JsonDocument` for why that matters.
         self.data: dict[str, Any] = document.data
-        self._blog_storage = JsonBlogStorage(document)
-        self._plugin_config = JsonPluginConfigRepository(document)
-        self._site_config = JsonSiteConfigRepository(document)
+        self._blog_storage: BlogStorage = JsonBlogStorage(document)
+        self._plugin_config: PluginConfigRepository = JsonPluginConfigRepository(document)
+        self._site_config: SiteConfigRepository = JsonSiteConfigRepository(document)
         self.module_name = "json_db"
         self.db_name = "JsonDb"
 
@@ -162,17 +164,6 @@ class Json(DB):
         """
         return self._blog_storage.posts.get_by_tag(tag, lang)
 
-    def _get_site_content(self) -> dict[str, Any]:
-        """Get the site content dictionary from data.
-
-        Returns:
-            Site content dictionary
-
-        Raises:
-            DBError: If the site_content section is missing from the database
-        """
-        return get_site_content(self.data)
-
     def get_site_settings(self) -> SiteSettings:
         """Retrieve branding and description settings for the app.
 
@@ -224,4 +215,4 @@ class Json(DB):
         Raises an exception if the database is not accessible.
         """
         # Try to access site_content to ensure basic structure is valid
-        self._get_site_content()
+        get_site_content(self.data)
