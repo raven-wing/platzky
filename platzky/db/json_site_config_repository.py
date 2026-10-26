@@ -26,14 +26,14 @@ class JsonSiteConfigRepository:
             The app's site settings.
         """
         site_content = get_site_content(self._data)
-        logo_url = site_content.get("logo_url", "")
+        logo_url = site_content.get("logo_url") or ""
         return SiteSettings(
             logo=Image(url=logo_url) if logo_url else None,
-            favicon_url=site_content.get("favicon_url", ""),
-            primary_color=site_content.get("primary_color", "white"),
-            secondary_color=site_content.get("secondary_color", "navy"),
-            font=site_content.get("font", ""),
-            app_description=site_content.get("app_description", {}),
+            favicon_url=site_content.get("favicon_url") or "",
+            primary_color=site_content.get("primary_color") or "white",
+            secondary_color=site_content.get("secondary_color") or "navy",
+            font=site_content.get("font") or "",
+            app_description=site_content.get("app_description") or {},
         )
 
     def get_menu_items_in_lang(self, lang: str) -> list[MenuItem]:

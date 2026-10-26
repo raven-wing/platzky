@@ -1,4 +1,5 @@
 from platzky.db.json_site_config_repository import JsonSiteConfigRepository
+from platzky.db.site_config_repository import SiteSettings
 from platzky.models import Footer, PageMeta
 
 
@@ -26,6 +27,24 @@ class TestJsonSiteConfigRepository:
         assert settings.primary_color == "blue"
         assert settings.secondary_color == "green"
         assert settings.app_description == {"en": "Hello", "pl": "Cześć"}
+
+    def test_get_site_settings_null_fields_fall_back_to_defaults(self):
+        repository = JsonSiteConfigRepository(
+            {
+                "site_content": {
+                    "logo_url": None,
+                    "favicon_url": None,
+                    "primary_color": None,
+                    "secondary_color": None,
+                    "font": None,
+                    "app_description": None,
+                }
+            }
+        )
+
+        settings = repository.get_site_settings()
+
+        assert settings == SiteSettings()
 
     def test_get_site_settings_defaults(self):
         repository = JsonSiteConfigRepository({"site_content": {}})

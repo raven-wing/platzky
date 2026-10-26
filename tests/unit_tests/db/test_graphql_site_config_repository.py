@@ -119,6 +119,32 @@ class TestNullRelationNodes:
         assert settings.secondary_color == "navy"
 
 
+def test_null_application_description_falls_back_to_empty_string(
+    repository: GraphQLSiteConfigRepository, mock_client: Mock
+):
+    mock_client.execute.return_value = {
+        "logos": [],
+        "favicons": [],
+        "themes": [],
+        "applicationSetups": [{"language": "en", "applicationDescription": None}],
+    }
+
+    assert repository.get_site_settings().app_description == {"en": ""}
+
+
+def test_null_application_setups_is_treated_as_empty(
+    repository: GraphQLSiteConfigRepository, mock_client: Mock
+):
+    mock_client.execute.return_value = {
+        "logos": [],
+        "favicons": [],
+        "themes": [],
+        "applicationSetups": None,
+    }
+
+    assert repository.get_site_settings().app_description == {}
+
+
 def test_get_menu_items_in_lang(repository: GraphQLSiteConfigRepository, mock_client: Mock):
     mock_client.execute.return_value = {
         "menuItems": [{"name": "Home", "url": "/"}, {"name": "About", "url": "/about"}]

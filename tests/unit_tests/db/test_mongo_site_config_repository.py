@@ -2,6 +2,7 @@ from typing import cast
 from unittest.mock import Mock
 
 from platzky.db.mongo_site_config_repository import MongoSiteConfigRepository
+from platzky.db.site_config_repository import SiteSettings
 from platzky.models import Footer, PageMeta
 
 
@@ -81,6 +82,21 @@ class TestMongoSiteConfigRepository:
         repository = MongoSiteConfigRepository(site_content, Mock())
 
         assert repository.get_home_page_path("en") is None
+
+    def test_get_site_settings_null_fields_fall_back_to_defaults(self):
+        site_content = Mock()
+        cast(Mock, site_content.find_one).return_value = {
+            "_id": "config",
+            "logo_url": None,
+            "favicon_url": None,
+            "primary_color": None,
+            "secondary_color": None,
+            "font": None,
+            "app_description": None,
+        }
+        repository = MongoSiteConfigRepository(site_content, Mock())
+
+        assert repository.get_site_settings() == SiteSettings()
 
     def test_get_blog_meta(self):
         site_content = Mock()

@@ -80,8 +80,8 @@ class GraphQLSiteConfigRepository:
         secondary_color = theme.get("secondaryColor") or "navy"
 
         app_description = {
-            item["language"]: item.get("applicationDescription", "")
-            for item in result.get("applicationSetups", [])
+            item["language"]: item.get("applicationDescription") or ""
+            for item in result.get("applicationSetups") or []
         }
 
         return SiteSettings(

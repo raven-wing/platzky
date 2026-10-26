@@ -36,15 +36,15 @@ class MongoSiteConfigRepository:
         Returns:
             The app's site settings.
         """
-        site_config = self._get_site_config()
-        logo_url = site_config.get("logo_url", "") if site_config else ""
+        site_config = self._get_site_config() or {}
+        logo_url = site_config.get("logo_url") or ""
         return SiteSettings(
             logo=Image(url=logo_url) if logo_url else None,
-            favicon_url=site_config.get("favicon_url", "") if site_config else "",
-            primary_color=site_config.get("primary_color", "white") if site_config else "white",
-            secondary_color=(site_config.get("secondary_color", "navy") if site_config else "navy"),
-            font=site_config.get("font", "") if site_config else "",
-            app_description=site_config.get("app_description", {}) if site_config else {},
+            favicon_url=site_config.get("favicon_url") or "",
+            primary_color=site_config.get("primary_color") or "white",
+            secondary_color=site_config.get("secondary_color") or "navy",
+            font=site_config.get("font") or "",
+            app_description=site_config.get("app_description") or {},
         )
 
     def get_menu_items_in_lang(self, lang: str) -> list[MenuItem]:
