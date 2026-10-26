@@ -4,6 +4,7 @@ on:
     branches:
       - main
 
+# INSERT_ISSUE_URLS: true would also need contents: write and pull-requests: write.
 permissions:
   contents: read
   issues: write
@@ -13,5 +14,7 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        persist-credentials: false
     - name: "TODO to Issue"
       uses: "alstr/todo-to-issue-action@64aca8fda7023259aada83ba44ad988c4c443657" # v5.1.14
