@@ -173,7 +173,7 @@ def test_add_comment_delegates_to_blog_storage(
     blog_storage.posts.add_comment.assert_called_once_with("John Doe", "Great post!", "test-post")
 
 
-def test_get_plugins_data_delegates_to_plugins_repository(
+def test_get_plugins_data_delegates_to_plugin_config(
     graph_ql_db_with_mocked_repos: tuple[GraphQL, Mock, Mock, Mock],
 ):
     db, _, plugins_repository, _ = graph_ql_db_with_mocked_repos

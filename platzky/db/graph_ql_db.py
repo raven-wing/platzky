@@ -60,7 +60,7 @@ class GraphQL(DB):
         # repository, so the endpoint is only ever connected to through it.
         self._get_client = make_lazy_graphql_client(endpoint, token)
         self._blog_storage = GraphQLBlogStorage(self._get_client)
-        self._plugins_repository = GraphQLPluginConfigRepository(self._get_client)
+        self._plugin_config = GraphQLPluginConfigRepository(self._get_client)
         self._site_config = GraphQLSiteConfigRepository(self._get_client)
         super().__init__()
 
@@ -216,7 +216,7 @@ class GraphQL(DB):
 
     def get_plugins_data(self) -> dict[str, PluginConfigBase]:
         """Retrieve configuration data for all plugins."""
-        return self._plugins_repository.get_all()
+        return self._plugin_config.get_all()
 
     def health_check(self) -> None:
         """Perform a health check on the GraphQL database.

@@ -70,7 +70,7 @@ class MongoDB(DB):
         self.menu_items: Collection[Any] = self.db.menu_items
         self.plugins: Collection[Any] = self.db.plugins
         self._blog_storage = MongoBlogStorage(self.posts, self.pages)
-        self._plugins_repository = MongoPluginConfigRepository(self.plugins)
+        self._plugin_config = MongoPluginConfigRepository(self.plugins)
         self._site_config = MongoSiteConfigRepository(self.site_content, self.menu_items)
 
     @override
@@ -194,7 +194,7 @@ class MongoDB(DB):
 
     def get_plugins_data(self) -> dict[str, PluginConfigBase]:
         """Retrieve configuration data for all plugins."""
-        return self._plugins_repository.get_all()
+        return self._plugin_config.get_all()
 
     def get_home_page_path(self, locale: str) -> str | None:
         """Retrieve the site-relative path configured as the site's homepage.

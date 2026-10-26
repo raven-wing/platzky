@@ -65,7 +65,7 @@ class Json(DB):
         # this point (only mutated in place) -- see `JsonBlogStorage` for why
         # that matters (`FileStore.load()` isn't memoized).
         self.data: dict[str, Any] = self._blog_storage.data
-        self._plugins = JsonPluginConfigRepository(self.data)
+        self._plugin_config = JsonPluginConfigRepository(self.data)
         self._site_config = JsonSiteConfigRepository(self.data)
         self.module_name = "json_db"
         self.db_name = "JsonDb"
@@ -217,7 +217,7 @@ class Json(DB):
 
     def get_plugins_data(self) -> dict[str, PluginConfigBase]:
         """Retrieve configuration data for all plugins."""
-        return self._plugins.get_all()
+        return self._plugin_config.get_all()
 
     def health_check(self) -> None:
         """Perform a health check on the JSON database.
