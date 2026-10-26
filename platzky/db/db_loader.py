@@ -8,6 +8,7 @@ from platzky.db.db import DB, DBConfig
 from platzky.db.exceptions import UnknownDBTypeError
 
 _BACKEND_SUFFIX = "_db"
+_DB_PACKAGE = ".".join(__name__.split(".")[:-1])
 
 
 def get_db(db_config: DBConfig) -> DB:
@@ -23,8 +24,7 @@ def available_db_types() -> list[str]:
     Returns:
         Sorted values accepted as ``DB.TYPE``, derived from the ``*_db`` modules of the package.
     """
-    parent_module_name = ".".join(__name__.split(".")[:-1])
-    parent = importlib.import_module(parent_module_name)
+    parent = importlib.import_module(_DB_PACKAGE)
     return sorted(
         module.name.removesuffix(_BACKEND_SUFFIX)
         for module in pkgutil.iter_modules(parent.__path__)
@@ -53,5 +53,4 @@ def get_db_module(db_type: str) -> types.ModuleType:
         raise UnknownDBTypeError(
             f"Unknown DB type {db_type!r}; available types: {', '.join(available)}"
         )
-    parent_module_name = ".".join(__name__.split(".")[:-1])
-    return importlib.import_module(f"{parent_module_name}.{db_type}{_BACKEND_SUFFIX}")
+    return importlib.import_module(f"{_DB_PACKAGE}.{db_type}{_BACKEND_SUFFIX}")

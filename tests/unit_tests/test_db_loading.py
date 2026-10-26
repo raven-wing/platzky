@@ -1,3 +1,5 @@
+import importlib
+from types import ModuleType
 from typing import cast
 from unittest.mock import MagicMock, mock_open, patch
 
@@ -111,10 +113,22 @@ def test_known_db_type_still_loads_module():
 
 
 def test_missing_dependency_inside_backend_is_not_reported_as_unknown_type():
-    missing = ModuleNotFoundError("No module named 'pymongo'", name="pymongo")
-    with patch("platzky.db.db_loader.importlib.import_module", side_effect=missing):
+    real_import_module = importlib.import_module
+
+    def import_module(name: str) -> ModuleType:
+        if name == "platzky.db.mongodb_db":
+            raise ModuleNotFoundError("No module named 'pymongo'", name="pymongo")
+        return real_import_module(name)
+
+    with patch("platzky.db.db_loader.importlib.import_module", side_effect=import_module):
         with pytest.raises(ModuleNotFoundError) as exc_info:
             db_loader.get_db_module("mongodb")
 
     assert not isinstance(exc_info.value, UnknownDBTypeError)
     assert exc_info.value.name == "pymongo"
+
+
+@pytest.mark.parametrize("db_type", ["../x", "json_file.x", ""])
+def test_odd_db_type_is_reported_as_unknown(db_type: str):
+    with pytest.raises(UnknownDBTypeError, match="available types"):
+        db_loader.get_db_module(db_type)
