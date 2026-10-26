@@ -1,6 +1,5 @@
 """MongoDB database implementation."""
 
-import datetime
 from typing import Any
 
 from pydantic import Field
@@ -10,7 +9,7 @@ from pymongo.database import Database
 from typing_extensions import override
 
 from platzky.db.db import DB, DBConfig
-from platzky.db.exceptions import NotFoundError
+from platzky.db.mongo_blog_storage import MongoBlogStorage
 from platzky.db.mongo_plugin_config_repository import MongoPluginConfigRepository
 from platzky.db.mongo_site_config_repository import MongoSiteConfigRepository
 from platzky.db.site_config_repository import SiteSettings
@@ -70,6 +69,7 @@ class MongoDB(DB):
         self.pages: Collection[Any] = self.db.pages
         self.menu_items: Collection[Any] = self.db.menu_items
         self.plugins: Collection[Any] = self.db.plugins
+        self._blog_storage = MongoBlogStorage(self.posts, self.pages)
         self._plugins_repository = MongoPluginConfigRepository(self.plugins)
         self._site_config = MongoSiteConfigRepository(self.site_content, self.menu_items)
 
@@ -106,8 +106,7 @@ class MongoDB(DB):
         Returns:
             List of Post objects
         """
-        posts_cursor = self.posts.find({"language": lang})
-        return [Post.model_validate(post) for post in posts_cursor]
+        return self._blog_storage.posts.get_all(lang)
 
     @override
     def get_all_pages(self, lang: str) -> list[Page]:
@@ -119,7 +118,7 @@ class MongoDB(DB):
         Returns:
             List of Page objects
         """
-        return [Page.model_validate(page) for page in self.pages.find({"language": lang})]
+        return self._blog_storage.pages.get_all(lang)
 
     def get_menu_items_in_lang(self, lang: str) -> list[MenuItem]:
         """Retrieve menu items for a specific language.
@@ -144,10 +143,7 @@ class MongoDB(DB):
         Raises:
             NotFoundError: If post not found
         """
-        post_doc = self.posts.find_one({"slug": slug})
-        if post_doc is None:
-            raise NotFoundError(f"Post with slug {slug} not found")
-        return Post.model_validate(post_doc)
+        return self._blog_storage.posts.get(slug)
 
     def get_page(self, slug: str) -> Page:
         """Retrieve a page by its slug.
@@ -161,10 +157,7 @@ class MongoDB(DB):
         Raises:
             NotFoundError: If page not found
         """
-        page_doc = self.pages.find_one({"slug": slug})
-        if page_doc is None:
-            raise NotFoundError(f"Page with slug {slug} not found")
-        return Page.model_validate(page_doc)
+        return self._blog_storage.pages.get(slug)
 
     def get_posts_by_tag(self, tag: str, lang: str) -> list[Post]:
         """Retrieve posts filtered by tag and language.
@@ -176,8 +169,7 @@ class MongoDB(DB):
         Returns:
             List of Post objects matching the tag and language
         """
-        posts_cursor = self.posts.find({"tags": tag, "language": lang})
-        return [Post.model_validate(post) for post in posts_cursor]
+        return self._blog_storage.posts.get_by_tag(tag, lang)
 
     def add_comment(self, author_name: str, comment: str, post_slug: str) -> None:
         """Add a new comment to a post.
@@ -190,16 +182,7 @@ class MongoDB(DB):
         Raises:
             NotFoundError: If post not found
         """
-        now_utc = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
-        comment_doc = {
-            "author": str(author_name),
-            "comment": str(comment),
-            "date": now_utc,
-        }
-
-        result = self.posts.update_one({"slug": post_slug}, {"$push": {"comments": comment_doc}})
-        if result.matched_count == 0:
-            raise NotFoundError(f"Post with slug {post_slug} not found")
+        self._blog_storage.posts.add_comment(author_name, comment, post_slug)
 
     def get_site_settings(self) -> SiteSettings:
         """Retrieve branding and description settings for the app.

@@ -3,9 +3,8 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from platzky.db.exceptions import NotFoundError
 from platzky.db.mongodb_db import MongoDB, MongoDbConfig, db_from_config
-from platzky.models import Footer, MenuItem, PageMeta, Post
+from platzky.models import Footer, MenuItem, PageMeta
 
 
 class TestMongoDbConfig:
@@ -121,35 +120,6 @@ class TestMongoDB:
         }
         assert db.get_footer("en") == Footer(content="Footer", collapsible=True)
 
-    def test_get_all_posts(self, db: MongoDB):
-        # Mock posts data
-        mock_posts = [
-            {
-                "_id": "1",
-                "title": "Post 1",
-                "slug": "post-1",
-                "content": "Content 1",
-                "language": "en",
-                "tags": ["tag1"],
-                "comments": [],
-                "author": "Test Author",
-                "contentInMarkdown": "# Post 1",
-                "excerpt": "Post excerpt",
-                "coverImage": {"url": "/images/post1.jpg"},
-                "date": "2023-01-01T00:00:00",
-            }
-        ]
-
-        mock_find = cast(Mock, db.posts.find)
-        mock_find.return_value = mock_posts
-
-        posts = db.get_all_posts("en")
-
-        assert len(posts) == 1
-        assert isinstance(posts[0], Post)
-        assert posts[0].title == "Post 1"
-        mock_find.assert_called_once_with({"language": "en"})
-
     def test_get_menu_items_in_lang(self, db: MongoDB):
         # Mock menu items data
         mock_find_one = cast(Mock, db.menu_items.find_one)
@@ -170,132 +140,64 @@ class TestMongoDB:
         menu_items = db.get_menu_items_in_lang("fr")
         assert len(menu_items) == 0
 
-    def test_get_post(self, db: MongoDB):
-        # Mock post data
-        mock_post = {
-            "_id": "1",
-            "title": "Post 1",
-            "slug": "post-1",
-            "content": "Content 1",
-            "language": "en",
-            "tags": ["tag1"],
-            "comments": [],
-            "author": "Test Author",
-            "contentInMarkdown": "# Post 1",
-            "excerpt": "Post excerpt",
-            "coverImage": {"url": "/images/post1.jpg"},
-            "date": "2023-01-01T00:00:00",
-        }
+    @pytest.fixture
+    def db_with_mocked_blog_storage(
+        self,
+        mock_client: tuple[Mock, Mock],  # noqa: ARG002
+    ) -> tuple[MongoDB, Mock]:
+        """A MongoDB built with its blog storage mocked out, so delegation can be
+        verified through MongoDB's public API."""
+        with patch("platzky.db.mongodb_db.MongoBlogStorage") as blog_storage_class:
+            db = MongoDB("mongodb://localhost:27017", "test_db")
+        return db, blog_storage_class.return_value
 
-        mock_find_one = cast(Mock, db.posts.find_one)
-        mock_find_one.return_value = mock_post
+    @pytest.mark.usefixtures("mock_client")
+    def test_blog_storage_is_built_over_posts_and_pages(self):
+        with patch("platzky.db.mongodb_db.MongoBlogStorage") as blog_storage_class:
+            db = MongoDB("mongodb://localhost:27017", "test_db")
+        blog_storage_class.assert_called_once_with(db.posts, db.pages)
 
-        post = db.get_post("post-1")
+    def test_get_all_posts_delegates(self, db_with_mocked_blog_storage: tuple[MongoDB, Mock]):
+        db, blog_storage = db_with_mocked_blog_storage
+        blog_storage.posts.get_all.return_value = ["sentinel"]
 
-        assert isinstance(post, Post)
-        assert post.title == "Post 1"
-        mock_find_one.assert_called_once_with({"slug": "post-1"})
+        assert db.get_all_posts("en") == ["sentinel"]
+        blog_storage.posts.get_all.assert_called_once_with("en")
 
-    def test_get_post_not_found(self, db: MongoDB):
-        cast(Mock, db.posts.find_one).return_value = None
+    def test_get_all_pages_delegates(self, db_with_mocked_blog_storage: tuple[MongoDB, Mock]):
+        db, blog_storage = db_with_mocked_blog_storage
+        blog_storage.pages.get_all.return_value = ["sentinel"]
 
-        with pytest.raises(NotFoundError, match="Post with slug non-existent not found"):
-            db.get_post("non-existent")
+        assert db.get_all_pages("en") == ["sentinel"]
+        blog_storage.pages.get_all.assert_called_once_with("en")
 
-    def test_get_all_pages(self, db: MongoDB):
-        mock_find = cast(Mock, db.pages.find)
-        mock_find.return_value = [
-            {
-                "title": "About Tolkien",
-                "slug": "about-tolkien",
-                "author": "Test Author",
-                "contentInMarkdown": "# About",
-                "excerpt": "excerpt",
-                "language": "en",
-                "coverImage": {"url": "/images/tolkien.jpg"},
-            }
-        ]
+    def test_get_post_delegates(self, db_with_mocked_blog_storage: tuple[MongoDB, Mock]):
+        db, blog_storage = db_with_mocked_blog_storage
+        blog_storage.posts.get.return_value = "sentinel"
 
-        pages = db.get_all_pages("en")
+        assert db.get_post("post-1") == "sentinel"
+        blog_storage.posts.get.assert_called_once_with("post-1")
 
-        assert [page.slug for page in pages] == ["about-tolkien"]
-        mock_find.assert_called_once_with({"language": "en"})
+    def test_get_page_delegates(self, db_with_mocked_blog_storage: tuple[MongoDB, Mock]):
+        db, blog_storage = db_with_mocked_blog_storage
+        blog_storage.pages.get.return_value = "sentinel"
 
-    def test_get_page(self, db: MongoDB):
-        # Mock page data
-        mock_page = {
-            "_id": "1",
-            "title": "Page 1",
-            "slug": "page-1",
-            "content": "Page content",
-            "language": "en",
-            "tags": [],
-            "comments": [],
-            "author": "Page Author",
-            "contentInMarkdown": "# Page 1",
-            "excerpt": "Page excerpt",
-            "coverImage": {"url": "/images/page1.jpg"},
-            "date": "2023-01-01T00:00:00",
-        }
+        assert db.get_page("page-1") == "sentinel"
+        blog_storage.pages.get.assert_called_once_with("page-1")
 
-        mock_find_one = cast(Mock, db.pages.find_one)
-        mock_find_one.return_value = mock_page
+    def test_get_posts_by_tag_delegates(self, db_with_mocked_blog_storage: tuple[MongoDB, Mock]):
+        db, blog_storage = db_with_mocked_blog_storage
+        blog_storage.posts.get_by_tag.return_value = ["sentinel"]
 
-        page = db.get_page("page-1")
+        assert db.get_posts_by_tag("tag1", "en") == ["sentinel"]
+        blog_storage.posts.get_by_tag.assert_called_once_with("tag1", "en")
 
-        assert isinstance(page, Post)  # Page is actually Post type in platzky
-        assert page.title == "Page 1"
-        mock_find_one.assert_called_once_with({"slug": "page-1"})
+    def test_add_comment_delegates(self, db_with_mocked_blog_storage: tuple[MongoDB, Mock]):
+        db, blog_storage = db_with_mocked_blog_storage
 
-    def test_get_page_not_found(self, db: MongoDB):
-        cast(Mock, db.pages.find_one).return_value = None
+        db.add_comment("Test User", "Great post!", "post-1")
 
-        with pytest.raises(NotFoundError, match="Page with slug non-existent not found"):
-            db.get_page("non-existent")
-
-    def test_get_posts_by_tag(self, db: MongoDB):
-        mock_posts = [
-            {
-                "title": "Tagged Post",
-                "slug": "tagged-post",
-                "content": "Content",
-                "language": "en",
-                "tags": ["tag1"],
-                "comments": [],
-                "author": "Test Author",
-                "contentInMarkdown": "# Tagged Post",
-                "excerpt": "Excerpt",
-                "coverImage": {"url": "/images/post.jpg"},
-                "date": "2023-01-01T00:00:00",
-            }
-        ]
-        mock_find = cast(Mock, db.posts.find)
-        mock_find.return_value = mock_posts
-
-        result = db.get_posts_by_tag("tag1", "en")
-
-        assert len(result) == 1
-        assert isinstance(result[0], Post)
-        assert result[0].title == "Tagged Post"
-        mock_find.assert_called_once_with({"tags": "tag1", "language": "en"})
-
-    def test_add_comment(self, db: MongoDB):
-        with patch("platzky.db.mongodb_db.datetime.datetime") as mock_datetime:
-            test_date = Mock()
-            test_date.isoformat.return_value = "2023-01-01T12:00:00"
-            mock_datetime.now.return_value = test_date
-
-            db.add_comment("Test User", "Great post!", "post-1")
-
-            expected_comment = {
-                "author": "Test User",
-                "comment": "Great post!",
-                "date": "2023-01-01T12:00:00",
-            }
-
-            cast(Mock, db.posts.update_one).assert_called_once_with(
-                {"slug": "post-1"}, {"$push": {"comments": expected_comment}}
-            )
+        blog_storage.posts.add_comment.assert_called_once_with("Test User", "Great post!", "post-1")
 
     def test_get_plugins_data(self, db: MongoDB):
         cast(Mock, db.plugins.find_one).return_value = {
