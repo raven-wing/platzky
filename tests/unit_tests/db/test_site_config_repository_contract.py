@@ -23,7 +23,9 @@ from gql import Client, GraphQLRequest
 from graphql import print_ast
 
 from platzky.db.graphql_site_config_repository import GraphQLSiteConfigRepository
+from platzky.db.json_document import JsonDocument
 from platzky.db.json_site_config_repository import JsonSiteConfigRepository
+from platzky.db.json_stores import MemoryStore
 from platzky.db.mongo_site_config_repository import MongoSiteConfigRepository
 from platzky.db.site_config_repository import SiteConfigRepository
 from platzky.models import Footer, MenuItem, PageMeta
@@ -48,7 +50,7 @@ _BLOG_META = {
 
 
 def _json_repository(site_content: dict[str, Any]) -> SiteConfigRepository:
-    return JsonSiteConfigRepository({"site_content": site_content})
+    return JsonSiteConfigRepository(JsonDocument(MemoryStore({"site_content": site_content})))
 
 
 def _mongo_repository(site_content: dict[str, Any]) -> SiteConfigRepository:

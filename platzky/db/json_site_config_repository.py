@@ -1,8 +1,6 @@
 """SiteConfigRepository implementation backed by a shared JSON document."""
 
-from typing import Any
-
-from platzky.db.json_document import get_site_content
+from platzky.db.json_document import JsonDocument, get_site_content
 from platzky.db.site_config_repository import SiteSettings
 from platzky.models import Footer, Image, MenuItem, PageMeta
 
@@ -10,14 +8,14 @@ from platzky.models import Footer, Image, MenuItem, PageMeta
 class JsonSiteConfigRepository:
     """Site config repository backed by a shared, in-memory document."""
 
-    def __init__(self, data: dict[str, Any]) -> None:
+    def __init__(self, document: JsonDocument) -> None:
         """Store a reference to the shared document.
 
         Args:
-            data: The loaded document, shared with whatever else (blog
+            document: The loaded document, shared with whatever else (blog
                 storage, plugin config) reads from the same backing store.
         """
-        self._data = data
+        self._document = document
 
     def get_site_settings(self) -> SiteSettings:
         """Retrieve branding and description settings for the app.
@@ -25,7 +23,7 @@ class JsonSiteConfigRepository:
         Returns:
             The app's site settings.
         """
-        site_content = get_site_content(self._data)
+        site_content = get_site_content(self._document.data)
         logo_url = site_content.get("logo_url") or ""
         return SiteSettings(
             logo=Image(url=logo_url) if logo_url else None,
@@ -45,7 +43,7 @@ class JsonSiteConfigRepository:
         Returns:
             Menu items in that language.
         """
-        menu_items_raw = get_site_content(self._data).get("menu_items", {})
+        menu_items_raw = get_site_content(self._document.data).get("menu_items", {})
         items_in_lang = menu_items_raw.get(lang, [])
         return [MenuItem.model_validate(x) for x in items_in_lang]
 
@@ -62,7 +60,7 @@ class JsonSiteConfigRepository:
         Returns:
             Homepage path, or None if no homepage override is configured.
         """
-        home_page_path = get_site_content(self._data).get("home_page_path")
+        home_page_path = get_site_content(self._document.data).get("home_page_path")
         if isinstance(home_page_path, dict):
             return home_page_path.get(locale, home_page_path.get("default"))
         return home_page_path
@@ -76,7 +74,7 @@ class JsonSiteConfigRepository:
         Returns:
             The blog meta, empty if none is configured for the language.
         """
-        return PageMeta(**get_site_content(self._data).get("blog_meta", {}).get(lang, {}))
+        return PageMeta(**get_site_content(self._document.data).get("blog_meta", {}).get(lang, {}))
 
     def get_footer(self, lang: str) -> Footer:
         """Retrieve the site-wide footer for a specific language.
@@ -87,7 +85,7 @@ class JsonSiteConfigRepository:
         Returns:
             The footer, empty and not collapsible if none is configured.
         """
-        footer = get_site_content(self._data).get("footer", {})
+        footer = get_site_content(self._document.data).get("footer", {})
         return Footer(
             content=footer.get("content", {}).get(lang, ""),
             collapsible=bool(footer.get("collapsible", False)),

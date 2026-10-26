@@ -7,7 +7,12 @@ import pytest
 from platzky.db.blog_storage import BlogStorage
 from platzky.db.exceptions import DBError, NotFoundError, ReadOnlyStorageError
 from platzky.db.json_blog_storage import JsonBlogStorage
+from platzky.db.json_document import JsonDocument
 from platzky.db.json_stores import FileStore, JsonStore, MemoryStore, ReadOnlyStore
+
+
+def _storage(store: JsonStore) -> JsonBlogStorage:
+    return JsonBlogStorage(JsonDocument(store))
 
 
 def sample_data() -> dict[str, Any]:
@@ -66,7 +71,7 @@ def store(request: pytest.FixtureRequest, tmp_path: Path) -> JsonStore:
 
 @pytest.fixture
 def storage(store: JsonStore) -> JsonBlogStorage:
-    return JsonBlogStorage(store)
+    return _storage(store)
 
 
 class TestPosts:
@@ -80,7 +85,7 @@ class TestPosts:
             storage.posts.get("missing")
 
     def test_get_raises_not_found_when_posts_key_missing(self):
-        storage = JsonBlogStorage(MemoryStore({"site_content": {}}))
+        storage = _storage(MemoryStore({"site_content": {}}))
         with pytest.raises(NotFoundError):
             storage.posts.get("post-1")
 
@@ -106,11 +111,11 @@ class TestPosts:
 
         # A fresh storage re-loads from the store, so this verifies persistence
         # (the saved JSON for FileStore), not just the shared in-memory dict.
-        reloaded = JsonBlogStorage(store).posts.get("post-1")
+        reloaded = _storage(store).posts.get("post-1")
         assert [(c.author, c.comment) for c in reloaded.comments] == [("Alice", "Nice post!")]
 
     def test_null_posts_is_treated_as_missing(self):
-        storage = JsonBlogStorage(MemoryStore({"site_content": {"posts": None}}))
+        storage = _storage(MemoryStore({"site_content": {"posts": None}}))
         assert storage.posts.get_all("en") == []
         assert storage.posts.get_by_tag("python", "en") == []
         with pytest.raises(NotFoundError):
@@ -119,7 +124,7 @@ class TestPosts:
     def test_null_tags_is_treated_as_missing(self):
         data = sample_data()
         data["site_content"]["posts"][0]["tags"] = None
-        storage = JsonBlogStorage(MemoryStore(data))
+        storage = _storage(MemoryStore(data))
         assert storage.posts.get_by_tag("python", "en") == []
 
     def test_add_comment_raises_not_found_for_unknown_slug(self, storage: JsonBlogStorage):
@@ -128,22 +133,22 @@ class TestPosts:
 
     def test_add_comment_rolls_back_on_save_failure(self):
         data = sample_data()
-        storage = JsonBlogStorage(ReadOnlyStore(data))
+        storage = _storage(ReadOnlyStore(data))
 
         with pytest.raises(ReadOnlyStorageError):
             storage.posts.add_comment("Alice", "Nice post!", "post-1")
 
-        assert storage.data["site_content"]["posts"][0]["comments"] == []
+        assert data["site_content"]["posts"][0]["comments"] == []
 
     def test_add_comment_rollback_removes_comments_key_if_it_was_absent(self):
         data = sample_data()
         del data["site_content"]["posts"][0]["comments"]
-        storage = JsonBlogStorage(ReadOnlyStore(data))
+        storage = _storage(ReadOnlyStore(data))
 
         with pytest.raises(ReadOnlyStorageError):
             storage.posts.add_comment("Alice", "Nice post!", "post-1")
 
-        assert "comments" not in storage.data["site_content"]["posts"][0]
+        assert "comments" not in data["site_content"]["posts"][0]
 
 
 class TestPages:
@@ -162,29 +167,29 @@ class TestPages:
     def test_get_all_defaults_missing_language_to_en(self):
         data = sample_data()
         del data["site_content"]["pages"][0]["language"]
-        storage = JsonBlogStorage(MemoryStore(data))
+        storage = _storage(MemoryStore(data))
         assert [p.slug for p in storage.pages.get_all("en")] == ["page-1"]
 
     @pytest.mark.parametrize("site_content", [{}, {"pages": None}])
     def test_get_all_treats_missing_or_null_pages_as_empty(self, site_content: dict[str, Any]):
-        storage = JsonBlogStorage(MemoryStore({"site_content": site_content}))
+        storage = _storage(MemoryStore({"site_content": site_content}))
         assert storage.pages.get_all("en") == []
 
     def test_get_raises_not_found_when_pages_key_missing(self):
-        storage = JsonBlogStorage(MemoryStore({"site_content": {}}))
+        storage = _storage(MemoryStore({"site_content": {}}))
         with pytest.raises(NotFoundError):
             storage.pages.get("page-1")
 
 
 class TestSharedDocument:
     def test_site_content_missing_raises_db_error(self):
-        storage = JsonBlogStorage(MemoryStore({}))
+        storage = _storage(MemoryStore({}))
         with pytest.raises(DBError):
             storage.posts.get_all("en")
 
     @pytest.mark.parametrize("content", [None, [], "text", 5])
     def test_site_content_not_a_dict_raises_db_error(self, content: object):
-        storage = JsonBlogStorage(MemoryStore({"site_content": content}))
+        storage = _storage(MemoryStore({"site_content": content}))
         with pytest.raises(DBError):
             storage.posts.get_all("en")
 

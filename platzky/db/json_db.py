@@ -7,7 +7,7 @@ from typing_extensions import override
 
 from platzky.db.db import DB, DBConfig
 from platzky.db.json_blog_storage import JsonBlogStorage
-from platzky.db.json_document import get_site_content
+from platzky.db.json_document import JsonDocument, get_site_content
 from platzky.db.json_plugin_config_repository import JsonPluginConfigRepository
 from platzky.db.json_site_config_repository import JsonSiteConfigRepository
 from platzky.db.json_stores import JsonStore, MemoryStore
@@ -59,14 +59,13 @@ class Json(DB):
                 bucket, ...) pass their own.
         """
         super().__init__()
-        self._store: JsonStore = store
-        self._blog_storage = JsonBlogStorage(store)
-        # Same dict object as `self._blog_storage.data`, never reassigned after
-        # this point (only mutated in place) -- see `JsonBlogStorage` for why
-        # that matters (`FileStore.load()` isn't memoized).
-        self.data: dict[str, Any] = self._blog_storage.data
-        self._plugin_config = JsonPluginConfigRepository(self.data)
-        self._site_config = JsonSiteConfigRepository(self.data)
+        document = JsonDocument(store)
+        # Same dict object the repositories operate on, never reassigned (only
+        # mutated in place) -- see `JsonDocument` for why that matters.
+        self.data: dict[str, Any] = document.data
+        self._blog_storage = JsonBlogStorage(document)
+        self._plugin_config = JsonPluginConfigRepository(document)
+        self._site_config = JsonSiteConfigRepository(document)
         self.module_name = "json_db"
         self.db_name = "JsonDb"
 

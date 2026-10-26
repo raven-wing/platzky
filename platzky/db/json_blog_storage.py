@@ -1,21 +1,17 @@
-"""BlogStorage implementation backed by a single shared JSON document.
+"""BlogStorage implementation backed by a shared JSON document.
 
 `JsonBlogStorage` is the JSON-family (`JsonStore`) implementation of the
-`BlogStorage` protocol. It owns the loaded document and its write lock so a
-`Json`-family backend and this class always operate on the exact same
-in-memory dict — `FileStore.load()` re-reads and re-parses the file on every
-call rather than returning a memoized object, so callers must load once and
-share the result rather than each loading independently.
+`BlogStorage` protocol. It operates on a `JsonDocument` shared with the other
+JSON repositories (see `json_document` for why the dict is shared) and takes
+the document's write lock for every write.
 """
 
 import datetime
 import logging
-import threading
-from typing import Any
 
 from platzky.db.exceptions import NotFoundError
+from platzky.db.json_document import JsonDocument
 from platzky.db.json_document import get_site_content as _site_content
-from platzky.db.json_stores import JsonStore
 from platzky.models import Page, Post
 
 logger = logging.getLogger(__name__)
@@ -24,10 +20,8 @@ logger = logging.getLogger(__name__)
 class _JsonPostRepository:
     """Post repository backed by a shared, in-memory document."""
 
-    def __init__(self, data: dict[str, Any], store: JsonStore, write_lock: threading.Lock) -> None:
-        self._data = data
-        self._store = store
-        self._write_lock = write_lock
+    def __init__(self, document: JsonDocument) -> None:
+        self._document = document
 
     def get(self, slug: str) -> Post:
         """Retrieve a single post by its slug.
@@ -41,7 +35,7 @@ class _JsonPostRepository:
         Raises:
             NotFoundError: If posts data is missing, or no post has this slug.
         """
-        all_posts = _site_content(self._data).get("posts")
+        all_posts = _site_content(self._document.data).get("posts")
         if all_posts is None:
             raise NotFoundError("Posts data is missing")
         wanted_post = next((post for post in all_posts if post["slug"] == slug), None)
@@ -60,7 +54,7 @@ class _JsonPostRepository:
         """
         return [
             Post.model_validate(post)
-            for post in _site_content(self._data).get("posts") or ()
+            for post in _site_content(self._document.data).get("posts") or ()
             if post.get("language", "en") == lang
         ]
 
@@ -76,7 +70,7 @@ class _JsonPostRepository:
         """
         return [
             Post.model_validate(post)
-            for post in _site_content(self._data).get("posts") or ()
+            for post in _site_content(self._document.data).get("posts") or ()
             if tag in (post.get("tags") or ()) and post.get("language", "en") == lang
         ]
 
@@ -104,8 +98,8 @@ class _JsonPostRepository:
             "date": now_utc,
         }
 
-        with self._write_lock:
-            posts = _site_content(self._data).get("posts")
+        with self._document.write_lock:
+            posts = _site_content(self._document.data).get("posts")
             if posts is None:
                 raise NotFoundError("Posts data is missing")
             post = next((p for p in posts if p["slug"] == post_slug), None)
@@ -116,7 +110,7 @@ class _JsonPostRepository:
             comments = post.setdefault("comments", [])
             comments.append(comment_data)
             try:
-                self._store.save(self._data)
+                self._document.store.save(self._document.data)
             except BaseException:
                 if had_comments:
                     comments.pop()
@@ -129,8 +123,8 @@ class _JsonPostRepository:
 class _JsonPageRepository:
     """Page repository backed by a shared, in-memory document."""
 
-    def __init__(self, data: dict[str, Any]) -> None:
-        self._data = data
+    def __init__(self, document: JsonDocument) -> None:
+        self._document = document
 
     def get(self, slug: str) -> Page:
         """Retrieve a page by its slug.
@@ -144,7 +138,7 @@ class _JsonPageRepository:
         Raises:
             NotFoundError: If pages data is missing, or no page has this slug.
         """
-        pages = _site_content(self._data).get("pages")
+        pages = _site_content(self._document.data).get("pages")
         if pages is None:
             raise NotFoundError("Pages data is missing")
         wanted_page = next((page for page in pages if page["slug"] == slug), None)
@@ -163,22 +157,20 @@ class _JsonPageRepository:
         """
         return [
             Page.model_validate(page)
-            for page in _site_content(self._data).get("pages") or ()
+            for page in _site_content(self._document.data).get("pages") or ()
             if page.get("language", "en") == lang
         ]
 
 
 class JsonBlogStorage:
-    """BlogStorage implementation backed by a JSON document held in a JsonStore."""
+    """BlogStorage implementation backed by a shared JSON document."""
 
-    def __init__(self, store: JsonStore) -> None:
-        """Load the document once and build the post/page repositories over it.
+    def __init__(self, document: JsonDocument) -> None:
+        """Build the post/page repositories over the shared document.
 
         Args:
-            store: Storage transport to load the document from and persist
-                writes to.
+            document: The loaded document, shared with the other JSON
+                repositories.
         """
-        self.data: dict[str, Any] = store.load()
-        self._write_lock = threading.Lock()
-        self.posts = _JsonPostRepository(self.data, store, self._write_lock)
-        self.pages = _JsonPageRepository(self.data)
+        self.posts = _JsonPostRepository(document)
+        self.pages = _JsonPageRepository(document)

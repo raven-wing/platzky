@@ -50,6 +50,10 @@ Implementations live in `<backend>_<repo>.py` (for example
 its own: it builds its repositories and forwards each method to them, in
 `self._blog_storage`, `self._site_config` and `self._plugin_config`.
 
+The JSON repositories share one `JsonDocument` (`json_document.py`): the loaded
+dict, its store and a write lock. A JSON repository that writes must hold
+`document.write_lock` and persist with `document.store.save(document.data)`.
+
 To add a new repository:
 
 1. Define its Protocol in a new `platzky/db/<name>.py`.

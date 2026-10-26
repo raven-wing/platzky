@@ -29,6 +29,7 @@ from platzky.db.blog_storage import BlogStorage
 from platzky.db.exceptions import NotFoundError
 from platzky.db.graphql_blog_storage import GraphQLBlogStorage
 from platzky.db.json_blog_storage import JsonBlogStorage
+from platzky.db.json_document import JsonDocument
 from platzky.db.json_stores import MemoryStore
 from platzky.db.mongo_blog_storage import MongoBlogStorage
 
@@ -87,7 +88,7 @@ _PAGES = [
 
 def _json_storage(posts: list[dict[str, Any]], pages: list[dict[str, Any]]) -> BlogStorage:
     document = {"site_content": {"posts": copy.deepcopy(posts), "pages": copy.deepcopy(pages)}}
-    return JsonBlogStorage(MemoryStore(document))
+    return JsonBlogStorage(JsonDocument(MemoryStore(document)))
 
 
 @dataclass
