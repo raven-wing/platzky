@@ -1,5 +1,6 @@
 """Command line interface for running a Platzky application."""
 
+import ipaddress
 from importlib.resources import files
 from pathlib import Path
 from secrets import token_hex
@@ -15,6 +16,7 @@ _SCAFFOLD_DIR = "scaffold"
 _CONFIG_FILE_MODE = 0o600
 _CONFIG_TEMPLATE = "config.template.yml"
 _DATA_TEMPLATE = "data.template.json"
+_LOOPBACK_HOSTNAME = "localhost"
 
 
 def _render_scaffold(filename: str, **values: str) -> str:
@@ -31,6 +33,22 @@ def _render_scaffold(filename: str, **values: str) -> str:
     return Template(scaffold_file.read_text(encoding="utf-8")).substitute(values)
 
 
+def _is_loopback(host: str) -> bool:
+    """Tell whether a bind address only accepts connections from the local machine.
+
+    Args:
+        host: Hostname or IP address given to ``--host``
+
+    Returns:
+        True for ``localhost`` and loopback IP addresses (127.0.0.0/8, ::1), False otherwise
+    """
+    try:
+        is_loopback = ipaddress.ip_address(host.strip("[]")).is_loopback
+    except ValueError:
+        is_loopback = host.lower() == _LOOPBACK_HOSTNAME
+    return is_loopback
+
+
 @click.group()
 def cli() -> None:
     """Platzky command line interface."""
@@ -42,6 +60,13 @@ def cli() -> None:
 @click.option("--port", default=5000, show_default=True, type=int, help="Port to bind to.")
 def run(config_path: str, host: str, port: int) -> None:
     """Run the development server, with the reloader, the debugger and fake login available."""
+    if not _is_loopback(host):
+        click.secho(
+            f"Warning: binding to {host} exposes the development server, with its debugger and "
+            "fake login, to the network. Do not use it in production.",
+            fg="yellow",
+            err=True,
+        )
     app = create_app(config_path, development=True)
     # Explicit debug wins over FLASK_DEBUG, which Flask.run would otherwise let override it.
     app.run(host=host, port=port, debug=True)

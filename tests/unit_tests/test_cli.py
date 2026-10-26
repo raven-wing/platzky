@@ -34,6 +34,30 @@ def test_run_defaults_to_localhost():
     app.run.assert_called_once_with(host="127.0.0.1", port=5000, debug=True)
 
 
+def test_run_warns_when_bound_to_non_loopback_host():
+    with patch("platzky.cli.create_app", return_value=MagicMock()):
+        result = CliRunner().invoke(cli, ["run", "--config", "config.yml", "--host", "0.0.0.0"])
+
+    assert result.exit_code == 0
+    assert "exposes the development server" in result.output
+
+
+@pytest.mark.parametrize("host", ["127.0.0.1", "127.0.0.5", "localhost", "::1"])
+def test_run_does_not_warn_on_loopback_host(host: str):
+    with patch("platzky.cli.create_app", return_value=MagicMock()):
+        result = CliRunner().invoke(cli, ["run", "--config", "config.yml", "--host", host])
+
+    assert result.exit_code == 0
+    assert "Warning" not in result.output
+
+
+def test_run_does_not_warn_by_default():
+    with patch("platzky.cli.create_app", return_value=MagicMock()):
+        result = CliRunner().invoke(cli, ["run", "--config", "config.yml"])
+
+    assert "Warning" not in result.output
+
+
 def test_run_requires_config():
     result = CliRunner().invoke(cli, ["run"])
 
