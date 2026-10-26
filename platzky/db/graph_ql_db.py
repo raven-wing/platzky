@@ -175,8 +175,7 @@ class GraphQL(DB):
     def get_blog_meta(self, lang: str) -> PageMeta:
         """Retrieve the blog index's title and description for a specific language.
 
-        The CMS schema has no blog meta content type, so this queries nothing and the blog
-        index uses its default title and the site's description.
+        The CMS schema has no blog meta content type, so this queries nothing.
 
         Args:
             lang: Language code (e.g., 'en', 'pl'), unused
@@ -184,14 +183,13 @@ class GraphQL(DB):
         Returns:
             An empty blog meta
         """
-        return PageMeta()
+        return self._site_config.get_blog_meta(lang)
 
     @override
     def get_footer(self, lang: str) -> Footer:
         """Retrieve the site-wide footer for a specific language.
 
-        The CMS schema has no footer content type, so this queries nothing and
-        shows no footer.
+        The CMS schema has no footer content type, so this queries nothing.
 
         Args:
             lang: Language code (e.g., 'en', 'pl'), unused
@@ -199,7 +197,7 @@ class GraphQL(DB):
         Returns:
             An empty, non-collapsible footer
         """
-        return Footer()
+        return self._site_config.get_footer(lang)
 
     def get_home_page_path(self, locale: str) -> str | None:
         """Retrieve the site-relative path configured as the site's homepage.

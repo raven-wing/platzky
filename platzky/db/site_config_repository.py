@@ -9,7 +9,7 @@ from typing import Protocol
 
 from pydantic import BaseModel, Field
 
-from platzky.models import Image, MenuItem
+from platzky.models import Footer, Image, MenuItem, PageMeta
 
 
 class SiteSettings(BaseModel):
@@ -53,5 +53,27 @@ class SiteConfigRepository(Protocol):
 
         Returns:
             Homepage path, or None if no homepage override is configured.
+        """
+        ...
+
+    def get_blog_meta(self, lang: str) -> PageMeta:
+        """Retrieve the blog index's title and description for a specific language.
+
+        Args:
+            lang: Language code (e.g., 'en', 'pl').
+
+        Returns:
+            The blog meta, empty if none is configured for the language.
+        """
+        ...
+
+    def get_footer(self, lang: str) -> Footer:
+        """Retrieve the site-wide footer for a specific language.
+
+        Args:
+            lang: Language code (e.g., 'en', 'pl').
+
+        Returns:
+            The footer, empty and not collapsible if none is configured.
         """
         ...

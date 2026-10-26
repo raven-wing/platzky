@@ -4,6 +4,7 @@ from unittest.mock import Mock
 import pytest
 
 from platzky.db.graphql_site_config_repository import GraphQLSiteConfigRepository
+from platzky.models import Footer, PageMeta
 
 
 @pytest.fixture
@@ -150,3 +151,17 @@ def test_get_home_page_path_no_application_setups(
     mock_client.execute.return_value = {"applicationSetups": []}
 
     assert repository.get_home_page_path("en") is None
+
+
+def test_get_blog_meta_is_not_supported_and_queries_nothing(
+    repository: GraphQLSiteConfigRepository, mock_client: Mock
+):
+    assert repository.get_blog_meta("en") == PageMeta()
+    mock_client.execute.assert_not_called()
+
+
+def test_get_footer_is_not_supported_and_queries_nothing(
+    repository: GraphQLSiteConfigRepository, mock_client: Mock
+):
+    assert repository.get_footer("en") == Footer()
+    mock_client.execute.assert_not_called()

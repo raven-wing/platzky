@@ -5,7 +5,7 @@ from typing import Callable
 from gql import Client, gql
 
 from platzky.db.site_config_repository import SiteSettings
-from platzky.models import Image, MenuItem
+from platzky.models import Footer, Image, MenuItem, PageMeta
 
 
 class GraphQLSiteConfigRepository:
@@ -143,3 +143,31 @@ class GraphQLSiteConfigRepository:
             )
         except IndexError:
             return None
+
+    def get_blog_meta(self, lang: str) -> PageMeta:  # noqa: ARG002
+        """Retrieve the blog index's title and description for a specific language.
+
+        The CMS schema has no blog meta content type, so this queries nothing and the blog
+        index uses its default title and the site's description.
+
+        Args:
+            lang: Language code (e.g., 'en', 'pl'), unused.
+
+        Returns:
+            An empty blog meta.
+        """
+        return PageMeta()
+
+    def get_footer(self, lang: str) -> Footer:  # noqa: ARG002
+        """Retrieve the site-wide footer for a specific language.
+
+        The CMS schema has no footer content type, so this queries nothing and
+        shows no footer.
+
+        Args:
+            lang: Language code (e.g., 'en', 'pl'), unused.
+
+        Returns:
+            An empty, non-collapsible footer.
+        """
+        return Footer()

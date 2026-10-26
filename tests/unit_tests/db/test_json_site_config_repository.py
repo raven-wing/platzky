@@ -1,4 +1,5 @@
 from platzky.db.json_site_config_repository import JsonSiteConfigRepository
+from platzky.models import Footer, PageMeta
 
 
 class TestJsonSiteConfigRepository:
@@ -76,3 +77,36 @@ class TestJsonSiteConfigRepository:
     def test_get_home_page_path_default(self):
         repository = JsonSiteConfigRepository({"site_content": {}})
         assert repository.get_home_page_path("en") is None
+
+    def test_get_blog_meta(self):
+        blog_meta = {
+            "en": {"title": "Reading notes", "description": "Notes on Tolkien's books."},
+            "pl": {"title": "Notatki", "description": "Notatki o książkach Tolkiena."},
+        }
+        repository = JsonSiteConfigRepository({"site_content": {"blog_meta": blog_meta}})
+        assert repository.get_blog_meta("en") == PageMeta(**blog_meta["en"])
+        assert repository.get_blog_meta("pl").title == "Notatki"
+        assert repository.get_blog_meta("fr") == PageMeta()
+
+    def test_get_blog_meta_not_configured(self):
+        repository = JsonSiteConfigRepository({"site_content": {}})
+        assert repository.get_blog_meta("en") == PageMeta()
+
+    def test_get_footer(self):
+        footer = {"content": {"en": "Footer", "pl": "Stopka"}}
+        repository = JsonSiteConfigRepository({"site_content": {"footer": footer}})
+        assert repository.get_footer("en").content == "Footer"
+        assert repository.get_footer("pl").content == "Stopka"
+        assert repository.get_footer("fr").content == ""
+
+    def test_get_footer_not_configured(self):
+        repository = JsonSiteConfigRepository({"site_content": {}})
+        assert repository.get_footer("en") == Footer()
+
+    def test_get_footer_collapsible(self):
+        repository = JsonSiteConfigRepository({"site_content": {"footer": {"collapsible": True}}})
+        assert repository.get_footer("en").collapsible is True
+
+    def test_get_footer_collapsible_not_configured(self):
+        repository = JsonSiteConfigRepository({"site_content": {}})
+        assert repository.get_footer("en").collapsible is False

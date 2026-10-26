@@ -73,10 +73,6 @@ class MongoDB(DB):
         self._plugins_repository = MongoPluginConfigRepository(self.plugins)
         self._site_config = MongoSiteConfigRepository(self.site_content, self.menu_items)
 
-    def _get_site_config(self) -> dict[str, Any] | None:
-        """Retrieve the site configuration document."""
-        return self.site_content.find_one({"_id": "config"})
-
     @override
     def get_blog_meta(self, lang: str) -> PageMeta:
         """Retrieve the blog index's title and description for a specific language.
@@ -87,8 +83,7 @@ class MongoDB(DB):
         Returns:
             The blog meta, empty if none is configured for the language
         """
-        site_config = self._get_site_config() or {}
-        return PageMeta(**site_config.get("blog_meta", {}).get(lang, {}))
+        return self._site_config.get_blog_meta(lang)
 
     @override
     def get_footer(self, lang: str) -> Footer:
@@ -100,14 +95,7 @@ class MongoDB(DB):
         Returns:
             The footer, empty and not collapsible if none is configured
         """
-        site_config = self._get_site_config()
-        if not site_config or "footer" not in site_config:
-            return Footer()
-        footer = site_config["footer"]
-        return Footer(
-            content=footer.get("content", {}).get(lang, ""),
-            collapsible=bool(footer.get("collapsible", False)),
-        )
+        return self._site_config.get_footer(lang)
 
     def get_all_posts(self, lang: str) -> list[Post]:
         """Retrieve all posts for a specific language.

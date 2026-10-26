@@ -80,7 +80,7 @@ class Json(DB):
         Returns:
             The blog meta, empty if none is configured for the language
         """
-        return PageMeta(**self._get_site_content().get("blog_meta", {}).get(lang, {}))
+        return self._site_config.get_blog_meta(lang)
 
     @override
     def get_footer(self, lang: str) -> Footer:
@@ -92,11 +92,7 @@ class Json(DB):
         Returns:
             The footer, empty and not collapsible if none is configured
         """
-        footer = self._get_site_content().get("footer", {})
-        return Footer(
-            content=footer.get("content", {}).get(lang, ""),
-            collapsible=bool(footer.get("collapsible", False)),
-        )
+        return self._site_config.get_footer(lang)
 
     def get_all_posts(self, lang: str) -> list[Post]:
         """Retrieve all posts for a specific language.

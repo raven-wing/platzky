@@ -4,7 +4,7 @@ from typing import Any
 
 from platzky.db.json_document import get_site_content
 from platzky.db.site_config_repository import SiteSettings
-from platzky.models import Image, MenuItem
+from platzky.models import Footer, Image, MenuItem, PageMeta
 
 
 class JsonSiteConfigRepository:
@@ -66,3 +66,29 @@ class JsonSiteConfigRepository:
         if isinstance(home_page_path, dict):
             return home_page_path.get(locale, home_page_path.get("default"))
         return home_page_path
+
+    def get_blog_meta(self, lang: str) -> PageMeta:
+        """Retrieve the blog index's title and description for a specific language.
+
+        Args:
+            lang: Language code (e.g., 'en', 'pl').
+
+        Returns:
+            The blog meta, empty if none is configured for the language.
+        """
+        return PageMeta(**get_site_content(self._data).get("blog_meta", {}).get(lang, {}))
+
+    def get_footer(self, lang: str) -> Footer:
+        """Retrieve the site-wide footer for a specific language.
+
+        Args:
+            lang: Language code (e.g., 'en', 'pl').
+
+        Returns:
+            The footer, empty and not collapsible if none is configured.
+        """
+        footer = get_site_content(self._data).get("footer", {})
+        return Footer(
+            content=footer.get("content", {}).get(lang, ""),
+            collapsible=bool(footer.get("collapsible", False)),
+        )

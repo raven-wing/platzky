@@ -2,6 +2,7 @@ from typing import cast
 from unittest.mock import Mock
 
 from platzky.db.mongo_site_config_repository import MongoSiteConfigRepository
+from platzky.models import Footer, PageMeta
 
 
 class TestMongoSiteConfigRepository:
@@ -80,3 +81,64 @@ class TestMongoSiteConfigRepository:
         repository = MongoSiteConfigRepository(site_content, Mock())
 
         assert repository.get_home_page_path("en") is None
+
+    def test_get_blog_meta(self):
+        site_content = Mock()
+        cast(Mock, site_content.find_one).return_value = {
+            "_id": "config",
+            "blog_meta": {"en": {"title": "Reading notes", "description": "On Tolkien."}},
+        }
+        repository = MongoSiteConfigRepository(site_content, Mock())
+
+        assert repository.get_blog_meta("en") == PageMeta(
+            title="Reading notes", description="On Tolkien."
+        )
+        assert repository.get_blog_meta("pl") == PageMeta()
+
+    def test_get_blog_meta_no_data(self):
+        site_content = Mock()
+        cast(Mock, site_content.find_one).return_value = None
+        repository = MongoSiteConfigRepository(site_content, Mock())
+
+        assert repository.get_blog_meta("en") == PageMeta()
+
+    def test_get_footer(self):
+        site_content = Mock()
+        find_one = cast(Mock, site_content.find_one)
+        find_one.return_value = {
+            "_id": "config",
+            "footer": {"content": {"en": "Footer", "pl": "Stopka"}},
+        }
+        repository = MongoSiteConfigRepository(site_content, Mock())
+
+        assert repository.get_footer("en").content == "Footer"
+        assert repository.get_footer("pl").content == "Stopka"
+        assert repository.get_footer("fr").content == ""
+        find_one.assert_called_with({"_id": "config"})
+
+    def test_get_footer_not_configured(self):
+        site_content = Mock()
+        cast(Mock, site_content.find_one).return_value = {"_id": "config"}
+        repository = MongoSiteConfigRepository(site_content, Mock())
+
+        assert repository.get_footer("en") == Footer()
+        assert repository.get_footer("en").collapsible is False
+
+    def test_get_footer_no_data(self):
+        site_content = Mock()
+        cast(Mock, site_content.find_one).return_value = None
+        repository = MongoSiteConfigRepository(site_content, Mock())
+
+        assert repository.get_footer("en") == Footer()
+
+    def test_get_footer_is_read_in_a_single_query(self):
+        site_content = Mock()
+        find_one = cast(Mock, site_content.find_one)
+        find_one.return_value = {
+            "_id": "config",
+            "footer": {"content": {"en": "Footer"}, "collapsible": True},
+        }
+        repository = MongoSiteConfigRepository(site_content, Mock())
+
+        assert repository.get_footer("en") == Footer(content="Footer", collapsible=True)
+        find_one.assert_called_once_with({"_id": "config"})

@@ -10,7 +10,6 @@ from platzky.db.graph_ql_db import (
     db_config_type,
     db_from_config,
 )
-from platzky.models import Footer, PageMeta
 
 
 @pytest.fixture
@@ -234,16 +233,28 @@ def test_get_home_page_path_delegates_to_site_config(
     assert result == "/blog/page/about"
 
 
-def test_get_blog_meta_is_not_supported_and_queries_nothing(
-    graph_ql_db: GraphQL, mock_client: Mock
+def test_get_blog_meta_delegates_to_site_config(
+    graph_ql_db_with_mocked_repos: tuple[GraphQL, Mock, Mock, Mock],
 ):
-    assert graph_ql_db.get_blog_meta("en") == PageMeta()
-    mock_client.execute.assert_not_called()
+    db, _, _, site_config = graph_ql_db_with_mocked_repos
+    site_config.get_blog_meta.return_value = "sentinel"
+
+    result = db.get_blog_meta("en")
+
+    site_config.get_blog_meta.assert_called_once_with("en")
+    assert result == "sentinel"
 
 
-def test_get_footer_is_not_supported_and_queries_nothing(graph_ql_db: GraphQL, mock_client: Mock):
-    assert graph_ql_db.get_footer("en") == Footer()
-    mock_client.execute.assert_not_called()
+def test_get_footer_delegates_to_site_config(
+    graph_ql_db_with_mocked_repos: tuple[GraphQL, Mock, Mock, Mock],
+):
+    db, _, _, site_config = graph_ql_db_with_mocked_repos
+    site_config.get_footer.return_value = "sentinel"
+
+    result = db.get_footer("en")
+
+    site_config.get_footer.assert_called_once_with("en")
+    assert result == "sentinel"
 
 
 def test_health_check_success(graph_ql_db: GraphQL, mock_client: Mock):

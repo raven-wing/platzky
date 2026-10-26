@@ -101,35 +101,15 @@ class TestJsonDb:
         assert app_description.get("de") == "Deutsche Beschreibung"
         assert app_description.get("fr", "") == ""
 
-    def test_get_blog_meta(self):
-        blog_meta = {
-            "en": {"title": "Reading notes", "description": "Notes on Tolkien's books."},
-            "pl": {"title": "Notatki", "description": "Notatki o książkach Tolkiena."},
-        }
+    def test_get_blog_meta_forwards_to_site_config(self):
+        blog_meta = {"en": {"title": "Reading notes", "description": "Notes."}}
         db = Json(MemoryStore({"site_content": {"blog_meta": blog_meta}}))
         assert db.get_blog_meta("en") == PageMeta(**blog_meta["en"])
-        assert db.get_blog_meta("pl").title == "Notatki"
-        assert db.get_blog_meta("fr") == PageMeta()
 
-    def test_get_blog_meta_not_configured(self, db: Json):
-        assert db.get_blog_meta("en") == PageMeta()
-
-    def test_get_footer(self):
-        footer = {"content": {"en": "Footer", "pl": "Stopka"}}
+    def test_get_footer_forwards_to_site_config(self):
+        footer = {"content": {"en": "Footer"}, "collapsible": True}
         db = Json(MemoryStore({"site_content": {"footer": footer}}))
-        assert db.get_footer("en").content == "Footer"
-        assert db.get_footer("pl").content == "Stopka"
-        assert db.get_footer("fr").content == ""
-
-    def test_get_footer_not_configured(self, db: Json):
-        assert db.get_footer("en") == Footer()
-
-    def test_get_footer_collapsible(self):
-        db = Json(MemoryStore({"site_content": {"footer": {"collapsible": True}}}))
-        assert db.get_footer("en").collapsible is True
-
-    def test_get_footer_collapsible_not_configured(self, db: Json):
-        assert db.get_footer("en").collapsible is False
+        assert db.get_footer("en") == Footer(content="Footer", collapsible=True)
 
     def test_get_all_posts(self, db: Json):
         posts = db.get_all_posts("en")
