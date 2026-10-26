@@ -18,6 +18,7 @@ cannot raise `NotFoundError`; GraphQL `get_by_tag` returns lightweight posts
 """
 
 import copy
+import datetime
 from dataclasses import dataclass
 from typing import Any, Callable
 
@@ -53,6 +54,9 @@ _POSTS = [
         "language": "en",
         "tags": ["web"],
         "date": "2024-02-02T03:04:05+00:00",
+        "comments": [
+            {"author": "Cat", "comment": "First!", "date": "2024-01-03T00:00:00+00:00"},
+        ],
     },
     {
         "slug": "czesc",
@@ -157,7 +161,10 @@ class _FakeGraphQLClient:
             "title": post["title"],
             "excerpt": post["excerpt"],
             "contentInRichText": {"html": post["contentInMarkdown"]},
-            "comments": [],
+            "comments": [
+                {"author": c["author"], "comment": c["comment"], "createdAt": c["date"]}
+                for c in post.get("comments", [])
+            ],
             "tags": post["tags"],
             "language": post["language"],
             "coverImage": None,
@@ -235,6 +242,17 @@ class TestPostRepositoryContract:
         assert post.tags == ["python", "web"]
         assert post.comments == []
 
+    def test_get_returns_existing_comments_with_author_text_and_date(
+        self, make_storage: StorageFactory
+    ):
+        storage = make_storage(_POSTS, _PAGES)
+
+        comments = storage.posts.get("second").comments
+
+        assert [(c.author, c.comment, c.date) for c in comments] == [
+            ("Cat", "First!", datetime.datetime(2024, 1, 3, tzinfo=datetime.timezone.utc))
+        ]
+
     def test_get_unknown_slug_raises_not_found(self, make_storage: StorageFactory):
         storage = make_storage(_POSTS, _PAGES)
 
@@ -287,7 +305,7 @@ class TestPostRepositoryContract:
 
         comments = storage.posts.get("hello").comments
         assert [(c.author, c.comment) for c in comments] == [("Bob", "Nice post")]
-        assert storage.posts.get("second").comments == []
+        assert storage.posts.get("czesc").comments == []
 
     def test_add_comment_appends_to_existing_comments(self, make_local_storage: StorageFactory):
         storage = make_local_storage(_POSTS, _PAGES)
