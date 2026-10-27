@@ -1,13 +1,14 @@
 import datetime
+from datetime import timezone
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 from pydantic import ValidationError
 
 from platzky.db.exceptions import DBError, NotFoundError, ReadOnlyStorageError
 from platzky.db.json_db import Json, JsonDbConfig, db_from_config
-from platzky.db.json_stores import MemoryStore, ReadOnlyStore
+from platzky.db.json_stores import JsonStore, MemoryStore, ReadOnlyStore
 from platzky.models import Footer, MenuItem, Page, PageMeta, Post
 
 
@@ -23,10 +24,12 @@ class TestJsonDbConfig:
 
 class TestFactoryFunctions:
     def test_db_from_config(self):
-        config = JsonDbConfig(TYPE="json_db", DATA={"test": "data"})
+        config = JsonDbConfig(
+            TYPE="json_db", DATA={"site_content": {"app_description": {"en": "Configured"}}}
+        )
         db = db_from_config(config)
         assert isinstance(db, Json)
-        assert db.data == {"test": "data"}
+        assert db.get_site_settings().app_description == {"en": "Configured"}
 
 
 class TestJsonDb:
@@ -101,35 +104,15 @@ class TestJsonDb:
         assert app_description.get("de") == "Deutsche Beschreibung"
         assert app_description.get("fr", "") == ""
 
-    def test_get_blog_meta(self):
-        blog_meta = {
-            "en": {"title": "Reading notes", "description": "Notes on Tolkien's books."},
-            "pl": {"title": "Notatki", "description": "Notatki o książkach Tolkiena."},
-        }
+    def test_get_blog_meta_forwards_to_site_config(self):
+        blog_meta = {"en": {"title": "Reading notes", "description": "Notes."}}
         db = Json(MemoryStore({"site_content": {"blog_meta": blog_meta}}))
         assert db.get_blog_meta("en") == PageMeta(**blog_meta["en"])
-        assert db.get_blog_meta("pl").title == "Notatki"
-        assert db.get_blog_meta("fr") == PageMeta()
 
-    def test_get_blog_meta_not_configured(self, db: Json):
-        assert db.get_blog_meta("en") == PageMeta()
-
-    def test_get_footer(self):
-        footer = {"content": {"en": "Footer", "pl": "Stopka"}}
+    def test_get_footer_forwards_to_site_config(self):
+        footer = {"content": {"en": "Footer"}, "collapsible": True}
         db = Json(MemoryStore({"site_content": {"footer": footer}}))
-        assert db.get_footer("en").content == "Footer"
-        assert db.get_footer("pl").content == "Stopka"
-        assert db.get_footer("fr").content == ""
-
-    def test_get_footer_not_configured(self, db: Json):
-        assert db.get_footer("en") == Footer()
-
-    def test_get_footer_collapsible(self):
-        db = Json(MemoryStore({"site_content": {"footer": {"collapsible": True}}}))
-        assert db.get_footer("en").collapsible is True
-
-    def test_get_footer_collapsible_not_configured(self, db: Json):
-        assert db.get_footer("en").collapsible is False
+        assert db.get_footer("en") == Footer(content="Footer", collapsible=True)
 
     def test_get_all_posts(self, db: Json):
         posts = db.get_all_posts("en")
@@ -157,9 +140,9 @@ class TestJsonDb:
         with pytest.raises(NotFoundError, match="Posts data is missing"):
             db_without_posts.get_post("any-slug")
 
-    def test_get_post_with_missing_required_field(self, db: Json):
+    def test_get_post_with_missing_required_field(self, sample_data: dict[str, Any]):
         """ValidationError raised when required field is missing."""
-        db.data["site_content"]["posts"].append(
+        sample_data["site_content"]["posts"].append(
             {
                 "slug": "test-post",
                 "author": "Test Author",
@@ -167,6 +150,7 @@ class TestJsonDb:
                 "excerpt": "Test excerpt",
             }
         )
+        db = Json(MemoryStore(sample_data))
 
         with pytest.raises(ValidationError):
             db.get_post("test-post")
@@ -238,8 +222,9 @@ class TestJsonDb:
         assert len(db.get_posts_by_tag("non-existent", "en")) == 0
         assert len(db.get_posts_by_tag("tag1", "fr")) == 0
 
-    def test_get_posts_by_tag_with_empty_posts(self, db: Json):
-        db.data["site_content"]["posts"] = []
+    def test_get_posts_by_tag_with_empty_posts(self, sample_data: dict[str, Any]):
+        sample_data["site_content"]["posts"] = []
+        db = Json(MemoryStore(sample_data))
         posts = list(db.get_posts_by_tag("tag1", "en"))
         assert len(posts) == 0
 
@@ -347,16 +332,44 @@ class TestJsonDbComments:
             mock_datetime.now.return_value = test_date
             db.add_comment("Test User", "Great post!", "post-1")
 
-        post_data = next(
-            p
-            for p in db._get_site_content()["posts"]  # type: ignore[reportPrivateUsage]
-            if p["slug"] == "post-1"
-        )
-        assert len(post_data["comments"]) == 1
-        comment = post_data["comments"][0]
-        assert comment["author"] == "Test User"
-        assert comment["comment"] == "Great post!"
-        assert comment["date"] == "2023-01-01T12:00:00"
+        comments = db.get_post("post-1").comments
+        assert len(comments) == 1
+        assert comments[0].author == "Test User"
+        assert comments[0].comment == "Great post!"
+        assert comments[0].date == test_date.replace(tzinfo=timezone.utc)
+
+    def test_add_comment_persists_to_store(self):
+        document: dict[str, Any] = {
+            "site_content": {
+                "posts": [
+                    {
+                        "title": "Post 1",
+                        "slug": "post-1",
+                        "language": "en",
+                        "tags": [],
+                        "comments": [],
+                        "author": "Test Author",
+                        "contentInMarkdown": "# Post 1",
+                        "excerpt": "Post 1 excerpt",
+                        "date": "2023-01-01T00:00:00",
+                    }
+                ]
+            }
+        }
+        store = Mock(spec=JsonStore)
+        store.load.return_value = document
+        db = Json(store)
+        test_date = datetime.datetime(2023, 1, 1, 12, 0)
+
+        with patch("datetime.datetime") as mock_datetime:
+            mock_datetime.now.return_value = test_date
+            db.add_comment("Test User", "Great post!", "post-1")
+
+        store.save.assert_called_once()
+        saved = store.save.call_args.args[0]
+        assert saved["site_content"]["posts"][0]["comments"] == [
+            {"author": "Test User", "comment": "Great post!", "date": "2023-01-01T12:00:00"}
+        ]
 
     def test_add_comment_to_nonexistent_post(self, db: Json):
         with pytest.raises(NotFoundError, match="Post with slug non-existent not found"):
@@ -394,7 +407,7 @@ class TestJsonDbComments:
             db.add_comment("Test User", "Comment", "post-1")
 
         # The in-memory mutation is rolled back, not left dangling.
-        assert db.data["site_content"]["posts"][0]["comments"] == []
+        assert db.get_post("post-1").comments == []
         assert "Failed to persist comment for post 'post-1'" in caplog.text
 
 
