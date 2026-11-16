@@ -312,8 +312,9 @@ own routes, so it can point at a page, a post, or any other registered route.
   that resolves back to ``/`` itself, one that redirects to a path that redirects again, one
   that matches no route, or one that matches only a route for other methods than ``GET``
   makes ``/`` render the 404 page.
-* The home page paths are read on each request, so a change in the site content applies
-  without restarting the app.
+* The home page paths are read on each request, so with MongoDB or GraphQL a change in the
+  site content applies without restarting the app. The JSON databases read the site content
+  once, at startup.
 
 .. _site-content:
 
